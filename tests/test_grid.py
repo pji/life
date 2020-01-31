@@ -21,3 +21,13 @@ class GridTestCase(ut.TestCase):
         g = grid.Grid(3, 2)
         act = g._data
         self.assertEqual(exp, act)
+    
+    def test_string_representation(self):
+        """Grid objects should be able to produce a simple string 
+        representation of themselves.
+        """
+        exp = ('...\n'
+               '...')
+        g = grid.Grid(3, 2)
+        act = g.__str__()
+        self.assertEqual(exp, act)
