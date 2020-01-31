@@ -1,0 +1,72 @@
+==========================
+life Requirements Document
+==========================
+
+The purpose of this document is to detail the requirements for life, 
+a Python implementation of Conway's Game of Life. This is an initial 
+take for the purposes of planning. There may be additional requirements 
+or non-required features added in the future.
+
+
+Purpose
+-------
+The purpose of life are:
+
+* To be able to run an instance of Conway's Game of Life
+
+
+Functional Requirements
+-----------------------
+The following are the functional requirements for life:
+
+1. life can display the current generation of cells
+2. life can calculate the next generation of cells
+3. life can handle cell grids of varying size
+4. life allows cell activity to wrap around the edges of the grid
+5. Patterns can be imported from file
+6. The current grid state can be saved to file
+7. life can progress cell generation automatically
+8. life can pause generation progression
+9. life can randomize the initial cell state
+
+
+Technical Requirements
+----------------------
+The following are the technical requirements for life:
+
+1. life is written in Python
+2. life will have a command line interface that uses blessed
+
+
+Design Discussion
+-----------------
+What am I going to need:
+
+* A grid of cells
+* An engine that understands the behavior of cells
+* A user interface that displays the grid
+
+I think that's it. It's a lot fewer pieces that blackjack had, but 
+that's probably not surprising. There is no concept of players here. 
+It's just the cells, their behavior, and the interface.
+
+
+The Rules of Conway's Game of Life
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The rules for the GoL are:
+
+* A live cell with 2 or 3 neighbors survives
+* A dead cell with 3 neighbors becomes alive
+* A other cells die or stay dead
+
+
+Grid
+~~~~
+While I may go for a more efficient implementation in the future. I'm 
+going to start with something very straight forward. The cells will 
+be stored in a two dimensional array. The grid must:
+
+* Contain cells that are represented by booleans indicating the status 
+  of the cell.
+* Provide a very basic string representation of the grid.
+* Allow the grid size to be set on initialization.
