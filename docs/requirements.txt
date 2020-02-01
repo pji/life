@@ -57,7 +57,7 @@ The rules for the GoL are:
 
 * A live cell with 2 or 3 neighbors survives
 * A dead cell with 3 neighbors becomes alive
-* A other cells die or stay dead
+* All other cells die or stay dead
 
 
 Grid
