@@ -5,6 +5,7 @@ test_grid
 This provides the unit tests for life.grid.py.
 """
 import unittest as ut
+from unittest.mock import call, patch
 
 from life import grid
 
@@ -81,3 +82,42 @@ class GridTestCase(ut.TestCase):
         act = g.neighbors(0, 0)
         self.assertEqual(exp, act)
     
+    def test_calculate_next_generation(self):
+        """grid.next_generation() should return update itself to the 
+        next generation.
+        """
+        exp = [
+            [False, True, False, False, False,],
+            [False, True, True, False, False,],
+            [True, False, True, False, False,],
+            [False, False, False, False, False,],
+            [False, False, False, False, False,],
+        ]
+        
+        data = [
+            [False, False, False, False, False,],
+            [True, True, True, False, False,],
+            [False, False, True, False, False,],
+            [False, True, False, False, False,],
+            [False, False, False, False, False,],
+        ]
+        g = grid.Grid(5, 5)
+        g._data = data
+        g.next_generation()
+        act = g._data
+        
+        self.assertEqual(exp, act)
+    
+    @patch('life.grid.choice', return_value=True)
+    def test_randomize_grid(self, mock_choice):
+        """Grid.randomize() should randomly set each cell in the grid 
+        object to either True or False.
+        """
+        exp_calls = [call([True, False]) for _ in range(5 * 5)]
+        exp_result = [[True for _ in range(5)] for _ in range(5)]
+        g = grid.Grid(5, 5)
+        g.randomize()
+        act_calls = mock_choice.mock_calls
+        act_result = g._data
+        self.assertListEqual(exp_calls, act_calls)
+        self.assertListEqual(exp_result, act_result)

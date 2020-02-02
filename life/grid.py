@@ -6,6 +6,7 @@ A simple object for handling cells in Conway's Game of Life.
 """
 from collections.abc import MutableSequence
 from copy import copy
+from random import choice
 
 class Grid(MutableSequence):
     def __init__(self, width:int, height:int) -> None:
@@ -59,3 +60,27 @@ class Grid(MutableSequence):
             coords.extend((row, col) for col in cols)
         del coords[4]
         return coords
+    
+    def next_generation(self):
+        """Calculate the next generation for the grid."""
+        counts = self._make_empty_grid(self.width, self.height)
+        for x in range(len(self)):
+            for y in range(len(self[x])):
+                if self[x][y]:
+                    affected = self.neighbors(x, y)
+                    for i, j in affected:
+                        counts[i][j] += 1
+        new = self._make_empty_grid(self.width, self.height)
+        for x in range(len(self)):
+            for y in range(len(self[x])):
+                if self[x][y] and counts[x][y] == 2:
+                    new[x][y] = True
+                elif counts[x][y] == 3:
+                    new[x][y] = True
+        self._data = new
+    
+    def randomize(self):
+        """Randomly set each value in the grid to True or False."""
+        for i in range(self.width):
+            for j in range(self.height):
+                self._data[i][j] = choice([True, False])

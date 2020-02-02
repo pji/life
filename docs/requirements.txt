@@ -70,3 +70,9 @@ be stored in a two dimensional array. The grid must:
   of the cell.
 * Provide a very basic string representation of the grid.
 * Allow the grid size to be set on initialization.
+* Calculate the next generation.
+* Randomize the value of each cell.
+
+Now, that last part requires the grid to understand the rules of the 
+game. That should be fine for now, but may want to look at adding the 
+ability to alter the game rules in the future.
