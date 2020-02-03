@@ -12,6 +12,28 @@ import blessed
 from life import grid, ui
 
 
+class mainTestCase(ut.TestCase):
+    def test_call_with_params(self):
+        """main() should accept parameters when called."""
+        exp = {
+            'ctlr': ui.TerminalController(),
+        }
+        
+        # This will raise a TypeError if the class cannot accept 
+        # the passed attributes.
+        _ = ui.main(**exp)
+    
+    @patch('life.ui.TerminalController')
+    def test_call_without_params(self, mock_tc):
+        """main() should generate default values if parameters are 
+        not passed when called.
+        """
+        exp = call()
+        _ = ui.main()
+        act = mock_tc.mock_calls[-1]
+        self.assertEqual(exp, act)
+
+
 class TerminalControllerTestCase(ut.TestCase):
     def test_init(self):
         """TerminalController object should be initialized, setting 
@@ -43,7 +65,6 @@ class TerminalControllerTestCase(ut.TestCase):
         }
         self.assertEqual(exp, act)
     
-#     @patch('life.ui.Terminal')
     def test_default_grid_size(self):
         """The default grid should be as wide as the terminal an 
         three less than the height of the terminal.

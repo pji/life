@@ -24,3 +24,8 @@ class TerminalController:
         if not data:
             data = Grid(term.width, term.height - 3)
         self.data = data
+
+
+def main(ctlr:TerminalController = None) -> None:
+    if not ctlr:
+        ctlr = TerminalController()
