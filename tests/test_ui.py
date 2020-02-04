@@ -29,12 +29,37 @@ class mainTestCase(ut.TestCase):
         not passed when called.
         """
         exp = call()
-        _ = ui.main()
-        act = mock_tc.mock_calls[-1]
+        
+        main = ui.main()
+        next(main)
+        main.close()
+        act = mock_tc.mock_calls[-3]
+        
         self.assertEqual(exp, act)
+    
+    @patch('blessed.Terminal.fullscreen')
+    def test_fullscreen(self, mock_fs):
+        """Iterating main() should engage fullscreen mode for the 
+        terminal.
+        """
+        main = ui.main()
+        next(main)
+        mock_fs.assert_called()
+    
+    @patch('blessed.Terminal.hidden_cursor')
+    def test_fullscreen(self, mock_hc):
+        """Iterating main() should engage hidden_cursor mode for the 
+        terminal.
+        """
+        main = ui.main()
+        next(main)
+        mock_hc.assert_called()
 
 
 class TerminalControllerTestCase(ut.TestCase):
+    # Common format templates for terminal control sequences.
+    loc = '\x1b[{};{}H'
+
     def test_init(self):
         """TerminalController object should be initialized, setting 
         the objects attributes with the given values.
@@ -84,3 +109,30 @@ class TerminalControllerTestCase(ut.TestCase):
                 'height': u.data.height,
             }
         self.assertEqual(exp, act)
+    
+    @patch('life.ui.print')
+    def test_draw(self, mock_print):
+        """TerminalController.draw() should draw the user interface to 
+        the termional.
+        """
+        exp = [
+            call(self.loc.format(1, 1) + '\u2588 \u2588'),
+            call(self.loc.format(2, 1) + ' \u2588 '),
+            call(self.loc.format(3, 1) + '\u2588 \u2588'),
+            call(self.loc.format(4, 1) + '\u2500\u2500\u2500'),
+            call(self.loc.format(5, 1) + '(N)ext, (R)andom, (Q)uit'),
+            call(self.loc.format(6, 1) + '> '),
+        ]
+        
+        g = grid.Grid(3, 3)
+        data = [
+            [True, False, True],
+            [False, True, False],
+            [True, False, True],
+        ]
+        g._data = data
+        tc = ui.TerminalController(g)
+        tc.draw()
+        act = mock_print.mock_calls
+        
+        self.assertListEqual(exp, act)
