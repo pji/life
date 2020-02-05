@@ -46,8 +46,10 @@ class mainTestCase(ut.TestCase):
         next(main)
         mock_fs.assert_called()
     
+    @patch('blessed.Terminal.inkey', return_value='n')
+    @patch('life.ui.print')
     @patch('blessed.Terminal.hidden_cursor')
-    def test_fullscreen(self, mock_hc):
+    def test_fullscreen(self, mock_hc, _, __):
         """Iterating main() should engage hidden_cursor mode for the 
         terminal.
         """
@@ -121,7 +123,6 @@ class TerminalControllerTestCase(ut.TestCase):
             call(self.loc.format(3, 1) + '\u2588 \u2588'),
             call(self.loc.format(4, 1) + '\u2500\u2500\u2500'),
             call(self.loc.format(5, 1) + '(N)ext, (R)andom, (Q)uit'),
-            call(self.loc.format(6, 1) + '> '),
         ]
         
         g = grid.Grid(3, 3)
@@ -136,3 +137,20 @@ class TerminalControllerTestCase(ut.TestCase):
         act = mock_print.mock_calls
         
         self.assertListEqual(exp, act)
+    
+    @patch('blessed.Terminal.inkey', return_value='n')
+    @patch('life.ui.print')
+    def test_input_valid(self, mock_print, mock_inkey):
+        """When called, TerminalController.input() should write the 
+        prompt to the UI and return a valid response from the user.
+        """
+        exp_call = call(self.loc.format(6, 1) + '> ')
+        exp_return = 'n'
+        
+        g = grid.Grid(3, 3)
+        tc = ui.TerminalController(g)
+        act_return = tc.input()
+        act_call = mock_print.mock_calls[-1]
+        
+        self.assertEqual(exp_call, act_call)
+        self.assertEqual(exp_return, act_return)

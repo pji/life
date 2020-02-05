@@ -83,4 +83,4 @@ class Grid(MutableSequence):
         """Randomly set each value in the grid to True or False."""
         for i in range(self.width):
             for j in range(self.height):
-                self._data[i][j] = choice([True, False])
+                self._data[j][i] = choice([True, False])

@@ -62,15 +62,30 @@ class TerminalController:
         self._draw_grid()
         self._draw_rule()
         self._draw_commands()
+    
+    def input(self):
+        """Get input from the user."""
         self._draw_prompt()
+        with self.term.cbreak():
+            resp = self.term.inkey()
+        return resp
 
 
-def main(ctlr:TerminalController = None) -> None:
+def main(ctlr: TerminalController = None) -> None:
     if not ctlr:
         ctlr = TerminalController()
-#     ctlr.data.randomize()
+    ctlr.data.randomize()
     with ctlr.term.fullscreen(), ctlr.term.hidden_cursor():
         while True:
-#             print(stlr.term.move(0, 0) + ctlr.data
-            yield True
+            ctlr.draw()
+            yield ctlr.input()
+            ctlr.data.next_generation()
             
+
+if __name__ == '__main__':
+    loop = main()
+    next(loop)
+    cmd = 'n'
+    while cmd == 'n':
+        cmd = next(loop)
+    loop.close()
