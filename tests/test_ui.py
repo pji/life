@@ -121,6 +121,15 @@ class TerminalControllerTestCase(ut.TestCase):
             }
         self.assertEqual(exp, act)
     
+    @patch('life.ui.TerminalController.draw')
+    @patch('life.grid.Grid.clear')
+    def test_clear(self, mock_clear, mock_draw):
+        """TerminalController.clear() should clear the grid."""
+        tc = ui.TerminalController()
+        tc.clear()
+        mock_clear.assert_called()
+        mock_draw.assert_called()
+    
     @patch('life.ui.print')
     def test_draw(self, mock_print):
         """TerminalController.draw() should draw the user interface to 
@@ -130,7 +139,7 @@ class TerminalControllerTestCase(ut.TestCase):
             call(self.loc.format(1, 1) + '\u2580\u2584\u2580'),
             call(self.loc.format(2, 1) + '\u2580 \u2580'),
             call(self.loc.format(3, 1) + '\u2500\u2500\u2500'),
-            call(self.loc.format(4, 1) + '(N)ext, (R)andom, (Q)uit'),
+            call(self.loc.format(4, 1) + '(C)lear, (N)ext, (R)andom, (Q)uit'),
         ]
         
         g = grid.Grid(3, 3)
@@ -173,3 +182,15 @@ class TerminalControllerTestCase(ut.TestCase):
         tc.next()
         mock_ng.assert_called()
         mock_draw.assert_called()
+    
+    @patch('life.ui.TerminalController.draw')
+    @patch('life.grid.Grid.randomize')
+    def test_random(self, mock_random, mock_draw):
+        """TerminalController.next() should advance the generation of 
+        the grid and update the display.
+        """
+        tc = ui.TerminalController()
+        tc.random()
+        mock_random.assert_called()
+        mock_draw.assert_called()
+    

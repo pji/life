@@ -4,6 +4,8 @@ ui
 
 The user interface for Conway's Game of Life.
 """
+import traceback as tb
+
 from blessed import Terminal
 
 from life.grid import Grid
@@ -13,6 +15,7 @@ class _Command:
     """A trusted object to handle command input from the UI."""
     def __init__(self, value: str) -> None:
         self.valid = {
+            'c': 'clear',
             'n': 'next',
             'q': 'quit',
             'r': 'random',
@@ -51,6 +54,7 @@ class TerminalController:
         self.term = term
         if not data:
             data = Grid(term.width, (term.height - 3) * 2)
+#             data = Grid((term.height - 3) * 2, term.width)
         self.data = data
         self.cell_alive = '\u2588'
         self.cell_dead = ' '
@@ -68,7 +72,7 @@ class TerminalController:
     
     def _draw_commands(self):
         """Draw the available commands."""
-        cmds = ['(N)ext', '(R)andom', '(Q)uit',]
+        cmds = ['(C)lear', '(N)ext', '(R)andom', '(Q)uit',]
         y = -(self.data.height // -2) + 1
         print(self.term.move(y, 0) + ', '.join(cmds))
     
@@ -95,6 +99,11 @@ class TerminalController:
         y = -(self.data.height // -2)
         print(self.term.move(y, 0) + '\u2500' * width)
     
+    def clear(self):
+        """Clear all cell statuses from the grid."""
+        self.data.clear()
+        self.draw()
+    
     def draw(self):
         """Draw the user interface."""
         self._draw_grid()
@@ -112,6 +121,11 @@ class TerminalController:
         with self.term.cbreak():
             cmd = _Command(self.term.inkey())
         return cmd
+    
+    def random(self):
+        """Randomize the values of the cells in the grid."""
+        self.data.randomize()
+        self.draw()
 
 
 def main(ctlr: TerminalController = None) -> None:
@@ -129,6 +143,14 @@ if __name__ == '__main__':
     loop = main()
     next(loop)
     cmd = _Command('n')
-    while cmd.value == 'next':
-        cmd = loop.send(cmd)
+    try:
+        while cmd.value != 'quit':
+            cmd = loop.send(cmd)
+    except Exception as ex:
+        with open('exception.log', 'w') as fh:
+            fh.write(str(ex.args))
+            tb_str = ''.join(tb.format_tb(ex.__traceback__))
+            fh.write(tb_str)
+        loop.close()
+        raise ex
     loop.close()

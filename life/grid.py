@@ -47,6 +47,12 @@ class Grid(MutableSequence):
         """Create a blank 2D grid of the given dimensions."""
         return [[False for col in range(width)] for row in range(height)]
     
+    def clear(self):
+        """Set all cells to False."""
+        for i in range(self.height):
+            for j in range(self.width):
+                self._data[i][j] = False
+    
     def insert(self, i, x):
         return self._data.insert(i, x)
     

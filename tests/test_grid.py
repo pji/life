@@ -121,3 +121,27 @@ class GridTestCase(ut.TestCase):
         act_result = g._data
         self.assertListEqual(exp_calls, act_calls)
         self.assertListEqual(exp_result, act_result)
+    
+    def test_clear(self):
+        """Grid.clear() should set every cell of the Grid object to 
+        False.
+        """
+        exp = [
+            [False, False, False,],
+            [False, False, False,],
+            [False, False, False,],
+            [False, False, False,],
+        ]
+        
+        g = grid.Grid(3, 4)
+        data = [
+            [True, False, True,],
+            [False, True, False,],
+            [True, False, True,],
+            [False, False, False,],
+        ]
+        g._data = data
+        g.clear()
+        act = g._data
+        
+        self.assertEqual(exp, act)
