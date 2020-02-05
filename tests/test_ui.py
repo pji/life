@@ -56,6 +56,15 @@ class mainTestCase(ut.TestCase):
         main = ui.main()
         next(main)
         mock_hc.assert_called()
+    
+    @patch('life.ui.print')
+    @patch('life.ui.TerminalController.input', return_value='n')
+    def test_loop_input(self, mock_input, _):
+        """Iterating main() should prompt for input.
+        """
+        main = ui.main()
+        next(main)
+        mock_input.assert_called()
 
 
 class TerminalControllerTestCase(ut.TestCase):

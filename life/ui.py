@@ -76,8 +76,8 @@ def main(ctlr: TerminalController = None) -> None:
         ctlr = TerminalController()
     ctlr.data.randomize()
     with ctlr.term.fullscreen(), ctlr.term.hidden_cursor():
+        ctlr.draw()
         while True:
-            ctlr.draw()
             yield ctlr.input()
             ctlr.data.next_generation()
             
