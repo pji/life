@@ -107,7 +107,7 @@ class TerminalControllerTestCase(ut.TestCase):
         """
         exp = {
             'width': 80,
-            'height': 21,
+            'height': 42,
         }
         
         with patch('life.ui.Terminal.width', new_callable=PropertyMock) as mock_width, \
@@ -127,11 +127,10 @@ class TerminalControllerTestCase(ut.TestCase):
         the termional.
         """
         exp = [
-            call(self.loc.format(1, 1) + '\u2588 \u2588'),
-            call(self.loc.format(2, 1) + ' \u2588 '),
-            call(self.loc.format(3, 1) + '\u2588 \u2588'),
-            call(self.loc.format(4, 1) + '\u2500\u2500\u2500'),
-            call(self.loc.format(5, 1) + '(N)ext, (R)andom, (Q)uit'),
+            call(self.loc.format(1, 1) + '\u2580\u2584\u2580'),
+            call(self.loc.format(2, 1) + '\u2580 \u2580'),
+            call(self.loc.format(3, 1) + '\u2500\u2500\u2500'),
+            call(self.loc.format(4, 1) + '(N)ext, (R)andom, (Q)uit'),
         ]
         
         g = grid.Grid(3, 3)
@@ -153,8 +152,8 @@ class TerminalControllerTestCase(ut.TestCase):
         """When called, TerminalController.input() should write the 
         prompt to the UI and return a valid response from the user.
         """
-        exp_call = call(self.loc.format(6, 1) + '> ')
-        exp_return = 'n'
+        exp_call = call(self.loc.format(5, 1) + '> ')
+        exp_return = ui._Command('n')
         
         g = grid.Grid(3, 3)
         tc = ui.TerminalController(g)
@@ -163,3 +162,14 @@ class TerminalControllerTestCase(ut.TestCase):
         
         self.assertEqual(exp_call, act_call)
         self.assertEqual(exp_return, act_return)
+    
+    @patch('life.ui.TerminalController.draw')
+    @patch('life.grid.Grid.next_generation')
+    def test_next(self, mock_ng, mock_draw):
+        """TerminalController.next() should advance the generation of 
+        the grid and update the display.
+        """
+        tc = ui.TerminalController()
+        tc.next()
+        mock_ng.assert_called()
+        mock_draw.assert_called()

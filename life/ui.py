@@ -9,6 +9,34 @@ from blessed import Terminal
 from life.grid import Grid
 
 
+class _Command:
+    """A trusted object to handle command input from the UI."""
+    def __init__(self, value: str) -> None:
+        self.valid = {
+            'n': 'next',
+            'q': 'quit',
+            'r': 'random',
+        }
+        self.default = 'n'
+        self.value = value
+    
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.value == other.value
+    
+    @property
+    def value(self):
+        return self._value
+    
+    @value.setter
+    def value(self, value):
+        normal = value.lower()
+        if normal not in self.valid:
+            normal = self.default
+        self._value = self.valid[normal]
+
+
 class TerminalController:
     def __init__(self, data: Grid = None, term: Terminal = None) -> None:
         """Initialize an instance od the class.
@@ -22,39 +50,49 @@ class TerminalController:
             term = Terminal()
         self.term = term
         if not data:
-            data = Grid(term.width, term.height - 3)
+            data = Grid(term.width, (term.height - 3) * 2)
         self.data = data
         self.cell_alive = '\u2588'
         self.cell_dead = ' '
     
-    def _char_for_state(self, is_alive):
+    def _char_for_state(self, top, bottom):
         """Return the character to draw based on the state of the cell."""
-        if is_alive:
-            return self.cell_alive
-        else:
-            return self.cell_dead
+        if top and bottom:
+            return '\u2588'
+        if top and not bottom:
+            return '\u2580'
+        if not top and bottom:
+            return '\u2584'
+        if not top and not bottom:
+            return ' '
     
     def _draw_commands(self):
         """Draw the available commands."""
         cmds = ['(N)ext', '(R)andom', '(Q)uit',]
-        y = self.data.height + 1
+        y = -(self.data.height // -2) + 1
         print(self.term.move(y, 0) + ', '.join(cmds))
     
     def _draw_grid(self):
         """Draw the grid to the terminal."""
-        for index in range(len(self.data)):
-            cells = [self._char_for_state(cell) for cell in self.data[index]]
-            print(self.term.move(index, 0) + ''.join(cells))
+        data = self.data[:]
+        if len(data) % 2:
+            data.append([False for _ in range(len(data[0]))])
+        for i in range(0, len(data), 2):
+            cells = []
+            for j in range(0, len(data[i])):
+                char = self._char_for_state(data[i][j], data[i+1][j])
+                cells.append(char)
+            print(self.term.move(i // 2, 0) + ''.join(cells))
     
     def _draw_prompt(self):
         """Draw the command prompt."""
-        y = self.data.height + 2
+        y = -(self.data.height // -2) + 2
         print(self.term.move(y, 0) + '> ')
     
     def _draw_rule(self):
         """Draw the a horizontal rule."""
         width = self.data.width
-        y = self.data.height
+        y = -(self.data.height // -2)
         print(self.term.move(y, 0) + '\u2500' * width)
     
     def draw(self):
@@ -63,12 +101,17 @@ class TerminalController:
         self._draw_rule()
         self._draw_commands()
     
+    def next(self):
+        """Advance the generation of the grid and draw the results."""
+        self.data.next_generation()
+        self.draw()
+    
     def input(self):
         """Get input from the user."""
         self._draw_prompt()
         with self.term.cbreak():
-            resp = self.term.inkey()
-        return resp
+            cmd = _Command(self.term.inkey())
+        return cmd
 
 
 def main(ctlr: TerminalController = None) -> None:
@@ -78,14 +121,14 @@ def main(ctlr: TerminalController = None) -> None:
     with ctlr.term.fullscreen(), ctlr.term.hidden_cursor():
         ctlr.draw()
         while True:
-            yield ctlr.input()
-            ctlr.data.next_generation()
+            cmd = yield ctlr.input()
+            getattr(ctlr, cmd.value)()
             
 
 if __name__ == '__main__':
     loop = main()
     next(loop)
-    cmd = 'n'
-    while cmd == 'n':
-        cmd = next(loop)
+    cmd = _Command('n')
+    while cmd.value == 'next':
+        cmd = loop.send(cmd)
     loop.close()
