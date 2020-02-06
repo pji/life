@@ -71,6 +71,26 @@ class TerminalController:
         if not top and not bottom:
             return ' '
     
+    def _convert_text_pattern(self, text:str, live: str = 'x') -> list:
+        """Convert a pattern saved as a text file into grid data.
+        
+        :param text: The pattern as text.
+        :param live: The character that represents an alive cell.
+        :return: The pattern converted to a table of True and False 
+            values.
+        :rtype: list
+        """
+        new = []
+        for line in text:
+            row = []
+            for char in line:
+                if char.lower() == live:
+                    row.append(True)
+                else:
+                    row.append(False)
+            new.append(row)
+        return new
+    
     def _draw_commands(self):
         """Draw the available commands."""
         cmds = ['(C)lear', '(L)oad', '(N)ext', '(R)andom', '(Q)uit',]
@@ -92,7 +112,7 @@ class TerminalController:
     def _draw_prompt(self, msg: str = '> '):
         """Draw the command prompt."""
         y = -(self.data.height // -2) + 2
-        print(self.term.move(y, 0) + msg)
+        print(self.term.move(y, 0) + msg, end='')
     
     def _draw_rule(self):
         """Draw the a horizontal rule."""
@@ -108,7 +128,9 @@ class TerminalController:
         :rtype: NoneType
         """
         self._draw_prompt(f'{msg} > ')
-        s = input()
+        x = len(msg) + 3
+        y = -(self.data.height // -2) + 2
+        s = input(self.term.move(y, x))
         return s
     
     def clear(self):
@@ -140,16 +162,7 @@ class TerminalController:
         text = []
         with open(filename, 'r') as f:
             text = f.readlines()
-        
-        new = []
-        for line in text:
-            row = []
-            for char in line:
-                if char.lower() == 'x':
-                    row.append(True)
-                else:
-                    row.append(False)
-            new.append(row)
+        new = self._convert_text_pattern(text)
         self.data.replace(new)
         self.draw()
     

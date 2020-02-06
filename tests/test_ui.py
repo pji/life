@@ -161,7 +161,7 @@ class TerminalControllerTestCase(ut.TestCase):
         """When called, TerminalController.input() should write the 
         prompt to the UI and return a valid response from the user.
         """
-        exp_call = call(self.loc.format(5, 1) + '> ')
+        exp_call = call(self.loc.format(5, 1) + '> ', end='')
         exp_return = ui._Command('n')
         
         g = grid.Grid(3, 3)
@@ -195,7 +195,7 @@ class TerminalControllerTestCase(ut.TestCase):
         mock_draw.assert_called()
     
     @patch('life.ui.print')
-    @patch('blessed.Terminal.inkey', return_value='spam')
+    @patch('life.ui.input', return_value='spam')
     @patch('life.ui.TerminalController.draw')
     @patch('life.grid.Grid.replace')
     @patch('life.ui.open')
