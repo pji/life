@@ -90,3 +90,14 @@ class Grid(MutableSequence):
         for i in range(self.width):
             for j in range(self.height):
                 self._data[j][i] = choice([True, False])
+    
+    def replace(self, new):
+        """Replace the current grid data with the given data."""
+        self.clear()
+        delta_width = self.width - len(new[0])
+        delta_height = self.height - len(new)
+        for i in range(len(new)):
+            for j in range(len(new[i])):
+                y = i + delta_height // 2
+                x = j + delta_width // 2
+                self._data[y][x] = new[i][j]

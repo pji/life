@@ -145,3 +145,34 @@ class GridTestCase(ut.TestCase):
         act = g._data
         
         self.assertEqual(exp, act)
+    
+    def test_replace_grid(self):
+        """Given a list of lists that contain True or False, 
+        Grid.replace() should clear its data then place those 
+        True/False values centered in its data.
+        """
+        exp = [
+            [False, False, False, False, False],
+            [False, True, False, True, False],
+            [False, False, False, False, False],
+            [False, True, False, True, False],
+            [False, False, False, False, False],
+        ]
+        
+        g = grid.Grid(5, 5)
+        g._data = [
+            [True, False, True, False, True],
+            [False, False, False, False, False],
+            [False, False, True, False, False],
+            [False, False, False, False, False],
+            [True, False, True, False, True],
+        ]
+        test = [
+            [True, False, True],
+            [False, False, False],
+            [True, False, True],
+        ]
+        g.replace(test)
+        act = g._data
+        
+        self.assertListEqual(exp, act)

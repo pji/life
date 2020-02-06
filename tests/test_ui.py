@@ -139,7 +139,7 @@ class TerminalControllerTestCase(ut.TestCase):
             call(self.loc.format(1, 1) + '\u2580\u2584\u2580'),
             call(self.loc.format(2, 1) + '\u2580 \u2580'),
             call(self.loc.format(3, 1) + '\u2500\u2500\u2500'),
-            call(self.loc.format(4, 1) + '(C)lear, (N)ext, (R)andom, (Q)uit'),
+            call(self.loc.format(4, 1) + '(C)lear, (L)oad, (N)ext, (R)andom, (Q)uit'),
         ]
         
         g = grid.Grid(3, 3)
@@ -194,3 +194,18 @@ class TerminalControllerTestCase(ut.TestCase):
         mock_random.assert_called()
         mock_draw.assert_called()
     
+    @patch('life.ui.print')
+    @patch('blessed.Terminal.inkey', return_value='spam')
+    @patch('life.ui.TerminalController.draw')
+    @patch('life.grid.Grid.replace')
+    @patch('life.ui.open')
+    def test_load(self, mock_open, mock_replace, mock_draw, _, __):
+        """TerminalController.replace() should advance the generation of 
+        the grid and update the display.
+        """
+        mock_open().__enter__().readlines.return_value = ['xoxo',]
+        tc = ui.TerminalController()
+        tc.load()
+        mock_replace.assert_called_with([[True, False, True, False],])
+        mock_open.assert_called_with('spam', 'r')
+        mock_draw.assert_called()

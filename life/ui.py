@@ -16,6 +16,7 @@ class _Command:
     def __init__(self, value: str) -> None:
         self.valid = {
             'c': 'clear',
+            'l': 'load',
             'n': 'next',
             'q': 'quit',
             'r': 'random',
@@ -72,7 +73,7 @@ class TerminalController:
     
     def _draw_commands(self):
         """Draw the available commands."""
-        cmds = ['(C)lear', '(N)ext', '(R)andom', '(Q)uit',]
+        cmds = ['(C)lear', '(L)oad', '(N)ext', '(R)andom', '(Q)uit',]
         y = -(self.data.height // -2) + 1
         print(self.term.move(y, 0) + ', '.join(cmds))
     
@@ -88,16 +89,27 @@ class TerminalController:
                 cells.append(char)
             print(self.term.move(i // 2, 0) + ''.join(cells))
     
-    def _draw_prompt(self):
+    def _draw_prompt(self, msg: str = '> '):
         """Draw the command prompt."""
         y = -(self.data.height // -2) + 2
-        print(self.term.move(y, 0) + '> ')
+        print(self.term.move(y, 0) + msg)
     
     def _draw_rule(self):
         """Draw the a horizontal rule."""
         width = self.data.width
         y = -(self.data.height // -2)
         print(self.term.move(y, 0) + '\u2500' * width)
+    
+    def _get_filename(self, msg:str):
+        """Prompt the use for the name of a file and return it.
+        
+        :param msg: The message to prompt the user with.
+        :return: None
+        :rtype: NoneType
+        """
+        self._draw_prompt(f'{msg} > ')
+        s = input()
+        return s
     
     def clear(self):
         """Clear all cell statuses from the grid."""
@@ -121,6 +133,25 @@ class TerminalController:
         with self.term.cbreak():
             cmd = _Command(self.term.inkey())
         return cmd
+    
+    def load(self):
+        """Load a GoL state from a file."""
+        filename = self._get_filename('Load file named')
+        text = []
+        with open(filename, 'r') as f:
+            text = f.readlines()
+        
+        new = []
+        for line in text:
+            row = []
+            for char in line:
+                if char.lower() == 'x':
+                    row.append(True)
+                else:
+                    row.append(False)
+            new.append(row)
+        self.data.replace(new)
+        self.draw()
     
     def random(self):
         """Randomize the values of the cells in the grid."""
