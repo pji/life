@@ -43,15 +43,26 @@ class Grid(MutableSequence):
             rows.append(s)
         return '\n'.join(rows)
     
+    def _gen_coordinates(self, height: int = None, width: int = None) -> None:
+        """A generator that returns each valid coordinate of the 
+        grid.
+        """
+        if not height:
+            height = self.height
+        if not width:
+            width = self.width
+        for row_index in range(height):
+            for cell_index in range(width):
+                yield row_index, cell_index
+    
     def _make_empty_grid(self, width:int, height:int) -> list:
         """Create a blank 2D grid of the given dimensions."""
         return [[False for col in range(width)] for row in range(height)]
     
     def clear(self):
         """Set all cells to False."""
-        for i in range(self.height):
-            for j in range(self.width):
-                self._data[i][j] = False
+        for row, col in self._gen_coordinates():
+            self._data[row][col] = False
     
     def insert(self, i, x):
         return self._data.insert(i, x)
@@ -70,27 +81,24 @@ class Grid(MutableSequence):
     def next_generation(self):
         """Calculate the next generation for the grid."""
         counts = self._make_empty_grid(self.width, self.height)
-        for x in range(len(self)):
-            for y in range(len(self[x])):
-                if self[x][y]:
-                    affected = self.neighbors(x, y)
-                    for i, j in affected:
-                        counts[i][j] += 1
+        for row, col in self._gen_coordinates():
+            if self[row][col]:
+                affected = self.neighbors(row, col)
+                for i, j in affected:
+                    counts[i][j] += 1
         new = self._make_empty_grid(self.width, self.height)
-        for x in range(len(self)):
-            for y in range(len(self[x])):
-                if self[x][y] and counts[x][y] == 2:
-                    new[x][y] = True
-                elif counts[x][y] == 3:
-                    new[x][y] = True
+        for row, col in self._gen_coordinates():
+            if self[row][col] and counts[row][col] == 2:
+                new[row][col] = True
+            elif counts[row][col] == 3:
+                new[row][col] = True
         self._data = new
     
     def randomize(self):
         """Randomly set each value in the grid to True or False."""
-        for i in range(self.width):
-            for j in range(self.height):
-                self._data[j][i] = choice([True, False])
-    
+        for row, col in self._gen_coordinates():
+            self._data[row][col] = choice([True, False])
+        
     def replace(self, new):
         """Replace the current grid data with the given data."""
         self.clear()
