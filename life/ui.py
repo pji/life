@@ -70,7 +70,7 @@ class _CursorNav(_Input):
         ('d', '(d) Right'), 
         ('w', '(w) Up'), 
         ('s', '(s) Down'),
-        ('\n', '(\u2890) Flip'),
+        (' ', '(\u2420) Flip'),
         ('e', '(E)xit'),
     ))
     default = 'e'
@@ -261,6 +261,8 @@ class TerminalController:
                     row += 1
                 elif cmd.value == 'e':
                     break
+                elif cmd.value == ' ':
+                    self.data.flip(row, col)
                 col = col % self.data.width
                 self._draw_grid()
         self.draw()

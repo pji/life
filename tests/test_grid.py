@@ -146,6 +146,21 @@ class GridTestCase(ut.TestCase):
         
         self.assertEqual(exp, act)
     
+    def test_flip(self):
+        """Flip the value of the cell at the given coordinates."""
+        exp = [
+            [False, False, False,],
+            [False, False, False,],
+            [False, True, False,],
+            [False, False, False,],
+        ]
+        
+        g = grid.Grid(3, 4)
+        g.flip(2, 1)
+        act = g._data
+        
+        self.assertEqual(exp, act)
+    
     def test_replace_grid(self):
         """Given a list of lists that contain True or False, 
         Grid.replace() should clear its data then place those 

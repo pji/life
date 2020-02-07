@@ -64,6 +64,10 @@ class Grid(MutableSequence):
         for row, col in self._gen_coordinates():
             self._data[row][col] = False
     
+    def flip(self, row, col):
+        """Flip the value of the cell at the given coordinates."""
+        self._data[row][col] = not self._data[row][col]
+    
     def insert(self, i, x):
         return self._data.insert(i, x)
     

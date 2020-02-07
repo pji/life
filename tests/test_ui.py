@@ -226,7 +226,7 @@ class TerminalControllerTestCase(ut.TestCase):
         commands with its commands.
         """
         exp = call(self.loc.format(4, 1) + '(a) Left, (d) Right, '
-                   '(w) Up, (s) Down, (\u2890) Flip, (E)xit')
+                   '(w) Up, (s) Down, (\u2420) Flip, (E)xit')
         
         g = grid.Grid(3, 3)
         tc = ui.TerminalController(g)
@@ -286,5 +286,25 @@ class TerminalControllerTestCase(ut.TestCase):
         # The last thing TerminalContoller.edit() does before exiting 
         # is set the command list back to display mode.
         act = mock_print.mock_calls[5]
+        
+        self.assertEqual(exp, act)
+    
+    @patch('blessed.Terminal.cbreak')
+    @patch('blessed.Terminal.inkey', side_effect=[' ', 'e'])
+    @patch('life.ui.print')
+    def test_edit_move_cursor_left(self, mock_print, _, __):
+        """TerminalController.edit() should exit when the e key 
+        is pressed.
+        """
+        exp = [
+            [False, False, False],
+            [False, True, False],
+            [False, False, False],
+        ]
+        
+        g = grid.Grid(3, 3)
+        tc = ui.TerminalController(g)
+        tc.edit()
+        act = g._data
         
         self.assertEqual(exp, act)
