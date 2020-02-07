@@ -211,3 +211,21 @@ class TerminalControllerTestCase(ut.TestCase):
         mock_replace.assert_called_with([[True, False, True, False],])
         mock_open.assert_called_with('pattern/spam', 'r')
         mock_draw.assert_called()
+    
+    
+    @patch('life.ui.print')
+    def test_edit_commands(self, mock_print):
+        """TerminalController.edit() should replace the display mode 
+        commands with its commands.
+        """
+        exp = call(self.loc.format(4, 1) + '(\u2190) Left, (\u2192) Right, '
+                   '(\u2191) Up, (\u2193) Down, (\u2890) Flip, (\u241b) Exit')
+        
+        g = grid.Grid(3, 3)
+        tc = ui.TerminalController(g)
+        tc.edit()
+        act = mock_print.mock_calls[-1]
+        
+        self.assertEqual(exp, act)
+        
+        

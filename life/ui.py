@@ -4,6 +4,7 @@ ui
 
 The user interface for Conway's Game of Life.
 """
+from collections import OrderedDict
 from os.path import exists, isfile
 import traceback as tb
 
@@ -46,6 +47,18 @@ class _Command(_Input):
         if normal not in self.valid:
             normal = self.default
         self._value = self.valid[normal]
+
+
+class _CursorNav(_Input):
+    """A trusted object to handle cursor navigation input."""
+    valid = OrderedDict((
+        ('\u2190', '(\u2190) Left'),
+        ('\u2192', '(\u2192) Right'), 
+        ('\u2191', '(\u2191) Up'), 
+        ('\u2193', '(\u2193) Down'),
+        ('\n', '(\u2890) Flip'),
+        ('\u001c', '(\u241b) Exit'),
+    ))
 
 
 class _LoadFile(_Input):
@@ -112,9 +125,10 @@ class TerminalController:
             new.append(row)
         return new
     
-    def _draw_commands(self):
+    def _draw_commands(self, cmds: list = None):
         """Draw the available commands."""
-        cmds = ['(C)lear', '(L)oad', '(N)ext', '(R)andom', '(Q)uit',]
+        if not cmds:
+            cmds = ['(C)lear', '(L)oad', '(N)ext', '(R)andom', '(Q)uit',]
         y = -(self.data.height // -2) + 1
         print(self.term.move(y, 0) + ', '.join(cmds))
     
@@ -165,10 +179,10 @@ class TerminalController:
         self._draw_rule()
         self._draw_commands()
     
-    def next(self):
-        """Advance the generation of the grid and draw the results."""
-        self.data.next_generation()
-        self.draw()
+    def edit(self):
+        """Edit the grid through the UI."""
+        cmds = (_CursorNav.valid[key] for key in _CursorNav.valid)
+        self._draw_commands(cmds)
     
     def input(self):
         """Get input from the user."""
@@ -185,6 +199,11 @@ class TerminalController:
             text = f.readlines()
         new = self._convert_text_pattern(text)
         self.data.replace(new)
+        self.draw()
+    
+    def next(self):
+        """Advance the generation of the grid and draw the results."""
+        self.data.next_generation()
         self.draw()
     
     def random(self):
