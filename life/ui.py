@@ -7,6 +7,7 @@ The user interface for Conway's Game of Life.
 from collections import OrderedDict
 from os.path import exists, isfile
 import traceback as tb
+from typing import List
 
 from blessed import Terminal
 
@@ -31,34 +32,57 @@ class _Input:
 
 class _Command(_Input):
     """A trusted object to handle command input from the UI."""
+    valid = OrderedDict((
+        ('c', 'clear'),
+        ('e', 'edit'),
+        ('l', 'load'),
+        ('n', 'next'),
+        ('q', 'quit'),
+        ('r', 'random'),
+    ))
+    
     def __init__(self, value: str) -> None:
-        self.valid = {
-            'c': 'clear',
-            'l': 'load',
-            'n': 'next',
-            'q': 'quit',
-            'r': 'random',
-        }
         self.default = 'n'
+        self.value = value
+    
+    def _validate(self, value:str) -> str:
+        normal = value.lower()
+        if normal not in self.valid:
+            normal = self.default
+        return self.valid[normal]
+    
+    @classmethod
+    def get_commands(cls) -> List[str]:
+        """Return a list of available commands for display."""
+        cmds = []
+        for key in cls.valid:
+            index = cls.valid[key].index(key)
+            cmd = (f'{cls.valid[key][0:index]}({key.upper()})'
+                   f'{cls.valid[key][index + 1:]}')
+            cmds.append(cmd)
+        return cmds
+
+
+class _CursorNav(_Input):
+    """A trusted object to handle cursor navigation input."""
+    valid = OrderedDict((
+        ('a', '(a) Left'),
+        ('d', '(d) Right'), 
+        ('w', '(w) Up'), 
+        ('s', '(s) Down'),
+        ('\n', '(\u2890) Flip'),
+        ('e', '(E)xit'),
+    ))
+    default = 'e'
+    
+    def __init__(self, value:str):
         self.value = value
     
     def _validate(self, value):
         normal = value.lower()
         if normal not in self.valid:
             normal = self.default
-        self._value = self.valid[normal]
-
-
-class _CursorNav(_Input):
-    """A trusted object to handle cursor navigation input."""
-    valid = OrderedDict((
-        ('\u2190', '(\u2190) Left'),
-        ('\u2192', '(\u2192) Right'), 
-        ('\u2191', '(\u2191) Up'), 
-        ('\u2193', '(\u2193) Down'),
-        ('\n', '(\u2890) Flip'),
-        ('\u001c', '(\u241b) Exit'),
-    ))
+        return normal
 
 
 class _LoadFile(_Input):
@@ -128,8 +152,9 @@ class TerminalController:
     def _draw_commands(self, cmds: list = None):
         """Draw the available commands."""
         if not cmds:
-            cmds = ['(C)lear', '(L)oad', '(N)ext', '(R)andom', '(Q)uit',]
+            cmds = _Command.get_commands()
         y = -(self.data.height // -2) + 1
+        print(self.term.move(y, 0) + ' ' * self.term.width)
         print(self.term.move(y, 0) + ', '.join(cmds))
     
     def _draw_grid(self):
@@ -179,10 +204,66 @@ class TerminalController:
         self._draw_rule()
         self._draw_commands()
     
+    def _draw_cursor(self, row, col):
+        y = row // 2
+        
+        # Figure out whether either of the cells sharing the location 
+        # are alive.
+        alive = []
+        char = ''
+        if row % 2:
+            alive.append(self.data[row - 1][col])
+            alive.append(self.data[row][col])
+            char = '\u2584'
+        else:
+            alive.append(self.data[row][col])
+            alive.append(self.data[row + 1][col])
+            char = '\u2580'
+        
+        # Figure out which character and color is needed for the 
+        # cursor. The cursor will be green if on a dead cell and 
+        # bright green if on a live cell. However, whether the 
+        # colors or foreground or background gets complicated 
+        # when both cells in the location are alive.
+        if alive == [False, False]:
+            color = self.term.green_on_black
+        elif alive == [True, True]:
+            color = self.term.bright_green_on_bright_white
+        elif alive == [True, False] and not row % 2:
+            color = self.term.bright_green_on_black
+        elif alive == [True, False]:
+            color = self.term.green_on_bright_white
+        elif alive == [False, True] and not row % 2:
+            color = self.term.green_on_bright_white
+        else:
+            color = self.term.bright_green_on_black
+        
+        print(self.term.move(y, col) + color + char 
+              + self.term.bright_white_on_black)
+        
     def edit(self):
         """Edit the grid through the UI."""
         cmds = (_CursorNav.valid[key] for key in _CursorNav.valid)
         self._draw_commands(cmds)
+        row = self.data.height // 2
+        col = self.data.width // 2
+        with self.term.cbreak():
+            while True:
+                self._draw_cursor(row, col)
+                cmd = _CursorNav(self.term.inkey())
+                if cmd.value == 'a':
+                    col -= 1
+                elif cmd.value == 'd':
+                    col += 1
+                elif cmd.value == 'w':
+                    row -= 1
+                elif cmd.value == 's':
+                    row += 1
+                elif cmd.value == 'e':
+                    break
+                col = col % self.data.width
+                self._draw_grid()
+        self.draw()
     
     def input(self):
         """Get input from the user."""

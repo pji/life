@@ -37,8 +37,10 @@ class mainTestCase(ut.TestCase):
         
         self.assertEqual(exp, act)
     
+    @patch('blessed.Terminal.inkey', return_value='n')
+    @patch('life.ui.print')
     @patch('blessed.Terminal.fullscreen')
-    def test_fullscreen(self, mock_fs):
+    def test_fullscreen(self, mock_fs, _, __):
         """Iterating main() should engage fullscreen mode for the 
         terminal.
         """
@@ -49,7 +51,7 @@ class mainTestCase(ut.TestCase):
     @patch('blessed.Terminal.inkey', return_value='n')
     @patch('life.ui.print')
     @patch('blessed.Terminal.hidden_cursor')
-    def test_fullscreen(self, mock_hc, _, __):
+    def test_hidden_cursor(self, mock_hc, _, __):
         """Iterating main() should engage hidden_cursor mode for the 
         terminal.
         """
@@ -70,6 +72,7 @@ class mainTestCase(ut.TestCase):
 class TerminalControllerTestCase(ut.TestCase):
     # Common format templates for terminal control sequences.
     loc = '\x1b[{};{}H'
+    color = '\x1b[{}m\x1b[{}m'
 
     def test_init(self):
         """TerminalController object should be initialized, setting 
@@ -135,11 +138,13 @@ class TerminalControllerTestCase(ut.TestCase):
         """TerminalController.draw() should draw the user interface to 
         the termional.
         """
+        term = blessed.Terminal()
         exp = [
             call(self.loc.format(1, 1) + '\u2580\u2584\u2580'),
             call(self.loc.format(2, 1) + '\u2580 \u2580'),
             call(self.loc.format(3, 1) + '\u2500\u2500\u2500'),
-            call(self.loc.format(4, 1) + '(C)lear, (L)oad, (N)ext, (R)andom, (Q)uit'),
+            call(self.loc.format(4, 1) + ' ' * term.width),
+            call(self.loc.format(4, 1) + '(C)lear, (E)dit, (L)oad, (N)ext, (Q)uit, (R)andom'),
         ]
         
         g = grid.Grid(3, 3)
@@ -213,19 +218,73 @@ class TerminalControllerTestCase(ut.TestCase):
         mock_draw.assert_called()
     
     
+    @patch('blessed.Terminal.cbreak')
+    @patch('blessed.Terminal.inkey', return_value='e')
     @patch('life.ui.print')
-    def test_edit_commands(self, mock_print):
+    def test_edit_commands(self, mock_print, _, __x):
         """TerminalController.edit() should replace the display mode 
         commands with its commands.
         """
-        exp = call(self.loc.format(4, 1) + '(\u2190) Left, (\u2192) Right, '
-                   '(\u2191) Up, (\u2193) Down, (\u2890) Flip, (\u241b) Exit')
+        exp = call(self.loc.format(4, 1) + '(a) Left, (d) Right, '
+                   '(w) Up, (s) Down, (\u2890) Flip, (E)xit')
         
         g = grid.Grid(3, 3)
         tc = ui.TerminalController(g)
         tc.edit()
-        act = mock_print.mock_calls[-1]
+        act = mock_print.mock_calls[1]
         
         self.assertEqual(exp, act)
+    
+    @patch('blessed.Terminal.cbreak')
+    @patch('blessed.Terminal.inkey', return_value='e')
+    @patch('life.ui.TerminalController.draw')
+    @patch('life.ui.print')
+    def test_edit_exit(self, mock_print, mock_draw, _, __):
+        """TerminalController.edit() should exit when the e key 
+        is pressed.
+        """
+        g = grid.Grid(3, 3)
+        tc = ui.TerminalController(g)
+        tc.edit()
+        mock_draw.assert_called()
         
+    
+    @patch('blessed.Terminal.cbreak')
+    @patch('blessed.Terminal.inkey', return_value='e')
+    @patch('life.ui.print')
+    def test_edit_initial_cursor(self, mock_print, _, __):
+        """TerminalController.edit() should exit when the e key 
+        is pressed.
+        """
+        exp = call(self.loc.format(1, 2) + self.color.format(32, 40) + 
+                   '\u2584' + self.color.format(97, 40))
         
+        g = grid.Grid(3, 3)
+        tc = ui.TerminalController(g)
+        tc.edit()
+        
+        # The last thing TerminalContoller.edit() does before exiting 
+        # is set the command list back to display mode.
+        act = mock_print.mock_calls[2]
+        
+        self.assertEqual(exp, act)
+    
+    @patch('blessed.Terminal.cbreak')
+    @patch('blessed.Terminal.inkey', side_effect=['a','e'])
+    @patch('life.ui.print')
+    def test_edit_move_cursor_left(self, mock_print, _, __):
+        """TerminalController.edit() should exit when the e key 
+        is pressed.
+        """
+        exp = call(self.loc.format(1, 1) + self.color.format(32, 40) + 
+                   '\u2584' + self.color.format(97, 40))
+        
+        g = grid.Grid(3, 3)
+        tc = ui.TerminalController(g)
+        tc.edit()
+        
+        # The last thing TerminalContoller.edit() does before exiting 
+        # is set the command list back to display mode.
+        act = mock_print.mock_calls[5]
+        
+        self.assertEqual(exp, act)
