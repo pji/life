@@ -194,12 +194,14 @@ class TerminalControllerTestCase(ut.TestCase):
         mock_random.assert_called()
         mock_draw.assert_called()
     
+    @patch('life.ui.exists', return_value='True')
+    @patch('life.ui.isfile', return_value='True')
     @patch('life.ui.print')
     @patch('life.ui.input', return_value='spam')
     @patch('life.ui.TerminalController.draw')
     @patch('life.grid.Grid.replace')
     @patch('life.ui.open')
-    def test_load(self, mock_open, mock_replace, mock_draw, _, __):
+    def test_load(self, mock_open, mock_replace, mock_draw, _, __, ___, ____):
         """TerminalController.replace() should advance the generation of 
         the grid and update the display.
         """
@@ -207,5 +209,5 @@ class TerminalControllerTestCase(ut.TestCase):
         tc = ui.TerminalController()
         tc.load()
         mock_replace.assert_called_with([[True, False, True, False],])
-        mock_open.assert_called_with('spam', 'r')
+        mock_open.assert_called_with('pattern/spam', 'r')
         mock_draw.assert_called()

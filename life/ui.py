@@ -4,6 +4,7 @@ ui
 
 The user interface for Conway's Game of Life.
 """
+from os.path import exists, isfile
 import traceback as tb
 
 from blessed import Terminal
@@ -11,7 +12,23 @@ from blessed import Terminal
 from life.grid import Grid
 
 
-class _Command:
+class _Input:
+    """A class for trusted input objects."""
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.value == other.value
+    
+    @property
+    def value(self):
+        return self._value
+    
+    @value.setter
+    def value(self, value):
+        self._value = self._validate(value)
+
+
+class _Command(_Input):
     """A trusted object to handle command input from the UI."""
     def __init__(self, value: str) -> None:
         self.valid = {
@@ -24,21 +41,25 @@ class _Command:
         self.default = 'n'
         self.value = value
     
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return self.value == other.value
-    
-    @property
-    def value(self):
-        return self._value
-    
-    @value.setter
-    def value(self, value):
+    def _validate(self, value):
         normal = value.lower()
         if normal not in self.valid:
             normal = self.default
         self._value = self.valid[normal]
+
+
+class _LoadFile(_Input):
+    """A trusted object to handle file name input from the UI."""
+    def __init__(self, value: str, path: str = 'pattern/') -> None:
+        self.path = path
+        self.value = value
+    
+    def _validate(self, value):
+        path = f'{self.path}{value}'
+        if exists(path) and isfile(path):
+            return path
+        msg = 'File not found in pattern/'
+        raise ValueError(msg)
 
 
 class TerminalController:
@@ -130,8 +151,8 @@ class TerminalController:
         self._draw_prompt(f'{msg} > ')
         x = len(msg) + 3
         y = -(self.data.height // -2) + 2
-        s = input(self.term.move(y, x))
-        return s
+        resp = _LoadFile(input(self.term.move(y, x)))
+        return resp
     
     def clear(self):
         """Clear all cell statuses from the grid."""
@@ -160,7 +181,7 @@ class TerminalController:
         """Load a GoL state from a file."""
         filename = self._get_filename('Load file named')
         text = []
-        with open(filename, 'r') as f:
+        with open(filename.value, 'r') as f:
             text = f.readlines()
         new = self._convert_text_pattern(text)
         self.data.replace(new)
