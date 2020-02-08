@@ -89,3 +89,59 @@ The UI needs to:
 * Allow the user to advance to the generation.
 * Allow the user to begin automatic advancement of the generation.
 * Allow the user to end automatic advancement of the generation.
+
+
+UI State
+~~~~~~~~
+I've done an initial implementation of most of the UI requirements 
+above, plus a few extra. It's implemented as a single class and a 
+main loop. However, as I implemented things like importing grid states 
+and changing cell states I noticed that I was creating extra loops 
+within the TerminalController object. That seems redundant. So, can I 
+just have a single UI loop, and have the type of input it collects 
+change based on the state of the UI?
+
+I'm thinking of this as a state machine. I'm not sure if that term is 
+actually correct here, but it seems to fit. I've got one machine, 
+which is the loop, and I want to have it change its behavior based on 
+its current state.
+
+What would be the requirements here?
+
+* There is a single loop that handles user input
+* There are multiple states, which include:
+    * Starting state
+    * Main state
+    * Load state
+    * Save state
+    * Edit state
+    * End state
+* Each state must have access to the current grid
+* Each state must display its UI to the terminal
+
+That seems possible. A way of doing it would be something like this::
+
+    def main(grid, term):
+        state = Start(grid, term)
+        state.update_ui()
+        while not isinstance(state, End):
+            cmd, *args = state.input()
+            new_state = getattr(state, cmd)(*args)
+            if new_state != state:
+                new_state.update_ui()
+            state = new_state
+
+This would mean the state classes would have the following 
+requirements: 
+
+* Each state is a class.
+* The End state terminates the loop.
+* Each state must have an input() method.
+* Each state must have an update_ui() method.
+* Each command within the state is a method.
+* Each command method must return the next state object.
+* The input() method must return the name of a command method and 
+  any arguments for that method.
+
+That seems a little cleaner of a design than the current UI.
+            
