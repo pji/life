@@ -13,59 +13,59 @@ from life import grid, ui
 
 
 class mainTestCase(ut.TestCase):
-    def test_call_with_params(self):
+    @patch('life.ui.print')
+    @patch('life.ui.TerminalController.input', return_value=ui._Command('q'))
+    def test_call_with_params(self, mock_input, _):
         """main() should accept parameters when called."""
         exp = {
             'ctlr': ui.TerminalController(),
         }
-        
+                
         # This will raise a TypeError if the class cannot accept 
         # the passed attributes.
         _ = ui.main(**exp)
     
+    @patch('life.ui.print')
     @patch('life.ui.TerminalController')
-    def test_call_without_params(self, mock_tc):
+    def test_call_without_params(self, mock_tc, _):
         """main() should generate default values if parameters are 
         not passed when called.
         """
         exp = call()
         
-        main = ui.main()
-        next(main)
-        main.close()
+        mock_tc().input.return_value = ui._Command('q')
+        ui.main()
         act = mock_tc.mock_calls[-3]
         
         self.assertEqual(exp, act)
     
     @patch('blessed.Terminal.inkey', return_value='n')
     @patch('life.ui.print')
+    @patch('life.ui.TerminalController.input', return_value=ui._Command('q'))
     @patch('blessed.Terminal.fullscreen')
-    def test_fullscreen(self, mock_fs, _, __):
+    def test_fullscreen(self, mock_fs, _, __, ___):
         """Iterating main() should engage fullscreen mode for the 
         terminal.
         """
-        main = ui.main()
-        next(main)
+        ui.main()
         mock_fs.assert_called()
     
     @patch('blessed.Terminal.inkey', return_value='n')
     @patch('life.ui.print')
+    @patch('life.ui.TerminalController.input', return_value=ui._Command('q'))
     @patch('blessed.Terminal.hidden_cursor')
-    def test_hidden_cursor(self, mock_hc, _, __):
+    def test_hidden_cursor(self, mock_hc, _, __, ___):
         """Iterating main() should engage hidden_cursor mode for the 
         terminal.
         """
-        main = ui.main()
-        next(main)
+        ui.main()
         mock_hc.assert_called()
     
     @patch('life.ui.print')
-    @patch('life.ui.TerminalController.input', return_value='n')
+    @patch('life.ui.TerminalController.input', return_value=ui._Command('q'))
     def test_loop_input(self, mock_input, _):
-        """Iterating main() should prompt for input.
-        """
-        main = ui.main()
-        next(main)
+        """Iterating main() should prompt for input."""
+        ui.main()
         mock_input.assert_called()
 
 

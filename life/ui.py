@@ -113,7 +113,6 @@ class TerminalController:
         self.term = term
         if not data:
             data = Grid(term.width, (term.height - 3) * 2)
-#             data = Grid((term.height - 3) * 2, term.width)
         self.data = data
         self.cell_alive = '\u2588'
         self.cell_dead = ' '
@@ -274,9 +273,10 @@ class TerminalController:
             cmd = _Command(self.term.inkey())
         return cmd
     
-    def load(self):
+    def load(self, filename: str = None):
         """Load a GoL state from a file."""
-        filename = self._get_filename('Load file named')
+        if not filename:
+            filename = self._get_filename('Load file named')
         text = []
         with open(filename.value, 'r') as f:
             text = f.readlines()
@@ -298,26 +298,22 @@ class TerminalController:
 def main(ctlr: TerminalController = None) -> None:
     if not ctlr:
         ctlr = TerminalController()
-    ctlr.data.randomize()
     with ctlr.term.fullscreen(), ctlr.term.hidden_cursor():
+        ctlr.load(_LoadFile('title.txt'))
         ctlr.draw()
         while True:
-            cmd = yield ctlr.input()
+            cmd = ctlr.input()
+            if cmd.value == 'quit':
+                break
             getattr(ctlr, cmd.value)()
             
 
 if __name__ == '__main__':
-    loop = main()
-    next(loop)
-    cmd = _Command('n')
     try:
-        while cmd.value != 'quit':
-            cmd = loop.send(cmd)
+        main()
     except Exception as ex:
         with open('exception.log', 'w') as fh:
             fh.write(str(ex.args))
             tb_str = ''.join(tb.format_tb(ex.__traceback__))
             fh.write(tb_str)
-        loop.close()
         raise ex
-    loop.close()
