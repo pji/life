@@ -57,6 +57,24 @@ class CoreTestCase(ut.TestCase):
         state = self._make_core()
         act = state.quit()
         self.assertIsInstance(act, exp)
+    
+    @patch('life.sui.print')
+    def test_update_ui(self, mock_print):
+        """Core.update_ui() should redraw the UI for the core state."""
+        state = self._make_core()
+        exp = [
+            call(loc.format(1, 1) + '   '),
+            call(loc.format(2, 1) + '   '),
+            call(loc.format(3, 1) + '\u2500' * state.data.width),
+            call(loc.format(4, 1) + ' ' * state.term.width),
+            call(loc.format(4, 1) + state.menu),
+            call(loc.format(5, 1) + '> ', end=''),
+        ]
+        
+        state.update_ui()
+        act = mock_print.mock_calls
+        
+        self.assertListEqual(exp, act)
 
 
 class EndTestCase(ut.TestCase):

@@ -86,15 +86,25 @@ class Core(State):
     """The standard state of the UI. This is used to manually progress 
     the grid and switch to other states.
     """
-    menu = {
+    commands = {
         'q': 'quit',
     }
+    
+    @property
+    def menu(self):
+        cmds = []
+        for key in self.commands:
+            index = self.commands[key].index(key)
+            cmd = (f'{self.commands[key][0:index]}({key.upper()})'
+                   f'{self.commands[key][index + 1:]}')
+            cmds.append(cmd)
+        return ', '.join(cmds)
     
     def input(self) -> _Command:
         """Validate the user's command and return it."""
         with self.term.cbreak():
             cmd = self.term.inkey()
-        return (self.menu[cmd],)
+        return (self.commands[cmd],)
     
     def quit(self) -> 'End':
         """Command method. Quit the game of life."""
@@ -102,7 +112,10 @@ class Core(State):
     
     def update_ui(self):
         """Draw the UI for the core state."""
-        raise NotImplementedError()
+        self._draw_state()
+        self._draw_rule()
+        self._draw_commands(self.menu)
+        self._draw_prompt()
     
 
 class End(State):
