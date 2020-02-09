@@ -43,8 +43,6 @@ class State(ABC):
     
     def _draw_commands(self, cmds: str = None):
         """Draw the available commands."""
-        if not cmds:
-            cmds = _Command.get_commands()
         y = -(self.data.height // -2) + 1
         print(self.term.move(y, 0) + ' ' * self.term.width)
         print(self.term.move(y, 0) + cmds)
@@ -64,7 +62,8 @@ class State(ABC):
     def _draw_prompt(self, msg: str = '> '):
         """Draw the command prompt."""
         y = -(self.data.height // -2) + 2
-        print(self.term.move(y, 0) + msg, end='')
+        print(self.term.move(y, 0) + self.term.clear_eol, end='')
+        print(self.term.move(y, 0) + msg, end='', flush=True)
     
     def _draw_rule(self):
         """Draw the a horizontal rule."""
@@ -110,6 +109,7 @@ class Core(State):
     
     def input(self) -> _Command:
         """Validate the user's command and return it."""
+        self._draw_prompt('> ')
         with self.term.cbreak():
             cmd = self.term.inkey()
         return (self.commands[cmd],)
@@ -133,7 +133,6 @@ class Core(State):
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)
-        self._draw_prompt()
     
 
 class End(State):
@@ -172,6 +171,7 @@ class Start(State):
     
     def input(self) -> _Command:
         """Return a Core object."""
+        self._draw_prompt(self.prompt)
         with self.term.cbreak():
             self.term.inkey()
         return ('run',)
@@ -185,12 +185,17 @@ class Start(State):
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)
-        self._draw_prompt(self.prompt)
 
 
 def main():
-    state = Start()
-    state.update_ui()
-    while not isinstance(state, End):
-        cmd, *args = state.input()
-        state = getattr(state, cmd)(*args)
+    term = Terminal()
+    with term.fullscreen(), term.hidden_cursor():
+        state = Start(term=term)
+        while not isinstance(state, End):
+            state.update_ui()
+            cmd, *args = state.input()
+            state = getattr(state, cmd)(*args)
+
+
+if __name__ == '__main__':
+    main()

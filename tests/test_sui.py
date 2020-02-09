@@ -14,6 +14,7 @@ from life import grid, sui
 
 # Terminal control sequence templates.
 loc = '\x1b[{};{}H'
+clr_eol = '\x1b[{};{}H\x1b[K'
 
 
 # Test cases.
@@ -38,10 +39,20 @@ class CoreTestCase(ut.TestCase):
     
     @patch('blessed.Terminal.cbreak')
     @patch('blessed.Terminal.inkey')
-    def _get_input_response(self, sym_input, mock_inkey, _):
+    @patch('life.sui.print')
+    def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
+        exp_calls = [
+            call(clr_eol.format(5, 1), end=''),
+            call(loc.format(5, 1) +  '> ', end='', flush=True),
+        ]
+        
         mock_inkey.return_value = sym_input
         state = self._make_core()
-        return state.input()
+        response = state.input()
+        act_calls = mock_print.mock_calls
+        
+        self.assertListEqual(exp_calls, act_calls)
+        return response
     
     def test_input_clear(self):
         """Core.clear() should return the clear command when selected 
@@ -122,7 +133,6 @@ class CoreTestCase(ut.TestCase):
             call(loc.format(3, 1) + '\u2500' * state.data.width),
             call(loc.format(4, 1) + ' ' * state.term.width),
             call(loc.format(4, 1) + state.menu),
-            call(loc.format(5, 1) + '> ', end=''),
         ]
         
         state.update_ui()
@@ -191,13 +201,24 @@ class StartTestCase(ut.TestCase):
     
     @patch('blessed.Terminal.cbreak')
     @patch('blessed.Terminal.inkey', return_value=' ')
-    def test_input(self, _, __):
+    @patch('life.sui.print')
+    def test_input(self, mock_print, _, __):
         """Start.input() should return the run command if any key is 
         pressed."""
+        term = blessed.Terminal()
         exp = ('run',)
+        exp_calls = [
+            call(clr_eol.format(term.height, 1), end=''),
+            call(loc.format(term.height, 1) +  'Press any key to continue.', 
+                 end='', flush=True),
+        ]
+        
         state = sui.Start()
         act = state.input()
+        act_calls = mock_print.mock_calls
+        
         self.assertTupleEqual(exp, act)
+        self.assertListEqual(exp_calls, act_calls)
         
     
     def test_run(self):
@@ -232,7 +253,6 @@ class StartTestCase(ut.TestCase):
             call(loc.format(3, 1) + '\u2500' * data.width),
             call(loc.format(4, 1) + ' ' * term.width),
             call(loc.format(4, 1) + state.menu),
-            call(loc.format(5, 1) + state.prompt, end=''),
         ]
         
         state.update_ui()
