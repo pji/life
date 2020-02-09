@@ -6,7 +6,7 @@ The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
 from os import listdir
-from typing import Any, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Sequence, Tuple
 
 from blessed import Terminal
 
@@ -166,6 +166,7 @@ class Load(State):
         DOWN: 'down',
         UP: 'up',
         'e': 'exit',
+        '\n': 'load',
     }
     menu = '(\u2191\u2192) Move, (\u23ce) Select, (E)xit'
     path = 'pattern/'
@@ -189,6 +190,23 @@ class Load(State):
             for y in range(len(self.files), height):
                 print(self.term.move(y, 0) + self.term.clear_eol)
     
+    def _normalize_loaded_text(self, text:str, live: str = 'x') -> List[list]:
+        """Convert a pattern saved as a text file into grid data.
+        
+        :param text: The pattern as text.
+        :param live: The character that represents an alive cell.
+        """
+        new = []
+        for line in text:
+            row = []
+            for char in line:
+                if char.lower() == live:
+                    row.append(True)
+                else:
+                    row.append(False)
+            new.append(row)
+        return new
+    
     def down(self) -> 'Load':
         """Command method. Select the next file in the list."""
         self.selected += 1
@@ -205,6 +223,15 @@ class Load(State):
         with self.term.cbreak():
             cmd = self.term.inkey()
         return (self.commands[cmd],)
+    
+    def load(self) -> 'Core':
+        """Load the selected file and return to core state."""
+        filename = self.path + self.files[self.selected]
+        with open(filename, 'r') as fh:
+            raw = fh.readlines()
+        normal = self._normalize_loaded_text(raw)
+        self.data.replace(normal)
+        return Core(self.data, self.term)
     
     def up(self) -> 'Load':
         """Command method. Select the previous file in the list."""

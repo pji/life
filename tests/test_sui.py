@@ -226,6 +226,33 @@ class LoadTestCase(ut.TestCase):
         self.assertIsInstance(act_obj, exp_class)
         self.assertDictEqual(exp_attrs, act_attrs)
     
+    @patch('life.sui.print')
+    @patch('life.grid.Grid.replace')
+    @patch('life.sui.open')
+    def test_cmd_load(self, mock_open, mock_replace, _):
+        """TerminalController.replace() should advance the generation of 
+        the grid and update the display.
+        """
+        state = self._make_load()
+        exp_class = sui.Core
+        exp_attrs = {
+            'data': state.data,
+            'term': state.term,
+        }
+        
+        mock_open().__enter__().readlines.return_value = ['xoxo',]
+        state.files = ['spam', 'eggs']
+        act_obj = state.load()
+        act_attrs = {
+            'data': act_obj.data,
+            'term': act_obj.term,
+        }
+        
+        self.assertIsInstance(act_obj, exp_class)
+        self.assertDictEqual(exp_attrs, act_attrs)
+        mock_replace.assert_called_with([[True, False, True, False],])
+        mock_open.assert_called_with('pattern/spam', 'r')
+    
     def test_cmd_up(self):
         """When called, Load.up() should subtract one from 
         Load.selected, rolling over if the number is below 
@@ -273,6 +300,14 @@ class LoadTestCase(ut.TestCase):
         """
         exp = ('exit',)
         act = self._get_input_response('e')
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_exit(self):
+        """Load.load() should return the load command when return is 
+        pressed.
+        """
+        exp = ('load',)
+        act = self._get_input_response('\n')
         self.assertTupleEqual(exp, act)
     
     def test_input_up(self):
