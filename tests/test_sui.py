@@ -13,8 +13,17 @@ from life import grid, sui
 
 
 # Terminal control sequence templates.
+clr_eol = '\x1b[K'
+color = '\x1b[{}m'
 loc = '\x1b[{};{}H'
-clr_eol = '\x1b[{};{}H\x1b[K'
+
+# Terminal colors.
+BG_BLACK = 40
+BG_GREEN = 42
+
+# Terminal keys:
+DOWN = '\x1b[B'
+UP = '\x1b[A'
 
 
 # Test cases.
@@ -42,8 +51,7 @@ class CoreTestCase(ut.TestCase):
     @patch('life.sui.print')
     def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
         exp_calls = [
-            call(clr_eol.format(5, 1), end=''),
-            call(loc.format(5, 1) +  '> ', end='', flush=True),
+            call(loc.format(5, 1) +  '> ' + clr_eol, end='', flush=True),
         ]
         
         mock_inkey.return_value = sym_input
@@ -54,8 +62,16 @@ class CoreTestCase(ut.TestCase):
         self.assertListEqual(exp_calls, act_calls)
         return response
     
+    def test_input_load(self):
+        """Core.input() should return the load command when selected 
+        by the user.
+        """
+        exp = ('load',)
+        act = self._get_input_response('l')
+        self.assertTupleEqual(exp, act)
+    
     def test_input_clear(self):
-        """Core.clear() should return the clear command when selected 
+        """Core.input() should return the clear command when selected 
         by the user.
         """
         exp = ('clear',)
@@ -96,6 +112,13 @@ class CoreTestCase(ut.TestCase):
         self.assertEqual(exp, act)
         mock_clear.assert_called()
     
+    def test_cmd_load(self):
+        """Core.load() should return an Load object."""
+        exp = sui.Load
+        state = self._make_core()
+        act = state.load()
+        self.assertIsInstance(act, exp)
+    
     @patch('life.grid.Grid.next_generation')
     def test_cmd_next(self, mock_next):
         """Core.next() should advance the grid to the next generation 
@@ -131,8 +154,7 @@ class CoreTestCase(ut.TestCase):
             call(loc.format(1, 1) + '   '),
             call(loc.format(2, 1) + '   '),
             call(loc.format(3, 1) + '\u2500' * state.data.width),
-            call(loc.format(4, 1) + ' ' * state.term.width),
-            call(loc.format(4, 1) + state.menu),
+            call(loc.format(4, 1) + state.menu + clr_eol, end='', flush=True),
         ]
         
         state.update_ui()
@@ -147,6 +169,141 @@ class EndTestCase(ut.TestCase):
         exp = sui.End
         act = exp()
         self.assertIsInstance(act, exp)
+
+
+class LoadTestCase(ut.TestCase):
+    def _make_load(self):
+        return sui.Load(grid.Grid(3, 3), blessed.Terminal())
+    
+    def test_init_with_parameters(self):
+        """Given grid and term, Load.__init__() will set the Load 
+        objects attributes with the given values.
+        """
+        exp = {
+            'data': grid.Grid(3, 3),
+            'term': blessed.Terminal(),
+        }
+        state = sui.Load(**exp)
+        act = {
+            'data': state.data,
+            'term': state.term,
+        }
+        self.assertDictEqual(exp, act)
+    
+    def test_cmd_down(self):
+        """When called, Load.down() should add one to Load.selected, 
+        rolling over if the number is above the number of files, and 
+        return the Load object.
+        """
+        state = self._make_load()
+        exp_selection = 1
+        exp_return = state
+        
+        state.files = ['spam', 'eggs', 'ham']
+        act_return = state.down()
+        act_selection = exp_return.selected
+        
+        self.assertEqual(exp_return, act_return)
+        self.assertEqual(exp_selection, act_selection)
+    
+    def test_cmd_exit(self):
+        """When called, Load.exit() should return a Core object 
+        populated with the grid and terminal objects.
+        """
+        state = self._make_load()
+        exp_class = sui.Core
+        exp_attrs = {
+            'data': state.data,
+            'term': state.term,
+        }
+        
+        act_obj = state.exit()
+        act_attrs = {
+            'data': act_obj.data,
+            'term': act_obj.term,
+        }
+        
+        self.assertIsInstance(act_obj, exp_class)
+        self.assertDictEqual(exp_attrs, act_attrs)
+        
+    
+    def test_cmd_up(self):
+        """When called, Load.up() should subtract one from 
+        Load.selected, rolling over if the number is below 
+        zero, and return the Load object.
+        """
+        state = self._make_load()
+        exp_selection = 2
+        exp_return = state
+        
+        state.files = ['spam', 'eggs', 'ham']
+        act_return = state.up()
+        act_selection = exp_return.selected
+        
+        self.assertEqual(exp_return, act_return)
+        self.assertEqual(exp_selection, act_selection)
+    
+    @patch('blessed.Terminal.cbreak')
+    @patch('blessed.Terminal.inkey')
+    @patch('life.sui.print')
+    def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
+        exp_calls = [
+            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
+        ]
+        
+        mock_inkey.return_value = sym_input
+        state = self._make_load()
+        state.files = ['spam', 'eggs']
+        response = state.input()
+        act_calls = mock_print.mock_calls
+        
+        self.assertListEqual(exp_calls, act_calls)
+        return response
+    
+    def test_input_down(self):
+        """Load.input() should return the down command when the down 
+        arrow is pressed.
+        """
+        exp = ('down',)
+        act = self._get_input_response(DOWN)
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_exit(self):
+        """Load.input() should return the exit command when the exit 
+        arrow is pressed.
+        """
+        exp = ('exit',)
+        act = self._get_input_response('e')
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_up(self):
+        """Load.input() should return the up command when the up arrow 
+        is pressed.
+        """
+        exp = ('up',)
+        act = self._get_input_response(UP)
+        self.assertTupleEqual(exp, act)
+    
+    @patch('life.sui.listdir', return_value=['spam', 'eggs'])
+    @patch('life.sui.print')
+    def test_update_ui(self, mock_print, _):
+        """When called, Load.update_ui should update the UI for the 
+        load state.
+        """
+        exp = [
+            call(loc.format(1, 1) + color.format(BG_GREEN) + 'spam' 
+                 + color.format(BG_BLACK)),
+            call(loc.format(2, 1) + 'eggs'),
+            call(loc.format(3, 1) + '\u2500' * 3),
+            call(loc.format(4, 1) + '(\u2191\u2192) Move, (\u23ce) Select, '
+                 + '(E)xit' + clr_eol.format(4, 10), end='', flush=True),
+        ]
+        
+        state = self._make_load()
+        state.update_ui()
+        act = mock_print.mock_calls
+        
+        self.assertListEqual(exp, act)
 
 
 class mainTestCase(ut.TestCase):
@@ -208,9 +365,8 @@ class StartTestCase(ut.TestCase):
         term = blessed.Terminal()
         exp = ('run',)
         exp_calls = [
-            call(clr_eol.format(term.height, 1), end=''),
-            call(loc.format(term.height, 1) +  'Press any key to continue.', 
-                 end='', flush=True),
+            call(loc.format(term.height, 1) +  'Press any key to continue.' 
+                 + clr_eol, end='', flush=True),
         ]
         
         state = sui.Start()
@@ -219,7 +375,6 @@ class StartTestCase(ut.TestCase):
         
         self.assertTupleEqual(exp, act)
         self.assertListEqual(exp_calls, act_calls)
-        
     
     def test_run(self):
         """Start.run() should always return a Core object 
@@ -251,8 +406,7 @@ class StartTestCase(ut.TestCase):
             call(loc.format(1, 1) + '   '),
             call(loc.format(2, 1) + '   '),
             call(loc.format(3, 1) + '\u2500' * data.width),
-            call(loc.format(4, 1) + ' ' * term.width),
-            call(loc.format(4, 1) + state.menu),
+            call(loc.format(4, 1) + state.menu + clr_eol, end='', flush=True),
         ]
         
         state.update_ui()

@@ -5,6 +5,7 @@ sui
 The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
+from os import listdir
 from typing import Any, Optional, Sequence, Tuple
 
 from blessed import Terminal
@@ -16,6 +17,10 @@ from life.grid import Grid
 # https://docs.python.org/3/library/typing.html
 _ArgList = Sequence[Any]
 _Command = Tuple[str, Optional[_ArgList]]
+
+# Useful terminal escape sequences:
+DOWN = '\x1b[B'
+UP = '\x1b[A'
 
 
 # Base class.
@@ -44,8 +49,8 @@ class State(ABC):
     def _draw_commands(self, cmds: str = None):
         """Draw the available commands."""
         y = -(self.data.height // -2) + 1
-        print(self.term.move(y, 0) + ' ' * self.term.width)
-        print(self.term.move(y, 0) + cmds)
+        print(self.term.move(y, 0) + cmds + self.term.clear_eol, end='', 
+              flush=True)
     
     def _draw_state(self):
         """Draw the grid to the terminal."""
@@ -62,8 +67,8 @@ class State(ABC):
     def _draw_prompt(self, msg: str = '> '):
         """Draw the command prompt."""
         y = -(self.data.height // -2) + 2
-        print(self.term.move(y, 0) + self.term.clear_eol, end='')
-        print(self.term.move(y, 0) + msg, end='', flush=True)
+        print(self.term.move(y, 0) + msg + self.term.clear_eol, 
+              end='', flush=True)
     
     def _draw_rule(self):
         """Draw the a horizontal rule."""
@@ -87,6 +92,7 @@ class Core(State):
     """
     commands = {
         'c': 'clear',
+        'l': 'load',
         'n': 'next',
         'r': 'random',
         'q': 'quit',
@@ -113,6 +119,10 @@ class Core(State):
         with self.term.cbreak():
             cmd = self.term.inkey()
         return (self.commands[cmd],)
+    
+    def load(self) -> 'Load':
+        """Command method. Switch to load state."""
+        return Load(self.data, self.term)
     
     def next(self) -> 'Core':
         """Command method. Run the next generation of the grid."""
@@ -148,6 +158,57 @@ class End(State):
     def update_ui(self):
         """Do not change the UI."""
         pass
+
+
+class Load(State):
+    """The state for loading patterns from a file."""
+    commands = {
+        DOWN: 'down',
+        UP: 'up',
+        'e': 'exit',
+    }
+    menu = '(\u2191\u2192) Move, (\u23ce) Select, (E)xit'
+    path = 'pattern/'
+    files = []
+    selected = 0
+    
+    def _draw_state(self):
+        """List the files available to be loaded."""
+        self.files = listdir(self.path)
+        for index in range(len(self.files)):
+            name = self.files[index]
+            if index == self.selected:
+                name = self.term.on_green + name + self.term.on_black
+            print(self.term.move(index, 0) + name)
+    
+    def down(self) -> 'Load':
+        """Command method. Select the next file in the list."""
+        self.selected += 1
+        self.selected = self.selected % len(self.files)
+        return self
+    
+    def exit(self) -> 'Core':
+        """Command method. Exit load state."""
+        return Core(self.data, self.term)
+    
+    def input(self) -> _Command:
+        """Get command input from the user."""
+        self._draw_prompt('')
+        with self.term.cbreak():
+            cmd = self.term.inkey()
+        return (self.commands[cmd],)
+    
+    def up(self) -> 'Load':
+        """Command method. Select the previous file in the list."""
+        self.selected -= 1
+        self.selected = self.selected % len(self.files)
+        return self
+    
+    def update_ui(self):
+        """Draw the load state UI."""
+        self._draw_state()
+        self._draw_rule()
+        self._draw_commands(self.menu)
 
 
 class Start(State):
@@ -198,4 +259,14 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    import traceback as tb
+    
+    try:
+        main()
+    except Exception as ex:
+        with open('exception.log', 'w') as fh:
+            fh.write(str(type(ex)) + '\n')
+            fh.write(str(ex.args) + '\n')
+            tb_str = ''.join(tb.format_tb(ex.__traceback__))
+            fh.write(tb_str)
+        raise ex
