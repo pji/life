@@ -27,3 +27,18 @@ class StartTestCase(ut.TestCase):
             'term': type(state.term),
         }
         self.assertDictEqual(exp, act)
+    
+    def test_init_with_parameters(self):
+        """Start.__init__() should set the given parameters, as 
+        the initial attribute values.
+        """
+        exp = {
+            'data': grid.Grid(3, 3),
+            'term': blessed.Terminal(),
+        }
+        state = sui.State(**exp)
+        act = {
+            'data': state.data,
+            'term': state.term,
+        }
+        self.assertDictEqual(exp, act)
