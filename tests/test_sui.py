@@ -225,7 +225,6 @@ class LoadTestCase(ut.TestCase):
         
         self.assertIsInstance(act_obj, exp_class)
         self.assertDictEqual(exp_attrs, act_attrs)
-        
     
     def test_cmd_up(self):
         """When called, Load.up() should subtract one from 
@@ -292,8 +291,29 @@ class LoadTestCase(ut.TestCase):
         """
         exp = [
             call(loc.format(1, 1) + color.format(BG_GREEN) + 'spam' 
-                 + color.format(BG_BLACK)),
-            call(loc.format(2, 1) + 'eggs'),
+                 + color.format(BG_BLACK) + clr_eol),
+            call(loc.format(2, 1) + 'eggs' + clr_eol),
+            call(loc.format(3, 1) + '\u2500' * 3),
+            call(loc.format(4, 1) + '(\u2191\u2192) Move, (\u23ce) Select, '
+                 + '(E)xit' + clr_eol.format(4, 10), end='', flush=True),
+        ]
+        
+        state = self._make_load()
+        state.update_ui()
+        act = mock_print.mock_calls
+        
+        self.assertListEqual(exp, act)
+    
+    @patch('life.sui.listdir', return_value=['spam',])
+    @patch('life.sui.print')
+    def test_update_ui_clear_empty_lines(self, mock_print, _):
+        """When called, Load.update_ui should update the UI for the 
+        load state.
+        """
+        exp = [
+            call(loc.format(1, 1) + color.format(BG_GREEN) + 'spam' 
+                 + color.format(BG_BLACK) + clr_eol),
+            call(loc.format(2, 1) + clr_eol),
             call(loc.format(3, 1) + '\u2500' * 3),
             call(loc.format(4, 1) + '(\u2191\u2192) Move, (\u23ce) Select, '
                  + '(E)xit' + clr_eol.format(4, 10), end='', flush=True),

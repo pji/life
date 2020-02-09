@@ -174,12 +174,20 @@ class Load(State):
     
     def _draw_state(self):
         """List the files available to be loaded."""
+        height = self.data.height // 2
+        if self.data.height % 2:
+            height += 1
+        
         self.files = listdir(self.path)
         for index in range(len(self.files)):
             name = self.files[index]
             if index == self.selected:
                 name = self.term.on_green + name + self.term.on_black
-            print(self.term.move(index, 0) + name)
+            print(self.term.move(index, 0) + name + self.term.clear_eol)
+        
+        if len(self.files) < height:
+            for y in range(len(self.files), height):
+                print(self.term.move(y, 0) + self.term.clear_eol)
     
     def down(self) -> 'Load':
         """Command method. Select the next file in the list."""
