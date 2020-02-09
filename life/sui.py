@@ -89,6 +89,7 @@ class Core(State):
     commands = {
         'c': 'clear',
         'n': 'next',
+        'r': 'random',
         'q': 'quit',
     }
     
@@ -121,6 +122,11 @@ class Core(State):
     def quit(self) -> 'End':
         """Command method. Quit the game of life."""
         return End()
+    
+    def random(self) -> 'Core':
+        """Command method. Randomize the values in the grid."""
+        self.data.randomize()
+        return self
     
     def update_ui(self):
         """Draw the UI for the core state."""

@@ -59,6 +59,14 @@ class CoreTestCase(ut.TestCase):
         act = self._get_input_response('n')
         self.assertTupleEqual(exp, act)
     
+    def test_input_random(self):
+        """Core.random() should return the random command when 
+        selected by the user.
+        """
+        exp = ('random',)
+        act = self._get_input_response('r')
+        self.assertTupleEqual(exp, act)
+    
     def test_input_quit(self):
         """Core.input() should return the quit command when selected 
         by the user.
@@ -93,6 +101,16 @@ class CoreTestCase(ut.TestCase):
         state = self._make_core()
         act = state.quit()
         self.assertIsInstance(act, exp)
+    
+    @patch('life.grid.Grid.randomize')
+    def test_cmd_random(self, mock_random):
+        """Core.random() should randomize the values of cells in the 
+        grid and return the Core object.
+        """
+        exp = self._make_core()
+        act = exp.random()
+        self.assertEqual(exp, act)
+        mock_random.assert_called()
     
     @patch('life.sui.print')
     def test_update_ui(self, mock_print):
