@@ -87,6 +87,8 @@ class Core(State):
     the grid and switch to other states.
     """
     commands = {
+        'c': 'clear',
+        'n': 'next',
         'q': 'quit',
     }
     
@@ -100,11 +102,21 @@ class Core(State):
             cmds.append(cmd)
         return ', '.join(cmds)
     
+    def clear(self) -> 'Core':
+        """Command method. Clear the grid."""
+        self.data.clear()
+        return self
+    
     def input(self) -> _Command:
         """Validate the user's command and return it."""
         with self.term.cbreak():
             cmd = self.term.inkey()
         return (self.commands[cmd],)
+    
+    def next(self) -> 'Core':
+        """Command method. Run the next generation of the grid."""
+        self.data.next_generation()
+        return self
     
     def quit(self) -> 'End':
         """Command method. Quit the game of life."""

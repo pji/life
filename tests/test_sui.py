@@ -43,6 +43,22 @@ class CoreTestCase(ut.TestCase):
         state = self._make_core()
         return state.input()
     
+    def test_input_clear(self):
+        """Core.clear() should return the clear command when selected 
+        by the user.
+        """
+        exp = ('clear',)
+        act = self._get_input_response('c')
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_next(self):
+        """Core.next() should return the next command when selected 
+        by the user.
+        """
+        exp = ('next',)
+        act = self._get_input_response('n')
+        self.assertTupleEqual(exp, act)
+    
     def test_input_quit(self):
         """Core.input() should return the quit command when selected 
         by the user.
@@ -51,7 +67,27 @@ class CoreTestCase(ut.TestCase):
         act = self._get_input_response('q')
         self.assertTupleEqual(exp, act)
     
-    def test_quit(self):
+    @patch('life.grid.Grid.clear')
+    def test_cmd_clear(self, mock_clear):
+        """Core.clear() should clear the grid and return the Core 
+        object.
+        """
+        exp = self._make_core()
+        act = exp.clear()
+        self.assertEqual(exp, act)
+        mock_clear.assert_called()
+    
+    @patch('life.grid.Grid.next_generation')
+    def test_cmd_next(self, mock_next):
+        """Core.next() should advance the grid to the next generation 
+        and return the Core object.
+        """
+        exp = self._make_core()
+        act = exp.next()
+        self.assertEqual(exp, act)
+        mock_next.assert_called()
+    
+    def test_cmd_quit(self):
         """Core.quit() should return an End object."""
         exp = sui.End
         state = self._make_core()
