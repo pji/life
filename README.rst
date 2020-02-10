@@ -65,4 +65,11 @@ The following features are still planned to be implemented:
 * Starting with the title pattern
 * Handle exceptions for bad input
 * Save current state
+* In Load, allow pattern list to wrap and page
 * Automatically advancing the generation
+* Handle uneven lines in a pattern file
+* Handle grids larger than the display area (windowing)
+* Handle window movement
+* Look at moving grid.Grid from lists to a memory view
+* Look at more efficient algorithms for GoL
+* Look at allowing pattern files to be saved anywhere
