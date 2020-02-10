@@ -185,6 +185,30 @@ class EditTestCase(ut.TestCase):
         self.assertDictEqual(exp, act)
     
     @patch('life.sui.print')
+    def test_cmd_up(self, mock_print):
+        """When called, Edit.up() should subtract one from the row, 
+        redraw the status, redraw the cursor, and return the Edit 
+        state.
+        """
+        state = self._make_edit()
+        exp_return = state
+        exp_row = 0
+        exp_calls = [
+            call(loc.format(1, 1) + '   '),
+            call(loc.format(2, 1) + '   '),
+            call(loc.format(1, 2) + color.format(FG_GREEN) + '\u2580' 
+                 + color.format(FG_BWHITE) + color.format(BG_BLACK)),
+        ]
+        
+        act_return = state.up()
+        act_row = state.row
+        act_calls = mock_print.mock_calls
+        
+        self.assertEqual(exp_return, act_return)
+        self.assertEqual(exp_row, act_row)
+        self.assertListEqual(exp_calls, act_calls)
+    
+    @patch('life.sui.print')
     def test_update_ui(self, mock_print):
         """When called, Edit.update_ui should draw the UI for edit 
         mode.

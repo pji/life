@@ -147,6 +147,9 @@ class Core(State):
 
 class Edit(State):
     """The state for manually editing the grid."""
+    commands = {
+        UP: 'up',
+    }
     menu = '(\u2190\u2191\u2192\u2193) Move, (space) Flip, (E)xit'
     
     def __init__(self, data:Grid, term:Terminal):
@@ -195,6 +198,14 @@ class Edit(State):
         
     def input(self):
         raise NotImplementedError()
+    
+    def up(self) -> 'Edit':
+        """Command method. Move the cursor up one row."""
+        self.row -= 1
+        self.row = self.row % self.data.height
+        self._draw_state()
+        self._draw_cursor()
+        return self
     
     def update_ui(self):
         """Draw the UI for the edit state."""
