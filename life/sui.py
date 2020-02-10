@@ -217,6 +217,11 @@ class Edit(State):
         self._move_cursor(1, 0)
         return self
     
+    def left(self) -> 'Edit':
+        """Command method. Move the cursor left one column."""
+        self._move_cursor(0, -1)
+        return self
+    
     def input(self):
         """Validate the user's command and return it."""
         self._draw_prompt('')

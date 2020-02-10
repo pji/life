@@ -216,6 +216,18 @@ class EditTestCase(ut.TestCase):
         cmd = 'down'
         self._cmd_tests(exp_call, exp_row, exp_col, cmd)
     
+    def test_cmd_left(self):
+        """When called, Edit.left() should subtract one from the col, 
+        redraw the status, redraw the cursor, and return the Edit 
+        state.
+        """
+        exp_call = call(loc.format(1, 1) + color.format(FG_GREEN) + '\u2584' 
+                        + color.format(FG_BWHITE) + color.format(BG_BLACK))
+        exp_row = 1
+        exp_col = 0
+        cmd = 'left'
+        self._cmd_tests(exp_call, exp_row, exp_col, cmd)
+    
     def test_cmd_up(self):
         """When called, Edit.up() should subtract one from the row, 
         redraw the status, redraw the cursor, and return the Edit 
