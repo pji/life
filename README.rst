@@ -38,8 +38,13 @@ bigger ones. But, if nothing else, at least I write unit tests now.
 
 How do I run the code?
 ----------------------
-Development is still in progress. This will be updated once running it 
-is possible.
+To run life, clone this repository to your local system and run the 
+following from the repository::
+
+    python3 -m life.sui
+
+That assumes you have a fairly recent version of Python 3 available 
+and it's at least aliased to `python3`.
 
 
 How to run the tests?
