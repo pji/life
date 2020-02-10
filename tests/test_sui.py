@@ -21,6 +21,7 @@ loc = '\x1b[{};{}H'
 BG_BLACK = 40
 BG_GREEN = 42
 FG_GREEN = 32
+FG_BGREEN = 92
 FG_BWHITE = 97
 
 # Terminal keys:
@@ -66,20 +67,28 @@ class CoreTestCase(ut.TestCase):
         self.assertListEqual(exp_calls, act_calls)
         return response
     
-    def test_input_load(self):
-        """Core.input() should return the load command when selected 
-        by the user.
-        """
-        exp = ('load',)
-        act = self._get_input_response('l')
-        self.assertTupleEqual(exp, act)
-    
     def test_input_clear(self):
         """Core.input() should return the clear command when selected 
         by the user.
         """
         exp = ('clear',)
         act = self._get_input_response('c')
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_edit(self):
+        """Core.input() should return the edit command when selected 
+        by the user.
+        """
+        exp = ('edit',)
+        act = self._get_input_response('e')
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_load(self):
+        """Core.input() should return the load command when selected 
+        by the user.
+        """
+        exp = ('load',)
+        act = self._get_input_response('l')
         self.assertTupleEqual(exp, act)
     
     def test_input_next(self):
@@ -115,6 +124,13 @@ class CoreTestCase(ut.TestCase):
         act = exp.clear()
         self.assertEqual(exp, act)
         mock_clear.assert_called()
+    
+    def test_cmd_edit(self):
+        """Core.load() should return an Edit object."""
+        exp = sui.Edit
+        state = self._make_core()
+        act = state.edit()
+        self.assertIsInstance(act, exp)
     
     def test_cmd_load(self):
         """Core.load() should return an Load object."""
@@ -236,6 +252,33 @@ class EditTestCase(ut.TestCase):
         self.assertIsInstance(act_obj, exp_class)
         self.assertDictEqual(exp_attrs, act_attrs)
     
+    @patch('life.sui.print')
+    def test_cmd_flip(self, mock_print):
+        """When called, Edit.flip() should pass the current coordinates 
+        to Grid.flip(), redraw the status and cursor,  and return the 
+        Edit object.
+        """
+        state = self._make_edit()
+        exp_return = state
+        exp_row = 1
+        exp_col = 1
+        exp_calls = [
+            call(loc.format(1, 1) + ' \u2584 '),
+            call(loc.format(2, 1) + '   '),
+            call(loc.format(1, 2) + color.format(FG_BGREEN) + '\u2584' 
+                 + color.format(FG_BWHITE) + color.format(BG_BLACK)),
+        ]
+        
+        act_return = state.flip()
+        act_row = state.row
+        act_col = state.col
+        act_calls = mock_print.mock_calls
+        
+        self.assertEqual(exp_return, act_return)
+        self.assertEqual(exp_row, act_row)
+        self.assertEqual(exp_col, act_col)
+        self.assertListEqual(exp_calls, act_calls)
+    
     def test_cmd_left(self):
         """When called, Edit.left() should subtract one from the col, 
         redraw the status, redraw the cursor, and return the Edit 
@@ -303,6 +346,14 @@ class EditTestCase(ut.TestCase):
         """
         exp = ('exit',)
         act = self._get_input_response('e')
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_flip(self):
+        """Edit.input() should return the flip command when the space 
+        bar is pressed.
+        """
+        exp = ('flip',)
+        act = self._get_input_response(' ')
         self.assertTupleEqual(exp, act)
     
     def test_input_left(self):

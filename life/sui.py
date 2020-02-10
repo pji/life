@@ -94,6 +94,7 @@ class Core(State):
     """
     commands = {
         'c': 'clear',
+        'e': 'edit',
         'l': 'load',
         'n': 'next',
         'r': 'random',
@@ -114,6 +115,10 @@ class Core(State):
         """Command method. Clear the grid."""
         self.data.clear()
         return self
+    
+    def edit(self) -> 'Edit':
+        """Command method. Switch to edit state."""
+        return Edit(self.data, self.term)
     
     def input(self) -> _Command:
         """Validate the user's command and return it."""
@@ -155,6 +160,7 @@ class Edit(State):
         LEFT: 'left',
         RIGHT: 'right',
         'e': 'exit',
+        ' ': 'flip',
     }
     menu = '(\u2190\u2191\u2192\u2193) Move, (space) Flip, (E)xit'
     
@@ -192,11 +198,11 @@ class Edit(State):
             color = self.term.green
         elif alive == [True, True]:
             color = self.term.bright_green_on_bright_white
-        elif alive == [True, False] and not row % 2:
+        elif alive == [True, False] and not self.row % 2:
             color = self.term.bright_green
         elif alive == [True, False]:
             color = self.term.green_on_bright_white
-        elif alive == [False, True] and not row % 2:
+        elif alive == [False, True] and not self.row % 2:
             color = self.term.green_on_bright_white
         else:
             color = self.term.bright_green
@@ -225,6 +231,13 @@ class Edit(State):
     def exit(self) -> 'Core':
         """Command method, switch to the Core state."""
         return Core(self.data, self.term)
+    
+    def flip(self) -> 'Edit':
+        """Command method. Flip the state of the current cell."""
+        self.data.flip(self.row, self.col)
+        self._draw_state()
+        self._draw_cursor()
+        return self
     
     def input(self):
         """Validate the user's command and return it."""
