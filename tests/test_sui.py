@@ -163,6 +163,23 @@ class CoreTestCase(ut.TestCase):
         self.assertListEqual(exp, act)
 
 
+class EditTestCase(ut.TestCase):
+    def test_init_with_parameters(self):
+        """Given grid and term, Edit.__init__() will set the Edit 
+        objects attributes with the given values.
+        """
+        exp = {
+            'data': grid.Grid(3, 3),
+            'term': blessed.Terminal(),
+        }
+        state = sui.Edit(**exp)
+        act = {
+            'data': state.data,
+            'term': state.term,
+        }
+        self.assertDictEqual(exp, act)
+
+
 class EndTestCase(ut.TestCase):
     def test_init_without_parameters(self):
         """End.__init__() should not require parameters."""

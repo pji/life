@@ -145,6 +145,15 @@ class Core(State):
         self._draw_commands(self.menu)
     
 
+class Edit(State):
+    """The state for manually editing the grid."""
+    def input(self):
+        raise NotImplementedError()
+    
+    def update_ui(self):
+        raise NotImplementedError()
+
+
 class End(State):
     """A state that terminates the game of life."""
     def __init__(self):
