@@ -21,6 +21,8 @@ _Command = Tuple[str, Optional[_ArgList]]
 # Useful terminal escape sequences:
 DOWN = '\x1b[B'
 UP = '\x1b[A'
+LEFT = '\x1b[D'
+RIGHT = '\x1b[C'
 
 
 # Base class.
@@ -150,6 +152,8 @@ class Edit(State):
     commands = {
         UP: 'up',
         DOWN: 'down',
+        LEFT: 'left',
+        RIGHT: 'right',
     }
     menu = '(\u2190\u2191\u2192\u2193) Move, (space) Flip, (E)xit'
     
@@ -217,17 +221,22 @@ class Edit(State):
         self._move_cursor(1, 0)
         return self
     
-    def left(self) -> 'Edit':
-        """Command method. Move the cursor left one column."""
-        self._move_cursor(0, -1)
-        return self
-    
     def input(self):
         """Validate the user's command and return it."""
         self._draw_prompt('')
         with self.term.cbreak():
             cmd = self.term.inkey()
         return (self.commands[cmd],)
+    
+    def left(self) -> 'Edit':
+        """Command method. Move the cursor left one column."""
+        self._move_cursor(0, -1)
+        return self
+    
+    def right(self) -> 'Edit':
+        """Command method. Move the cursor right one column."""
+        self._move_cursor(0, 1)
+        return self
     
     def up(self) -> 'Edit':
         """Command method. Move the cursor up one row."""
