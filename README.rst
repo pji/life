@@ -62,8 +62,6 @@ To-do List
 ----------
 The following features are still planned to be implemented:
 
-* Starting with the title pattern
-* Handle exceptions for bad input
 * Save current state
 * In Load, allow pattern list to wrap and page
 * Automatically advancing the generation

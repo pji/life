@@ -6,6 +6,7 @@ The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
 from os import listdir
+from time import sleep
 from typing import Any, List, Optional, Sequence, Tuple
 
 from blessed import Terminal
@@ -78,9 +79,21 @@ class State(ABC):
         y = -(self.data.height // -2)
         print(self.term.move(y, 0) + '\u2500' * width)
     
-    @abstractmethod
     def input(self) -> _Command:
         """Get and handle input from the user."""
+        cmd = None
+        prompt = ''
+        while not cmd:
+            self._draw_prompt(prompt)
+            with self.term.cbreak():
+                raw_input = self.term.inkey()
+            try:
+                cmd = self.commands[raw_input]
+            except KeyError:
+                self._draw_prompt('')
+                sleep(.05)
+                prompt = 'Invalid command. Please try again.'
+        return (cmd,)
     
     @abstractmethod
     def update_ui(self):
@@ -119,13 +132,6 @@ class Core(State):
     def edit(self) -> 'Edit':
         """Command method. Switch to edit state."""
         return Edit(self.data, self.term)
-    
-    def input(self) -> _Command:
-        """Validate the user's command and return it."""
-        self._draw_prompt('> ')
-        with self.term.cbreak():
-            cmd = self.term.inkey()
-        return (self.commands[cmd],)
     
     def load(self) -> 'Load':
         """Command method. Switch to load state."""
@@ -239,13 +245,6 @@ class Edit(State):
         self._draw_cursor()
         return self
     
-    def input(self):
-        """Validate the user's command and return it."""
-        self._draw_prompt('')
-        with self.term.cbreak():
-            cmd = self.term.inkey()
-        return (self.commands[cmd],)
-    
     def left(self) -> 'Edit':
         """Command method. Move the cursor left one column."""
         self._move_cursor(0, -1)
@@ -341,16 +340,10 @@ class Load(State):
         """Command method. Exit load state."""
         return Core(self.data, self.term)
     
-    def input(self) -> _Command:
-        """Get command input from the user."""
-        self._draw_prompt('')
-        with self.term.cbreak():
-            cmd = self.term.inkey()
-        return (self.commands[cmd],)
-    
-    def load(self) -> 'Core':
+    def load(self, filename: str = None) -> 'Core':
         """Load the selected file and return to core state."""
-        filename = self.path + self.files[self.selected]
+        if not filename:
+            filename = self.path + self.files[self.selected]
         with open(filename, 'r') as fh:
             raw = fh.readlines()
         normal = self._normalize_loaded_text(raw)
@@ -387,6 +380,8 @@ class Start(State):
             term = Terminal()
         if not data:
             data = Grid(term.width, (term.height - 3) * 2)
+            load = Load(data, term)
+            load.load('pattern/title.txt')
         super().__init__(data, term)
     
     def input(self) -> _Command:

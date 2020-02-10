@@ -56,7 +56,7 @@ class CoreTestCase(ut.TestCase):
     @patch('life.sui.print')
     def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
         exp_calls = [
-            call(loc.format(5, 1) +  '> ' + clr_eol, end='', flush=True),
+            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
         ]
         
         mock_inkey.return_value = sym_input
@@ -82,6 +82,28 @@ class CoreTestCase(ut.TestCase):
         exp = ('edit',)
         act = self._get_input_response('e')
         self.assertTupleEqual(exp, act)
+    
+    @patch('blessed.Terminal.cbreak')
+    @patch('blessed.Terminal.inkey', side_effect=['bad', 'c'])
+    @patch('life.sui.print')
+    def test_input_invalid(self, mock_print, _, __):
+        """When given an invalid input, Core.input should alert the 
+        user and let them try again.
+        """
+        exp_calls = [
+            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
+            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
+            call(loc.format(5, 1) +  'Invalid command. Please try again.' 
+                 + clr_eol, end='', flush=True),
+        ]
+        exp_return = ('clear',)
+        
+        state = self._make_core()
+        act_return = state.input()
+        act_calls = mock_print.mock_calls
+        
+        self.assertListEqual(exp_calls, act_calls)
+        self.assertTupleEqual(exp_return, act_return)
     
     def test_input_load(self):
         """Core.input() should return the load command when selected 
