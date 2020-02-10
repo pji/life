@@ -167,8 +167,11 @@ class Edit(State):
         RIGHT: 'right',
         'e': 'exit',
         ' ': 'flip',
+        'r': 'restore',
+        's': 'snapshot',
     }
-    menu = '(\u2190\u2191\u2192\u2193) Move, (space) Flip, (E)xit'
+    menu = ('(\u2190\u2191\u2192\u2193) Move, (space) Flip, (E)xit, '
+            '(R)estore, (S)napshot')
     
     def __init__(self, data:Grid, term:Terminal):
         """Initialize an instance of Edit."""
@@ -253,6 +256,20 @@ class Edit(State):
     def right(self) -> 'Edit':
         """Command method. Move the cursor right one column."""
         self._move_cursor(0, 1)
+        return self
+    
+    def restore(self) -> 'Edit':
+        """Restore the snapshot grid state."""
+        load = Load(self.data, self.term)
+        load.load('pattern/.snapshot.txt')
+        return self
+    
+    def snapshot(self) -> 'Edit':
+        """Save the current grid state as a snapshot."""
+        self._draw_prompt('Saving...')
+        text = str(self.data)
+        with open('pattern/.snapshot.txt', 'w') as fh:
+            fh.write(text)
         return self
     
     def up(self) -> 'Edit':

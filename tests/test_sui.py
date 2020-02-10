@@ -209,21 +209,6 @@ class EditTestCase(ut.TestCase):
     def _make_edit(self):
         return sui.Edit(grid.Grid(3, 3), blessed.Terminal())
     
-    def test_init_with_parameters(self):
-        """Given grid and term, Edit.__init__() will set the Edit 
-        objects attributes with the given values.
-        """
-        exp = {
-            'data': grid.Grid(3, 3),
-            'term': blessed.Terminal(),
-        }
-        state = sui.Edit(**exp)
-        act = {
-            'data': state.data,
-            'term': state.term,
-        }
-        self.assertDictEqual(exp, act)
-    
     @patch('life.sui.print')
     def _cmd_tests(self, exp_call, exp_row, exp_col, cmd, mock_print):
         state = self._make_edit()
@@ -243,6 +228,37 @@ class EditTestCase(ut.TestCase):
         self.assertEqual(exp_row, act_row)
         self.assertEqual(exp_col, act_col)
         self.assertListEqual(exp_calls, act_calls)
+    
+    @patch('blessed.Terminal.cbreak')
+    @patch('blessed.Terminal.inkey')
+    @patch('life.sui.print')
+    def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
+        exp_calls = [
+            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
+        ]
+        
+        mock_inkey.return_value = sym_input
+        state = self._make_edit()
+        response = state.input()
+        act_calls = mock_print.mock_calls
+        
+        self.assertListEqual(exp_calls, act_calls)
+        return response
+    
+    def test__init__with_parameters(self):
+        """Given grid and term, Edit.__init__() will set the Edit 
+        objects attributes with the given values.
+        """
+        exp = {
+            'data': grid.Grid(3, 3),
+            'term': blessed.Terminal(),
+        }
+        state = sui.Edit(**exp)
+        act = {
+            'data': state.data,
+            'term': state.term,
+        }
+        self.assertDictEqual(exp, act)
     
     def test_cmd_down(self):
         """When called, Edit.down() should subtract one from the row, 
@@ -325,6 +341,53 @@ class EditTestCase(ut.TestCase):
         cmd = 'right'
         self._cmd_tests(exp_call, exp_row, exp_col, cmd)
     
+    @patch('life.sui.print')
+    @patch('life.grid.Grid.replace')
+    @patch('life.sui.open')
+    def test_cmd_restore(self, mock_open, mock_replace, _):
+        """When called, Edit.restore() should load the snapshot file 
+        and return the Edit object.
+        """
+        state = self._make_edit()
+        exp_class = sui.Edit
+        exp_attrs = {
+            'data': state.data,
+            'term': state.term,
+        }
+        
+        mock_open().__enter__().readlines.return_value = ['xoxo',]
+        act_obj = state.restore()
+        act_attrs = {
+            'data': act_obj.data,
+            'term': act_obj.term,
+        }
+        
+        self.assertIsInstance(act_obj, exp_class)
+        self.assertDictEqual(exp_attrs, act_attrs)
+        mock_replace.assert_called_with([[True, False, True, False],])
+        mock_open.assert_called_with('pattern/.snapshot.txt', 'r')
+    
+    @patch('life.sui.print')
+    @patch('life.sui.open')
+    def test_cmd_snapshot(self, mock_open, _):
+        """When called, Edit.snapshot() should write the grid to 
+        the snapshot file and return the Edit object.
+        """
+        exp_class = sui.Edit
+        exp_calls = [
+            call('pattern/.snapshot.txt', 'w'),
+            call().__enter__(),
+            call().__enter__().write('...\n...\n...'),
+            call().__exit__(None, None, None),
+        ]
+        
+        state = self._make_edit()
+        act_obj = state.snapshot()
+        act_calls = mock_open.mock_calls
+        
+        self.assertIsInstance(act_obj, exp_class)
+        self.assertListEqual(exp_calls, act_calls)
+    
     def test_cmd_up(self):
         """When called, Edit.up() should subtract one from the row, 
         redraw the status, redraw the cursor, and return the Edit 
@@ -336,23 +399,6 @@ class EditTestCase(ut.TestCase):
         exp_col = 1
         cmd = 'up'
         self._cmd_tests(exp_call, exp_row, exp_col, cmd)
-    
-    @patch('blessed.Terminal.cbreak')
-    @patch('blessed.Terminal.inkey')
-    @patch('life.sui.print')
-    def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
-        exp_calls = [
-            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
-        ]
-        
-        mock_inkey.return_value = sym_input
-        state = self._make_edit()
-        state.files = ['spam', 'eggs']
-        response = state.input()
-        act_calls = mock_print.mock_calls
-        
-        self.assertListEqual(exp_calls, act_calls)
-        return response
     
     def test_input_down(self):
         """Edit.input() should return the down command when the down 
@@ -386,12 +432,28 @@ class EditTestCase(ut.TestCase):
         act = self._get_input_response(LEFT)
         self.assertTupleEqual(exp, act)
     
+    def test_input_restore(self):
+        """Edit.restore() should return the restore command when the 
+        r key is pressed.
+        """
+        exp = ('restore',)
+        act = self._get_input_response('r')
+        self.assertTupleEqual(exp, act)
+    
     def test_input_right(self):
         """Edit.input() should return the right command when the right 
         key is pressed.
         """
         exp = ('right',)
         act = self._get_input_response(RIGHT)
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_snapshot(self):
+        """Edit.snapshot() should return the snapshot command when the 
+        s key is pressed.
+        """
+        exp = ('snapshot',)
+        act = self._get_input_response('s')
         self.assertTupleEqual(exp, act)
     
     def test_input_up(self):
