@@ -56,3 +56,13 @@ the following from the root of the repository::
 
 That assumes you have a fairly recent version of Python 3 available 
 and it's at least aliased to `python3`.
+
+
+To-do List
+----------
+The following features are still planned to be implemented:
+
+* Starting with the title pattern
+* Handle exceptions for bad input
+* Save current state
+* Automatically advancing the generation
