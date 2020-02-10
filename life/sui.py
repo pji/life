@@ -154,6 +154,7 @@ class Edit(State):
         DOWN: 'down',
         LEFT: 'left',
         RIGHT: 'right',
+        'e': 'exit',
     }
     menu = '(\u2190\u2191\u2192\u2193) Move, (space) Flip, (E)xit'
     
@@ -220,6 +221,10 @@ class Edit(State):
         """Command method. Move the cursor down one row."""
         self._move_cursor(1, 0)
         return self
+    
+    def exit(self) -> 'Core':
+        """Command method, switch to the Core state."""
+        return Core(self.data, self.term)
     
     def input(self):
         """Validate the user's command and return it."""

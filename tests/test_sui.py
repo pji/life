@@ -218,6 +218,24 @@ class EditTestCase(ut.TestCase):
         cmd = 'down'
         self._cmd_tests(exp_call, exp_row, exp_col, cmd)
     
+    def test_cmd_exit(self):
+        """When called, Edit.exit should return a Core object."""
+        state = self._make_edit()
+        exp_class = sui.Core
+        exp_attrs = {
+            'data': state.data,
+            'term': state.term,
+        }
+        
+        act_obj = state.exit()
+        act_attrs = {
+            'data': act_obj.data,
+            'term': act_obj.term,
+        }
+        
+        self.assertIsInstance(act_obj, exp_class)
+        self.assertDictEqual(exp_attrs, act_attrs)
+    
     def test_cmd_left(self):
         """When called, Edit.left() should subtract one from the col, 
         redraw the status, redraw the cursor, and return the Edit 
@@ -277,6 +295,14 @@ class EditTestCase(ut.TestCase):
         """
         exp = ('down',)
         act = self._get_input_response(DOWN)
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_exit(self):
+        """Edit.input() should return the exit command when the 'e' 
+        key is pressed.
+        """
+        exp = ('exit',)
+        act = self._get_input_response('e')
         self.assertTupleEqual(exp, act)
     
     def test_input_left(self):
