@@ -147,11 +147,61 @@ class Core(State):
 
 class Edit(State):
     """The state for manually editing the grid."""
+    menu = '(\u2190\u2191\u2192\u2193) Move, (space) Flip, (E)xit'
+    
+    def __init__(self, data:Grid, term:Terminal):
+        """Initialize an instance of Edit."""
+        super().__init__(data, term)
+        self.row = self.data.height // 2
+        self.col = self.data.width // 2
+
+    def _draw_cursor(self):
+        """Display the cursor in the state UI."""
+        y = self.row // 2
+        
+        # Figure out whether either of the cells sharing the location 
+        # are alive.
+        alive = []
+        char = ''
+        if self.row % 2:
+            alive.append(self.data[self.row - 1][self.col])
+            alive.append(self.data[self.row][self.col])
+            char = '\u2584'
+        else:
+            alive.append(self.data[self.row][self.col])
+            alive.append(self.data[self.row + 1][self.col])
+            char = '\u2580'
+        
+        # Figure out which character and color is needed for the 
+        # cursor. The cursor will be green if on a dead cell and 
+        # bright green if on a live cell. However, whether the 
+        # colors or foreground or background gets complicated 
+        # when both cells in the location are alive.
+        if alive == [False, False]:
+            color = self.term.green
+        elif alive == [True, True]:
+            color = self.term.bright_green_on_bright_white
+        elif alive == [True, False] and not row % 2:
+            color = self.term.bright_green
+        elif alive == [True, False]:
+            color = self.term.green_on_bright_white
+        elif alive == [False, True] and not row % 2:
+            color = self.term.green_on_bright_white
+        else:
+            color = self.term.bright_green
+        
+        print(self.term.move(y, self.col) + color + char 
+              + self.term.bright_white_on_black)
+        
     def input(self):
         raise NotImplementedError()
     
     def update_ui(self):
-        raise NotImplementedError()
+        """Draw the UI for the edit state."""
+        self._draw_state()
+        self._draw_rule()
+        self._draw_commands(self.menu)
+        self._draw_cursor()
 
 
 class End(State):

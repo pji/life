@@ -20,6 +20,8 @@ loc = '\x1b[{};{}H'
 # Terminal colors.
 BG_BLACK = 40
 BG_GREEN = 42
+FG_GREEN = 32
+FG_BWHITE = 97
 
 # Terminal keys:
 DOWN = '\x1b[B'
@@ -164,6 +166,9 @@ class CoreTestCase(ut.TestCase):
 
 
 class EditTestCase(ut.TestCase):
+    def _make_edit(self):
+        return sui.Edit(grid.Grid(3, 3), blessed.Terminal())
+    
     def test_init_with_parameters(self):
         """Given grid and term, Edit.__init__() will set the Edit 
         objects attributes with the given values.
@@ -178,6 +183,26 @@ class EditTestCase(ut.TestCase):
             'term': state.term,
         }
         self.assertDictEqual(exp, act)
+    
+    @patch('life.sui.print')
+    def test_update_ui(self, mock_print):
+        """When called, Edit.update_ui should draw the UI for edit 
+        mode.
+        """
+        state = self._make_edit()
+        exp = [
+            call(loc.format(1, 1) + '   '),
+            call(loc.format(2, 1) + '   '),
+            call(loc.format(3, 1) + '\u2500' * state.data.width),
+            call(loc.format(4, 1) + state.menu + clr_eol, end='', flush=True),
+            call(loc.format(1, 2) + color.format(FG_GREEN) + '\u2584' 
+                 + color.format(FG_BWHITE) + color.format(BG_BLACK)),
+        ]
+        
+        state.update_ui()
+        act = mock_print.mock_calls
+        
+        self.assertListEqual(exp, act)
 
 
 class EndTestCase(ut.TestCase):
