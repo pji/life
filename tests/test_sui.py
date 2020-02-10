@@ -185,28 +185,81 @@ class EditTestCase(ut.TestCase):
         self.assertDictEqual(exp, act)
     
     @patch('life.sui.print')
-    def test_cmd_up(self, mock_print):
-        """When called, Edit.up() should subtract one from the row, 
-        redraw the status, redraw the cursor, and return the Edit 
-        state.
-        """
+    def _cmd_tests(self, exp_call, exp_row, exp_col, cmd, mock_print):
         state = self._make_edit()
         exp_return = state
-        exp_row = 0
         exp_calls = [
             call(loc.format(1, 1) + '   '),
             call(loc.format(2, 1) + '   '),
-            call(loc.format(1, 2) + color.format(FG_GREEN) + '\u2580' 
-                 + color.format(FG_BWHITE) + color.format(BG_BLACK)),
+            exp_call,
         ]
         
-        act_return = state.up()
+        act_return = getattr(state, cmd)()
         act_row = state.row
+        act_col = state.col
         act_calls = mock_print.mock_calls
         
         self.assertEqual(exp_return, act_return)
         self.assertEqual(exp_row, act_row)
+        self.assertEqual(exp_col, act_col)
         self.assertListEqual(exp_calls, act_calls)
+    
+    def test_cmd_down(self):
+        """When called, Edit.down() should subtract one from the row, 
+        redraw the status, redraw the cursor, and return the Edit 
+        state.
+        """
+        exp_call = call(loc.format(2, 2) + color.format(FG_GREEN) + '\u2580' 
+                        + color.format(FG_BWHITE) + color.format(BG_BLACK))
+        exp_row = 2
+        exp_col = 1
+        cmd = 'down'
+        self._cmd_tests(exp_call, exp_row, exp_col, cmd)
+    
+    def test_cmd_up(self):
+        """When called, Edit.up() should subtract one from the row, 
+        redraw the status, redraw the cursor, and return the Edit 
+        state.
+        """
+        exp_call = call(loc.format(1, 2) + color.format(FG_GREEN) + '\u2580' 
+                        + color.format(FG_BWHITE) + color.format(BG_BLACK))
+        exp_row = 0
+        exp_col = 1
+        cmd = 'up'
+        self._cmd_tests(exp_call, exp_row, exp_col, cmd)
+    
+    @patch('blessed.Terminal.cbreak')
+    @patch('blessed.Terminal.inkey')
+    @patch('life.sui.print')
+    def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
+        exp_calls = [
+            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
+        ]
+        
+        mock_inkey.return_value = sym_input
+        state = self._make_edit()
+        state.files = ['spam', 'eggs']
+        response = state.input()
+        act_calls = mock_print.mock_calls
+        
+        self.assertListEqual(exp_calls, act_calls)
+        return response
+    
+    def test_input_down(self):
+        """Edit.input() should return the down command when the down 
+        key is pressed.
+        """
+        exp = ('down',)
+        act = self._get_input_response(DOWN)
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_up(self):
+        """Edit.input() should return the up command when the up 
+        key is pressed.
+        """
+        exp = ('up',)
+        act = self._get_input_response(UP)
+        self.assertTupleEqual(exp, act)
     
     @patch('life.sui.print')
     def test_update_ui(self, mock_print):
@@ -369,7 +422,7 @@ class LoadTestCase(ut.TestCase):
         self.assertTupleEqual(exp, act)
     
     def test_input_exit(self):
-        """Load.load() should return the load command when return is 
+        """Load.input() should return the load command when return is 
         pressed.
         """
         exp = ('load',)

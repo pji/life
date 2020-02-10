@@ -149,6 +149,7 @@ class Edit(State):
     """The state for manually editing the grid."""
     commands = {
         UP: 'up',
+        DOWN: 'down',
     }
     menu = '(\u2190\u2191\u2192\u2193) Move, (space) Flip, (E)xit'
     
@@ -167,12 +168,14 @@ class Edit(State):
         alive = []
         char = ''
         if self.row % 2:
-            alive.append(self.data[self.row - 1][self.col])
+            next_row = (self.row - 1) % self.data.height
+            alive.append(self.data[next_row][self.col])
             alive.append(self.data[self.row][self.col])
             char = '\u2584'
         else:
+            next_row = (self.row + 1) % self.data.height
             alive.append(self.data[self.row][self.col])
-            alive.append(self.data[self.row + 1][self.col])
+            alive.append(self.data[next_row][self.col])
             char = '\u2580'
         
         # Figure out which character and color is needed for the 
@@ -196,15 +199,34 @@ class Edit(State):
         print(self.term.move(y, self.col) + color + char 
               + self.term.bright_white_on_black)
         
+    def _move_cursor(self, d_row:int, d_col:int):
+        """Move the cursor and update the UI.
+        
+        :param d_row: How much to change the row by.
+        :param d_col: How much to change the column by.
+        """
+        self.row += d_row
+        self.col += d_col
+        self.row = self.row % self.data.height
+        self.col = self.col % self.data.width
+        self._draw_state()
+        self._draw_cursor()
+    
+    def down(self) -> 'Edit':
+        """Command method. Move the cursor down one row."""
+        self._move_cursor(1, 0)
+        return self
+    
     def input(self):
-        raise NotImplementedError()
+        """Validate the user's command and return it."""
+        self._draw_prompt('')
+        with self.term.cbreak():
+            cmd = self.term.inkey()
+        return (self.commands[cmd],)
     
     def up(self) -> 'Edit':
         """Command method. Move the cursor up one row."""
-        self.row -= 1
-        self.row = self.row % self.data.height
-        self._draw_state()
-        self._draw_cursor()
+        self._move_cursor(-1, 0)
         return self
     
     def update_ui(self):
