@@ -736,6 +736,17 @@ class SaveTestCase(ut.TestCase):
         self.assertIsInstance(act_obj, exp_class)
         self.assertListEqual(exp_calls, act_calls)
     
+    @patch('life.sui.input', return_value='spam.txt')
+    @patch('life.sui.print')
+    def test_input(self, _, __):
+        """When called, Save.input() should get a file name from the 
+        user and return the save command with the filename.
+        """
+        exp = ('save', 'spam.txt')
+        state = self._make_save()
+        act = state.input()
+        self.assertTupleEqual(exp, act)
+    
     @patch('life.sui.listdir', return_value=['spam', 'eggs'])
     @patch('life.sui.print')
     def test_update_ui(self, mock_print, _):
