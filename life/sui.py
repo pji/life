@@ -6,6 +6,7 @@ The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
 from os import listdir
+from copy import deepcopy
 from time import sleep
 from typing import Any, List, Optional, Sequence, Tuple
 
@@ -375,6 +376,69 @@ class Load(State):
     
     def update_ui(self):
         """Draw the load state UI."""
+        self._draw_state()
+        self._draw_rule()
+        self._draw_commands(self.menu)
+
+
+class Save(State):
+    """The state for saving the grid state to a file."""
+    menu = 'Enter name for save file.'
+    path = 'pattern/'
+    
+    def _draw_state(self):
+        """List the files available to be loaded."""
+        height = self.data.height // 2
+        if self.data.height % 2:
+            height += 1
+        
+        self.files = listdir(self.path)
+        for index in range(len(self.files)):
+            name = self.files[index]
+            print(self.term.move(index, 0) + name + self.term.clear_eol)
+        
+        if len(self.files) < height:
+            for y in range(len(self.files), height):
+                print(self.term.move(y, 0) + self.term.clear_eol)
+    
+    def _remove_padding(self, data: Sequence[list]) -> Grid:
+        """Remove empty rows and columns surrounding the pattern."""
+        # Find the first row with the pattern.
+        y_start = 0
+        while True not in data[y_start] and y_start < len(data):
+            y_start += 1
+        
+        # Find last row with the pattern.
+        y_end = len(data)
+        while True not in data[y_end -1] and y_end > 0:
+            y_end -= 1
+        
+        # Find first column with the pattern.
+        x_start = 0
+        while (not any(data[i][x_start] for i in range(len(data))) 
+                and x_start < len(data[0])):
+            x_start += 1
+        
+        # Find last column with pattern.
+        x_end = len(data[0])
+        while (not any(data[i][x_end - 1] for i in range(len(data))) 
+                and x_start > 0):
+            x_end -= 1
+        
+        return [row[x_start:x_end] for row in data[y_start:y_end]]
+    
+    def save(self, filename:str) -> 'Core':
+        """Save the current grid state to a file.
+        
+        :param filename: The name of the file to save.
+        """
+        grid_ = deepcopy(self.data)
+        grid_._data = self._remove_padding(grid_._data)
+        with open(self.path + filename, 'w') as fh:
+            fh.write(str(grid_))
+        return Core(self.data, self.term)
+    
+    def update_ui(self):
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)

@@ -36,7 +36,7 @@ class CoreTestCase(ut.TestCase):
     def _make_core(self):
         return sui.Core(grid.Grid(3, 3), blessed.Terminal())
     
-    def test_init_with_parameters(self):
+    def test__init__with_parameters(self):
         """Core.__init__() should accept given parameters and use them 
         as the initial values for the relevant attributes.
         """
@@ -694,6 +694,87 @@ class mainTestCase(ut.TestCase):
         # The test fails if the input above doesn't terminate the 
         # loop in main().
         sui.main()
+
+
+class SaveTestCase(ut.TestCase):
+    def _make_save(self):
+        return sui.Save(grid.Grid(3, 3), blessed.Terminal())
+    
+    def test__init__with_parameters(self):
+        """Save.__init__() should accept given parameters and use them 
+        as the initial values for the relevant attributes.
+        """
+        exp = {
+            'data': grid.Grid(3, 3),
+            'term': blessed.Terminal(),
+        }
+        state = sui.Save(**exp)
+        act = {
+            'data': state.data,
+            'term': state.term,
+        }
+        self.assertDictEqual(exp, act)
+    
+    @patch('life.sui.open')
+    def test_cmd_save(self, mock_open):
+        """Given a filename, Save.save() should save the current grid 
+        to a file and return a Core object.
+        """
+        exp_class = sui.Core
+        exp_calls = [
+            call('pattern/spam', 'w'),
+            call().__enter__(),
+            call().__enter__().write('X'),
+            call().__exit__(None, None, None),
+        ]
+        
+        state = self._make_save()
+        state.data[1][1] = True
+        act_obj = state.save('spam')
+        act_calls = mock_open.mock_calls
+        
+        self.assertIsInstance(act_obj, exp_class)
+        self.assertListEqual(exp_calls, act_calls)
+    
+    @patch('life.sui.listdir', return_value=['spam', 'eggs'])
+    @patch('life.sui.print')
+    def test_update_ui(self, mock_print, _):
+        """When called, Save.update_ui should update the UI for the 
+        save state.
+        """
+        exp = [
+            call(loc.format(1, 1) + 'spam' + clr_eol),
+            call(loc.format(2, 1) + 'eggs' + clr_eol),
+            call(loc.format(3, 1) + '\u2500' * 3),
+            call(loc.format(4, 1) + 'Enter name for save file.' 
+                 + clr_eol.format(4, 10), end='', flush=True),
+        ]
+        
+        state = self._make_save()
+        state.update_ui()
+        act = mock_print.mock_calls
+        
+        self.assertListEqual(exp, act)
+    
+    @patch('life.sui.listdir', return_value=['spam',])
+    @patch('life.sui.print')
+    def test_update_ui_clear_empty_lines(self, mock_print, _):
+        """When called, Save.update_ui should update the UI for the 
+        save state.
+        """
+        exp = [
+            call(loc.format(1, 1) + 'spam' + clr_eol),
+            call(loc.format(2, 1) + clr_eol),
+            call(loc.format(3, 1) + '\u2500' * 3),
+            call(loc.format(4, 1) + 'Enter name for save file.' 
+                 + clr_eol.format(4, 10), end='', flush=True),
+        ]
+        
+        state = self._make_save()
+        state.update_ui()
+        act = mock_print.mock_calls
+        
+        self.assertListEqual(exp, act)
 
 
 class StartTestCase(ut.TestCase):
