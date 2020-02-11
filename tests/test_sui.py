@@ -507,8 +507,8 @@ class EndTestCase(ut.TestCase):
 
 
 class LoadTestCase(ut.TestCase):
-    def _make_load(self):
-        return sui.Load(grid.Grid(3, 3), blessed.Terminal())
+    def _make_load(self, height=3, width=3):
+        return sui.Load(grid.Grid(width, height), blessed.Terminal())
     
     def test_init_with_parameters(self):
         """Given grid and term, Load.__init__() will set the Load 
