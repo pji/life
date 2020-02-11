@@ -112,6 +112,7 @@ class Core(State):
         'l': 'load',
         'n': 'next',
         'r': 'random',
+        's': 'save',
         'q': 'quit',
     }
     
@@ -151,6 +152,10 @@ class Core(State):
         """Command method. Randomize the values in the grid."""
         self.data.randomize()
         return self
+    
+    def save(self) -> 'Load':
+        """Command method. Switch to save state."""
+        return Save(self.data, self.term)
     
     def update_ui(self):
         """Draw the UI for the core state."""
@@ -426,6 +431,12 @@ class Save(State):
             x_end -= 1
         
         return [row[x_start:x_end] for row in data[y_start:y_end]]
+    
+    def input(self) -> _Command:
+        """Get a file name from the user."""
+        y = self.data.height + 2
+        filename = input(self.term.move(y, 0) + '> ')
+        return ('save', filename)
     
     def save(self, filename:str) -> 'Core':
         """Save the current grid state to a file.

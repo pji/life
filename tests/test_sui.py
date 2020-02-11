@@ -129,6 +129,11 @@ class CoreTestCase(ut.TestCase):
         act = self._get_input_response('r')
         self.assertTupleEqual(exp, act)
     
+    def test_input_save(self):
+        exp = ('save',)
+        act = self._get_input_response('s')
+        self.assertTupleEqual(exp, act)
+    
     def test_input_quit(self):
         """Core.input() should return the quit command when selected 
         by the user.
@@ -187,6 +192,13 @@ class CoreTestCase(ut.TestCase):
         act = exp.random()
         self.assertEqual(exp, act)
         mock_random.assert_called()
+    
+    def test_cmd_save(self):
+        """When called, Core.save() should return a Save object."""
+        exp = sui.Save
+        state = self._make_core()
+        act = state.save()
+        self.assertIsInstance(act, exp)
     
     @patch('life.sui.print')
     def test_update_ui(self, mock_print):
@@ -736,7 +748,6 @@ class SaveTestCase(ut.TestCase):
         self.assertIsInstance(act_obj, exp_class)
         self.assertListEqual(exp_calls, act_calls)
     
-    @ut.skip
     @patch('life.sui.input', return_value='spam.txt')
     @patch('life.sui.print')
     def test_input(self, _, __):
