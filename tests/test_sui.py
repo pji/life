@@ -389,11 +389,12 @@ class EditTestCase(ut.TestCase):
         exp_calls = [
             call('pattern/.snapshot.txt', 'w'),
             call().__enter__(),
-            call().__enter__().write('...\n...\n...'),
+            call().__enter__().write('X'),
             call().__exit__(None, None, None),
         ]
         
         state = self._make_edit()
+        state.data[1][1] = True
         act_obj = state.snapshot()
         act_calls = mock_open.mock_calls
         

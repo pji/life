@@ -62,7 +62,6 @@ To-do List
 ----------
 The following features are still planned to be implemented:
 
-* Save current state
 * In Load, allow pattern list to wrap and page
 * Automatically advancing the generation
 * Handle uneven lines in a pattern file

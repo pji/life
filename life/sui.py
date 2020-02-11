@@ -273,9 +273,8 @@ class Edit(State):
     def snapshot(self) -> 'Edit':
         """Save the current grid state as a snapshot."""
         self._draw_prompt('Saving...')
-        text = str(self.data)
-        with open('pattern/.snapshot.txt', 'w') as fh:
-            fh.write(text)
+        save = Save(self.data, self.term)
+        save.save('.snapshot.txt')
         return self
     
     def up(self) -> 'Edit':
