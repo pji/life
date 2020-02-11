@@ -736,6 +736,7 @@ class SaveTestCase(ut.TestCase):
         self.assertIsInstance(act_obj, exp_class)
         self.assertListEqual(exp_calls, act_calls)
     
+    @ut.skip
     @patch('life.sui.input', return_value='spam.txt')
     @patch('life.sui.print')
     def test_input(self, _, __):
