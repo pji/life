@@ -192,20 +192,24 @@ class GridTestCase(ut.TestCase):
         
         self.assertListEqual(exp, act)
     
+    def _replace_tests(self, exp, test, height=5, width=5):
+        g = grid.Grid(width, height)
+        g.replace(test)
+        act = g._data
+        self.assertListEqual(exp, act)
+    
     def test_replace_grid_with_uneven_lines(self):
         """If the lists given have different widths, Grid.replace() 
         will add enough Falses to the end of the shorter lines until 
         all lists have the same width.
         """
-        exp = [
+        exp = [ 
             [False, False, False, False, False],
             [False, True, False, True, False],
             [False, False, False, False, False],
             [False, True, False, True, False],
             [False, False, False, False, False],
         ]
-        
-        g = grid.Grid(5, 5)
         test = [
             [False,],
             [False, True, False, True,],
@@ -213,7 +217,44 @@ class GridTestCase(ut.TestCase):
             [False, True, False, True, False],
             [False, False, False],
         ]
-        g.replace(test)
-        act = g._data
-        
-        self.assertListEqual(exp, act)
+        self._replace_tests(exp, test)
+    
+    def test_replace_grid_wider_than_grid_size(self):
+        """If the given grid is wider than the dimensions of the 
+        current grid, Grid.replace() should use a section of the 
+        given grid equal to the size of the current grid.
+        """
+        exp = [
+            [False, False, False,],
+            [True, False, True,],
+            [False, False, False,],
+            [True, False, True,],
+            [False, False, False,],
+        ]
+        test = [ 
+            [False, False, False, False, False],
+            [False, True, False, True, False],
+            [False, False, False, False, False],
+            [False, True, False, True, False],
+            [False, False, False, False, False],
+        ]
+        self._replace_tests(exp, test, 5, 3)
+    
+    def test_replace_grid_taller_than_grid_size(self):
+        """If the given grid is taller than the dimensions of the 
+        current grid, Grid.replace() should use a section of the 
+        given grid equal to the size of the current grid.
+        """
+        exp = [
+            [False, True, False, True, False],
+            [False, False, False, False, False],
+            [False, True, False, True, False],
+        ]
+        test = [ 
+            [False, False, False, False, False],
+            [False, True, False, True, False],
+            [False, False, False, False, False],
+            [False, True, False, True, False],
+            [False, False, False, False, False],
+        ]
+        self._replace_tests(exp, test, 3, 5)

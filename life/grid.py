@@ -7,6 +7,7 @@ A simple object for handling cells in Conway's Game of Life.
 from collections.abc import MutableSequence
 from copy import copy
 from random import choice
+from typing import List, Tuple
 
 class Grid(MutableSequence):
     def __init__(self, width:int, height:int) -> None:
@@ -54,6 +55,14 @@ class Grid(MutableSequence):
         for row_index in range(height):
             for cell_index in range(width):
                 yield row_index, cell_index
+    
+    def _get_size_diff(self, size:int, new_size:int) -> Tuple[int]:
+        delta = size - new_size
+        if delta >= 0:
+            return 0, new_size, delta
+        start = abs(delta // 2)
+        end = new_size - (abs(delta) - start)
+        return start, end, delta
     
     def _make_empty_grid(self, width:int, height:int) -> list:
         """Create a blank 2D grid of the given dimensions."""
@@ -111,14 +120,14 @@ class Grid(MutableSequence):
         for row, col in self._gen_coordinates():
             self._data[row][col] = choice([True, False])
         
-    def replace(self, new):
+    def replace(self, new:List[list]):
         """Replace the current grid data with the given data."""
         self.clear()
         new = self._normalize_row_length(new)
-        delta_width = self.width - len(new[0])
-        delta_height = self.height - len(new)
-        for i in range(len(new)):
-            for j in range(len(new[i])):
-                y = i + delta_height // 2
-                x = j + delta_width // 2
+        r_start, r_end, r_delta = self._get_size_diff(self.width, len(new[0]))
+        c_start, c_end, c_delta = self._get_size_diff(self.height, len(new))
+        for i in range(c_start, c_end):
+            for j in range(r_start, r_end):
+                y = i + c_delta // 2
+                x = j + r_delta // 2
                 self._data[y][x] = new[i][j]
