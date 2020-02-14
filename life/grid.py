@@ -59,6 +59,14 @@ class Grid(MutableSequence):
         """Create a blank 2D grid of the given dimensions."""
         return [[False for col in range(width)] for row in range(height)]
     
+    def _normalize_row_length(self, rows):
+        """Ensure each row has the same number of cells."""
+        width = max(len(row) for row in rows)
+        for row in rows:
+            while len(row) < width:
+                row.append(False)
+        return rows
+    
     def clear(self):
         """Set all cells to False."""
         for row, col in self._gen_coordinates():
@@ -106,6 +114,7 @@ class Grid(MutableSequence):
     def replace(self, new):
         """Replace the current grid data with the given data."""
         self.clear()
+        new = self._normalize_row_length(new)
         delta_width = self.width - len(new[0])
         delta_height = self.height - len(new)
         for i in range(len(new)):

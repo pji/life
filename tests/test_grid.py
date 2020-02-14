@@ -191,3 +191,29 @@ class GridTestCase(ut.TestCase):
         act = g._data
         
         self.assertListEqual(exp, act)
+    
+    def test_replace_grid_with_uneven_lines(self):
+        """If the lists given have different widths, Grid.replace() 
+        will add enough Falses to the end of the shorter lines until 
+        all lists have the same width.
+        """
+        exp = [
+            [False, False, False, False, False],
+            [False, True, False, True, False],
+            [False, False, False, False, False],
+            [False, True, False, True, False],
+            [False, False, False, False, False],
+        ]
+        
+        g = grid.Grid(5, 5)
+        test = [
+            [False,],
+            [False, True, False, True,],
+            [False, False,],
+            [False, True, False, True, False],
+            [False, False, False],
+        ]
+        g.replace(test)
+        act = g._data
+        
+        self.assertListEqual(exp, act)
