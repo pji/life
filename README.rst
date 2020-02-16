@@ -63,7 +63,6 @@ To-do List
 The following features are still planned to be implemented:
 
 * In Load, allow pattern list to wrap and page
-* Automatically advancing the generation
 * Handle grids larger than the display area (windowing)
 * Handle window movement
 * Look at moving grid.Grid from lists to a memory view

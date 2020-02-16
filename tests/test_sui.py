@@ -32,6 +32,102 @@ RIGHT = '\x1b[C'
 
 
 # Test cases.
+class AutorunTestCase(ut.TestCase):
+    def _make_autorun(self):
+        return sui.Autorun(grid.Grid(3, 3), blessed.Terminal())
+    
+    @patch('blessed.Terminal.cbreak')
+    @patch('life.sui.print')
+    @patch('blessed.Terminal.inkey')
+    def _get_input_response(self, sym_input, mock_inkey, _, __):
+        mock_inkey.return_value = sym_input
+        state = self._make_autorun()
+        response = state.input()
+        return response
+    
+    def test__init__with_parameters(self):
+        """Autorun.__init__() should accept given parameters and use 
+        them as the initial values for the relevant attributes.
+        """
+        exp = {
+            'data': grid.Grid(3, 3),
+            'term': blessed.Terminal(),
+        }
+        state = sui.Autorun(**exp)
+        act = {
+            'data': state.data,
+            'term': state.term,
+        }
+        self.assertDictEqual(exp, act)
+    
+    @patch('life.sui.print')
+    def test_cmd_exit(self, _):
+        """When called, Autorun.exit() should return a sui.Core 
+        object populated with the grid and terminal objects.
+        """
+        state = self._make_autorun()
+        exp_class = sui.Core
+        exp_attrs = {
+            'data': state.data,
+            'term': state.term,
+        }
+        
+        act_obj = state.exit()
+        act_attrs = {
+            'data': act_obj.data,
+            'term': act_obj.term,
+        }
+        
+        self.assertIsInstance(act_obj, exp_class)
+        self.assertDictEqual(exp_attrs, act_attrs)
+    
+    @patch('life.sui.print')
+    @patch('life.grid.Grid.next_generation')
+    def test_cmd_run(self, mock_ng, _):
+        """When called, Autorun.run() should advance the grid and 
+        return the Autorun object.
+        """
+        exp_class = sui.Autorun
+        
+        state = self._make_autorun()
+        act_obj = state.run()
+        
+        self.assertIsInstance(act_obj, exp_class)
+        mock_ng.assert_called()
+
+    def test_input_exit(self):
+        """If a key is pressed, Autorun.input() should return the exit 
+        command.
+        """
+        exp = ('exit',)
+        act = self._get_input_response(' ')
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_timeout(self):
+        """If timed out, Autorun.input() should return the run 
+        command.
+        """
+        exp = ('run',)
+        act = self._get_input_response('')
+        self.assertTupleEqual(exp, act)
+    
+    @patch('life.sui.print')
+    def test_update_ui(self, mock_print):
+        """Autorun.update_ui() should redraw the UI for the core state."""
+        state = self._make_autorun()
+        exp = [
+            call(loc.format(1, 1) + '   '),
+            call(loc.format(2, 1) + '   '),
+            call(loc.format(3, 1) + '\u2500' * state.data.width),
+            call(loc.format(4, 1) + state.menu + clr_eol, end='', flush=True),
+        ]
+        
+        state.update_ui()
+        act = mock_print.mock_calls
+        
+        self.assertListEqual(exp, act)
+
+
 class CoreTestCase(ut.TestCase):
     def _make_core(self):
         return sui.Core(grid.Grid(3, 3), blessed.Terminal())
@@ -66,6 +162,14 @@ class CoreTestCase(ut.TestCase):
         
         self.assertListEqual(exp_calls, act_calls)
         return response
+    
+    def test_input_autorun(self):
+        """Core.input() should return the autorun command when 
+        selected by the user.
+        """
+        exp = ('autorun',)
+        act = self._get_input_response('a')
+        self.assertTupleEqual(exp, act)
     
     def test_input_clear(self):
         """Core.input() should return the clear command when selected 
@@ -141,6 +245,13 @@ class CoreTestCase(ut.TestCase):
         exp = ('quit',)
         act = self._get_input_response('q')
         self.assertTupleEqual(exp, act)
+    
+    def test_cmd_autorun(self):
+        """Core.autorun() should return an Autorun object."""
+        exp = sui.Autorun
+        state = self._make_core()
+        act = state.autorun()
+        self.assertIsInstance(act, exp)
     
     @patch('life.grid.Grid.clear')
     def test_cmd_clear(self, mock_clear):

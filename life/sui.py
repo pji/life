@@ -102,11 +102,41 @@ class State(ABC):
 
 
 # State classes.
+class Autorun(State):
+    """Automatically advance the generation of the grid."""
+    menu = 'Press any key to exit autorun.'
+    
+    def exit(self) -> 'Core':
+        """Exit autorun state."""
+        return Core(self.data, self.term)
+    
+    def input(self) -> _Command:
+        """Get and handle input from the user."""
+        cmd = 'run'
+        with self.term.cbreak():
+            raw_input = self.term.inkey(timeout=0.005)
+        if raw_input:
+            cmd = 'exit'
+        return (cmd,)
+    
+    def run(self) -> 'Autorun':
+        """Advance the generation of the grid."""
+        self.data.next_generation()
+        return self
+    
+    def update_ui(self):
+        """Draw the UI for autorun state."""
+        self._draw_state()
+        self._draw_rule()
+        self._draw_commands(self.menu)
+
+
 class Core(State):
     """The standard state of the UI. This is used to manually progress 
     the grid and switch to other states.
     """
     commands = {
+        'a': 'autorun',
         'c': 'clear',
         'e': 'edit',
         'l': 'load',
@@ -125,6 +155,10 @@ class Core(State):
                    f'{self.commands[key][index + 1:]}')
             cmds.append(cmd)
         return ', '.join(cmds)
+    
+    def autorun(self) -> 'Autorun':
+        """Command method. Switch to autorun state."""
+        return Autorun(self.data, self.term)
     
     def clear(self) -> 'Core':
         """Command method. Clear the grid."""
