@@ -10,11 +10,25 @@ from random import choice
 from typing import List, Tuple
 
 class Grid(MutableSequence):
-    def __init__(self, width:int, height:int) -> None:
+    def __init__(self, width:int, height:int, rule: str = 'b3/s23') -> None:
         """Initialize an instance of the class."""
+        self.rule = rule
         self.width = width
         self.height = height
         self._data = self._make_empty_grid(self.width, self.height)
+    
+    @property
+    def rule(self) -> str:
+        """The B/S notation rule string for the variant of GoL."""
+        born = ''.join(str(n) for n in self._born)
+        survive = ''.join(str(n) for n in self._survive)
+        return f'B{born}/S{survive}'
+    
+    @rule.setter
+    def rule(self, value:str):
+        rules = [s[1:] for s in value.split('/')]
+        self._born = [int(n) for n in rules[0]]
+        self._survive = [int(n) for n in rules[1]]
     
     def __delitem__(self, key):
         return self._data.__delitem__(key)
@@ -27,7 +41,8 @@ class Grid(MutableSequence):
     
     def __repr__(self):
         cls = self.__class__.__name__
-        return f'{cls}(width={self.width}, height={self.height})'
+        return (f'{cls}(width={self.width}, height={self.height}), '
+                f'rule={self.rule}')
     
     def __setitem__(self, key, value):
         return self._data.__setitem__(key, value)
@@ -109,9 +124,9 @@ class Grid(MutableSequence):
                     counts[i][j] += 1
         new = self._make_empty_grid(self.width, self.height)
         for row, col in self._gen_coordinates():
-            if self[row][col] and counts[row][col] == 2:
+            if self[row][col] and counts[row][col] in self._survive:
                 new[row][col] = True
-            elif counts[row][col] == 3:
+            if not self[row][col] and counts[row][col] in self._born:
                 new[row][col] = True
         self._data = new
     

@@ -47,6 +47,30 @@ That assumes you have a fairly recent version of Python 3 available
 and it's at least aliased to `python3`.
 
 
+How do I use life?
+------------------
+When you first run life, you will see a title screen. At the bottom 
+of the title screen, it says "Press any key to continue." Do so.
+
+After you press any key, the text at the bottom of the screen will 
+change to show you a list of commands. You press the key surrounded 
+by parenthesis to use that command. For example, if you with to use 
+the "(N)ext" command, press the 'n' key.
+
+The initial commands available are:
+
+* (A)utorun: automatically advance to the next generation until 
+  stopped.
+* (C)lear: turn all live cells to dead cells.
+* (E)dit: Enter edit mode, where you can manually set which cells are 
+  alive and dead.
+* (L)oad: load a saved pattern.
+* (N)ext: advance to the next generation.
+* (S)ave: save the current pattern.
+* r(U)le: change the Game of Life rules used by the grid.
+* (Q)uit: quit this Game of Life.
+
+
 How to run the tests?
 ---------------------
 To run the tests, clone this repository to your local system and run 

@@ -258,3 +258,56 @@ class GridTestCase(ut.TestCase):
             [False, False, False, False, False],
         ]
         self._replace_tests(exp, test, 3, 5)
+    
+    def test_highlife_replicator_t2(self):
+        """Grid.next_generation should properly determine the second 
+        generation of a replicator when using Highife rules.
+        """
+        def pat_to_grid(pat):
+            return [[True if c == 'X' else False for c in row] for row in pat]
+        
+        before = [
+            '........X.......',
+            '.......X..X.....',
+            '........XXXX....',
+            '........XXXXX...',
+            '....X..X..XX....',
+            '...X.XX...XX.X..',
+            '.....XX..X..X...',
+            '....XXXXX.......',
+            '.....XXXX.......',
+            '......X..X......',
+            '........X.......',
+            '................',
+            '................',
+            '................',
+            '................',
+            '................',
+        ]
+        after = [
+            '................',
+            '.......X..XX....',
+            '.......X....X...',
+            '.......X....X...',
+            '....XXXXX.......',
+            '.......X.X......',
+            '........XXXXX...',
+            '....X....X......',
+            '....X....X......',
+            '.....XX..X......',
+            '................',
+            '................',
+            '................',
+            '................',
+            '................',
+            '................',
+        ]
+        
+        exp = pat_to_grid(after)
+
+        g = grid.Grid(16, 16, 'b36/s23')
+        g._data = pat_to_grid(before)
+        g.next_generation()
+        act = g._data
+        
+        self.assertListEqual(exp, act)

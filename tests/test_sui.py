@@ -233,6 +233,11 @@ class CoreTestCase(ut.TestCase):
         act = self._get_input_response('r')
         self.assertTupleEqual(exp, act)
     
+    def test_input_rule(self):
+        exp = ('rule',)
+        act = self._get_input_response('u')
+        self.assertTupleEqual(exp, act)
+    
     def test_input_save(self):
         exp = ('save',)
         act = self._get_input_response('s')
@@ -303,6 +308,13 @@ class CoreTestCase(ut.TestCase):
         act = exp.random()
         self.assertEqual(exp, act)
         mock_random.assert_called()
+    
+    def test_cmd_rule(self):
+        """When called, Core.rule() should return a Rule object."""
+        exp = sui.Rule
+        state = self._make_core()
+        act = state.rule()
+        self.assertIsInstance(act, exp)
     
     def test_cmd_save(self):
         """When called, Core.save() should return a Save object."""
@@ -818,6 +830,115 @@ class mainTestCase(ut.TestCase):
         # The test fails if the input above doesn't terminate the 
         # loop in main().
         sui.main()
+
+
+class RuleTestCase(ut.TestCase):
+    def _make_rule(self):
+        return sui.Rule(grid.Grid(3, 3), blessed.Terminal())
+    
+    @patch('life.sui.print')
+    @patch('life.sui.input')
+    def _get_input_response(self, sym_input, mock_input, __):
+        state = self._make_rule()
+        mock_input.return_value = sym_input
+        act = state.input()
+        return act
+    
+    def test__init__with_parameters(self):
+        """Rule.__init__() should accept given parameters and use them 
+        as the initial values for the relevant attributes.
+        """
+        exp = {
+            'data': grid.Grid(3, 3),
+            'term': blessed.Terminal(),
+        }
+        state = sui.Rule(**exp)
+        act = {
+            'data': state.data,
+            'term': state.term,
+        }
+        self.assertDictEqual(exp, act)
+    
+    @patch('life.sui.print')
+    def test_cmd_change(self, _):
+        """When called, Rule.change() should change the rules of the 
+        grid and return an sui.Core object with the grid and terminal 
+        objects.
+        """
+        state = self._make_rule()
+        exp_class = sui.Core
+        exp_attrs = {
+            'data': state.data,
+            'term': state.term,
+            'rule': 'B3/S23'
+        }
+        
+        act_obj = state.change(exp_attrs['rule'])
+        act_attrs = {
+            'data': act_obj.data,
+            'term': act_obj.term,
+            'rule': act_obj.data.rule
+        }
+        
+        self.assertIsInstance(act_obj, exp_class)
+        self.assertDictEqual(exp_attrs, act_attrs)
+    
+    @patch('life.sui.print')
+    def test_cmd_exit(self, _):
+        """When called, Rule.exit() should return a sui.Core 
+        object populated with the grid and terminal objects 
+        without changing the rules of the grid object.
+        """
+        state = self._make_rule()
+        exp_class = sui.Core
+        exp_attrs = {
+            'data': state.data,
+            'term': state.term,
+            'rule': state.data.rule,
+        }
+        
+        act_obj = state.exit()
+        act_attrs = {
+            'data': act_obj.data,
+            'term': act_obj.term,
+            'rule': act_obj.data.rule,
+        }
+        
+        self.assertIsInstance(act_obj, exp_class)
+        self.assertDictEqual(exp_attrs, act_attrs)
+    
+    def test_input_change(self):
+        """When given a rule, Rule.input() should return the change 
+        command and the given rule.
+        """
+        rule = 'B0/S0'
+        exp = ('change', rule)
+        act = self._get_input_response(rule)
+        self.assertTupleEqual(exp, act)
+    
+    def test_input_exit(self):
+        """When given no rule, Rule.input() should return the exit 
+        command.
+        """
+        exp = ('exit',)
+        act = self._get_input_response('')
+        self.assertTupleEqual(exp, act)
+    
+    @patch('life.sui.print')
+    def test_update_ui(self, mock_print):
+        """Rule.update_ui() should redraw the UI for the rule state."""
+        state = self._make_rule()
+        exp = [
+            call(loc.format(1, 1) + '   '),
+            call(loc.format(2, 1) + '   '),
+            call(loc.format(3, 1) + '\u2500' * state.data.width),
+            call(loc.format(4, 1) + state.menu + clr_eol, end='', flush=True),
+        ]
+        
+        state.update_ui()
+        act = mock_print.mock_calls
+        
+        self.assertListEqual(exp, act)
 
 
 class SaveTestCase(ut.TestCase):

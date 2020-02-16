@@ -143,6 +143,7 @@ class Core(State):
         'n': 'next',
         'r': 'random',
         's': 'save',
+        'u': 'rule',
         'q': 'quit',
     }
     
@@ -186,6 +187,10 @@ class Core(State):
         """Command method. Randomize the values in the grid."""
         self.data.randomize()
         return self
+    
+    def rule(self) -> 'Rule':
+        """Command method. Switch to rule state."""
+        return Rule(self.data, self.term)
     
     def save(self) -> 'Load':
         """Command method. Switch to save state."""
@@ -414,6 +419,37 @@ class Load(State):
     
     def update_ui(self):
         """Draw the load state UI."""
+        self._draw_state()
+        self._draw_rule()
+        self._draw_commands(self.menu)
+
+
+class Rule(State):
+    """Change the rules of the grid."""
+    def __init__(self, data:Grid, term:Terminal):
+        super().__init__(data, term)
+        self.menu = ('Enter the rules in BS notation. (Current rule: '
+                     f'{self.data.rule})')
+    
+    def change(self, rule:str) -> 'Core':
+        """Change the rules of the grid."""
+        self.data.rule = rule
+        return Core(self.data, self.term)
+    
+    def exit(self) -> 'Core':
+        """Exit rule state."""
+        return Core(self.data, self.term)
+        
+    def input(self) -> _Command:
+        """Get a rule from the user."""
+        y = self.data.height + 2
+        rule = input(self.term.move(y, 0) + '> ')
+        if rule:
+            return ('change', rule)
+        return ('exit',)
+    
+    def update_ui(self):
+        """Draw the UI for autorun state."""
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)
