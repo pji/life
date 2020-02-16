@@ -358,7 +358,7 @@ class Load(State):
         if self.data.height % 2:
             height += 1
         
-        self.files = listdir(self.path)
+        self.files = sorted(listdir(self.path))
         for index in range(len(self.files)):
             name = self.files[index]
             if index == self.selected:

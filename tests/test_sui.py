@@ -748,7 +748,7 @@ class LoadTestCase(ut.TestCase):
         act = self._get_input_response('e')
         self.assertTupleEqual(exp, act)
     
-    def test_input_exit(self):
+    def test_input_load(self):
         """Load.input() should return the load command when return is 
         pressed.
         """
@@ -771,9 +771,9 @@ class LoadTestCase(ut.TestCase):
         load state.
         """
         exp = [
-            call(loc.format(1, 1) + color.format(BG_GREEN) + 'spam' 
+            call(loc.format(1, 1) + color.format(BG_GREEN) + 'eggs' 
                  + color.format(BG_BLACK) + clr_eol),
-            call(loc.format(2, 1) + 'eggs' + clr_eol),
+            call(loc.format(2, 1) + 'spam' + clr_eol),
             call(loc.format(3, 1) + '\u2500' * 3),
             call(loc.format(4, 1) + '(\u2191\u2192) Move, (\u23ce) Select, '
                  + '(E)xit' + clr_eol.format(4, 10), end='', flush=True),
