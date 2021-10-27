@@ -152,7 +152,7 @@ class CoreTestCase(ut.TestCase):
     @patch('life.sui.print')
     def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
         exp_calls = [
-            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
+            call(loc.format(5, 1) + '' + clr_eol, end='', flush=True),
         ]
 
         mock_inkey.return_value = sym_input
@@ -195,9 +195,9 @@ class CoreTestCase(ut.TestCase):
         user and let them try again.
         """
         exp_calls = [
-            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
-            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
-            call(loc.format(5, 1) +  'Invalid command. Please try again.'
+            call(loc.format(5, 1) + '' + clr_eol, end='', flush=True),
+            call(loc.format(5, 1) + '' + clr_eol, end='', flush=True),
+            call(loc.format(5, 1) + 'Invalid command. Please try again.'
                  + clr_eol, end='', flush=True),
         ]
         exp_return = ('clear',)
@@ -369,7 +369,7 @@ class EditTestCase(ut.TestCase):
     @patch('life.sui.print')
     def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
         exp_calls = [
-            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
+            call(loc.format(5, 1) + '' + clr_eol, end='', flush=True),
         ]
 
         mock_inkey.return_value = sym_input
@@ -732,7 +732,7 @@ class LoadTestCase(ut.TestCase):
     @patch('life.sui.print')
     def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
         exp_calls = [
-            call(loc.format(5, 1) +  '' + clr_eol, end='', flush=True),
+            call(loc.format(5, 1) + '' + clr_eol, end='', flush=True),
         ]
 
         mock_inkey.return_value = sym_input
@@ -1079,7 +1079,7 @@ class StartTestCase(ut.TestCase):
         term = blessed.Terminal()
         exp = ('run',)
         exp_calls = [
-            call(loc.format(term.height, 1) +  'Press any key to continue.'
+            call(loc.format(term.height, 1) + 'Press any key to continue.'
                  + clr_eol, end='', flush=True),
         ]
 
@@ -1127,4 +1127,3 @@ class StartTestCase(ut.TestCase):
         act = mock_print.mock_calls
 
         self._listeq(exp, act)
-

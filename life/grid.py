@@ -7,7 +7,7 @@ A simple object for handling cells in Conway's Game of Life.
 from collections.abc import MutableSequence
 from copy import copy
 from random import choice
-from typing import List, Tuple
+from typing import Generator, List
 
 
 class Grid(MutableSequence):
@@ -60,7 +60,8 @@ class Grid(MutableSequence):
             rows.append(s)
         return '\n'.join(rows)
 
-    def _gen_coordinates(self, height: int = None, width: int = None) -> None:
+    def _gen_coordinates(self, height: int = None,
+                         width: int = None) -> Generator:
         """A generator that returns each valid coordinate of the
         grid.
         """
@@ -72,7 +73,7 @@ class Grid(MutableSequence):
             for cell_index in range(width):
                 yield row_index, cell_index
 
-    def _get_size_diff(self, size:int, new_size:int) -> Tuple[int]:
+    def _get_size_diff(self, size:int, new_size:int) -> tuple[int, int, int]:
         delta = size - new_size
         if delta >= 0:
             return 0, new_size, delta

@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from os import listdir
 from copy import deepcopy
 from time import sleep
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Sequence
 
 from blessed import Terminal
 
@@ -18,7 +18,7 @@ from life.grid import Grid
 # Complex type aliases for type hints. See the following for more info:
 # https://docs.python.org/3/library/typing.html
 _ArgList = Sequence[Any]
-_Command = Tuple[str, Optional[_ArgList]]
+_Command = Any
 
 # Useful terminal escape sequences:
 DOWN = '\x1b[B'
@@ -29,6 +29,8 @@ RIGHT = '\x1b[C'
 
 # Base class.
 class State(ABC):
+    commands: dict = {}
+
     """An abstract base class for UI states."""
     def __init__(self, data:Grid, term:Terminal):
         """Initialize a State object.
@@ -50,7 +52,7 @@ class State(ABC):
         if not top and not bottom:
             return ' '
 
-    def _draw_commands(self, cmds: str = None):
+    def _draw_commands(self, cmds: str = ''):
         """Draw the available commands."""
         y = -(self.data.height // -2) + 1
         print(self.term.move(y, 0) + cmds + self.term.clear_eol, end='',
@@ -192,7 +194,7 @@ class Core(State):
         """Command method. Switch to rule state."""
         return Rule(self.data, self.term)
 
-    def save(self) -> 'Load':
+    def save(self) -> 'Save':
         """Command method. Switch to save state."""
         return Save(self.data, self.term)
 
@@ -354,7 +356,7 @@ class Load(State):
     }
     menu = '(\u2191\u2192) Move, (\u23ce) Select, (E)xit'
     path = 'pattern/'
-    files = []
+    files: list[Any] = []
     selected = 0
 
     def _draw_state(self):
@@ -374,7 +376,8 @@ class Load(State):
             for y in range(len(self.files), height):
                 print(self.term.move(y, 0) + self.term.clear_eol)
 
-    def _normalize_loaded_text(self, text:str, live: str = 'x') -> List[list]:
+    def _normalize_loaded_text(self, text: list[str],
+                               live: str = 'x') -> List[list]:
         """Convert a pattern saved as a text file into grid data.
 
         :param text: The pattern as text.
@@ -401,9 +404,9 @@ class Load(State):
         """Command method. Exit load state."""
         return Core(self.data, self.term)
 
-    def load(self, filename: str = None) -> 'Core':
+    def load(self, filename: Optional[str] = None) -> 'Core':
         """Load the selected file and return to core state."""
-        if not filename:
+        if filename is None:
             filename = self.path + self.files[self.selected]
         with open(filename, 'r') as fh:
             raw = fh.readlines()
@@ -475,7 +478,7 @@ class Save(State):
             for y in range(len(self.files), height):
                 print(self.term.move(y, 0) + self.term.clear_eol)
 
-    def _remove_padding(self, data: Sequence[list]) -> Grid:
+    def _remove_padding(self, data: Sequence[list]) -> list[Any]:
         """Remove empty rows and columns surrounding the pattern."""
         # Find the first row with the pattern.
         y_start = 0
