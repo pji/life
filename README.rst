@@ -92,3 +92,4 @@ The following features are still planned to be implemented:
 * Look at moving grid.Grid from lists to a memory view
 * Look at more efficient algorithms for GoL
 * Look at allowing pattern files to be saved anywhere
+* Move default pattern files into the package

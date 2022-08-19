@@ -18,7 +18,7 @@ from textwrap import wrap
 
 import mypy.api
 import pycodestyle as pcs
-import rstcheck
+import rstcheck_core.checker as rstchecker
 
 
 # Script configuration.
@@ -55,7 +55,7 @@ def check_requirements():
     """Check requirements."""
     print('Checking requirements...')
     os.putenv('PIPENV_VERBOSITY', '-1')
-    cmd = '.venv/bin/python -m pipenv lock -r'
+    cmd = '.venv/bin/python -m pipenv requirements'
     current = os.popen(cmd).readlines()
     current = wrap_lines(current, 35, '', '  ')
     with open('requirements.txt') as fh:
@@ -70,7 +70,8 @@ def check_requirements():
         print('requirements.txt out of date.')
         print()
         tmp = '{:<35} {:<35}'
-        print(tmp.format('old', 'current'))
+        print(tmp.format('current', 'old'))
+        print('\u2500' * 70)
         for c, o in zip_longest(current, old, fillvalue=''):
             print(tmp.format(c, o))
         print()
@@ -88,7 +89,7 @@ def check_rst(file_paths, ignore):
         for file in files:
             with open(file) as fh:
                 lines = fh.read()
-            result = list(rstcheck.check(lines))
+            result = list(rstchecker.check_source(lines))
             if result:
                 results.append(file, *result)
         return results
