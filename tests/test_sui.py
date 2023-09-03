@@ -85,18 +85,7 @@ def test_Autorun_init(grid, term):
         assert getattr(obj, attr) is required[attr]
 
 
-# Tests for Autorun commands.
-def test_Autorun_cmd_exit(autorun):
-    """When called :func:`Autorun.exit` should return a :class:`Core`
-    object populated with its :class:`Grid` and :class:`blessed.Terminal`
-    objects.
-    """
-    state = autorun.exit()
-    assert isinstance(state, sui.Core)
-    assert state.data is autorun.data
-    assert state.term is autorun.term
-
-
+# Tests for Autorun input.
 def test_Autorun_input_keypress(autorun):
     """If a key is pressed, :meth:`Autorun.input` should return an
     exit command string.
@@ -111,6 +100,18 @@ def test_Autorun_input_timeout(autorun):
     """
     autorun.term.inkey.return_value = ''
     assert autorun.input() == ('run',)
+
+
+# Tests for Autorun commands.
+def test_Autorun_exit(autorun):
+    """When called :func:`Autorun.exit` should return a :class:`Core`
+    object populated with its :class:`Grid` and :class:`blessed.Terminal`
+    objects.
+    """
+    state = autorun.exit()
+    assert isinstance(state, sui.Core)
+    assert state.data is autorun.data
+    assert state.term is autorun.term
 
 
 def test_Autorun_run(autorun):
@@ -138,128 +139,63 @@ def test_Autorun_update_ui(capsys, autorun, term):
     )
 
 
+# Fixtures for Core.
+@pt.fixture
+def core(grid, term):
+    """A :class:`Core` object for testing."""
+    return sui.Core(grid, term)
+
+
+# Tests for Core initialization.
+def test_Core_init(grid, term):
+    """When given required parameters, :class:`Core` should return
+    an instance with attributes set to the given values.
+    """
+    required = {
+        'data': grid,
+        'term': term,
+    }
+    obj = sui.Core(**required)
+    for attr in required:
+        assert getattr(obj, attr) is required[attr]
+
+
+# Tests for Core input.
+def test_Core_input(core):
+    """When valid given input, :meth:`Core.input` should return the
+    expected command string.
+    """
+    core.term.inkey.side_effect = 'acelnrusq'
+    assert core.input() == ('autorun',)
+    assert core.input() == ('clear',)
+    assert core.input() == ('edit',)
+    assert core.input() == ('load',)
+    assert core.input() == ('next',)
+    assert core.input() == ('random',)
+    assert core.input() == ('rule',)
+    assert core.input() == ('save',)
+    assert core.input() == ('quit',)
+
+
+def test_Core_input_invalid(capsys, core, term):
+    """Given invalid input, :meth:`Core.input` should prompt the
+    user to try again.
+    """
+    core.term.inkey.side_effect = ('`', 'c')
+    assert core.input() == ('clear',)
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(4, 0) + term.clear_eol
+        + term.move(4, 0) + term.clear_eol
+        + term.move(4, 0) + 'Invalid command. Please try again.'
+        + term.clear_eol
+    )
+
+
+# Tests for Core commands.
 class CoreTestCase(ut.TestCase):
     def _make_core(self):
         return sui.Core(life.Grid(3, 3), blessed.Terminal())
-
-    def test__init__with_parameters(self):
-        """Core.__init__() should accept given parameters and use them
-        as the initial values for the relevant attributes.
-        """
-        exp = {
-            'data': life.Grid(3, 3),
-            'term': blessed.Terminal(),
-        }
-        state = sui.Core(**exp)
-        act = {
-            'data': state.data,
-            'term': state.term,
-        }
-        self.assertDictEqual(exp, act)
-
-    @patch('blessed.Terminal.cbreak')
-    @patch('blessed.Terminal.inkey')
-    @patch('life.sui.print')
-    def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
-        exp_calls = [
-            call(loc.format(5, 1) + '' + clr_eol, end='', flush=True),
-        ]
-
-        mock_inkey.return_value = sym_input
-        state = self._make_core()
-        response = state.input()
-        act_calls = mock_print.mock_calls
-
-        self.assertListEqual(exp_calls, act_calls)
-        return response
-
-    def test_input_autorun(self):
-        """Core.input() should return the autorun command when
-        selected by the user.
-        """
-        exp = ('autorun',)
-        act = self._get_input_response('a')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_clear(self):
-        """Core.input() should return the clear command when selected
-        by the user.
-        """
-        exp = ('clear',)
-        act = self._get_input_response('c')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_edit(self):
-        """Core.input() should return the edit command when selected
-        by the user.
-        """
-        exp = ('edit',)
-        act = self._get_input_response('e')
-        self.assertTupleEqual(exp, act)
-
-    @patch('blessed.Terminal.cbreak')
-    @patch('blessed.Terminal.inkey', side_effect=['bad', 'c'])
-    @patch('life.sui.print')
-    def test_input_invalid(self, mock_print, _, __):
-        """When given an invalid input, Core.input should alert the
-        user and let them try again.
-        """
-        exp_calls = [
-            call(loc.format(5, 1) + '' + clr_eol, end='', flush=True),
-            call(loc.format(5, 1) + '' + clr_eol, end='', flush=True),
-            call(loc.format(5, 1) + 'Invalid command. Please try again.'
-                 + clr_eol, end='', flush=True),
-        ]
-        exp_return = ('clear',)
-
-        state = self._make_core()
-        act_return = state.input()
-        act_calls = mock_print.mock_calls
-
-        self.assertListEqual(exp_calls, act_calls)
-        self.assertTupleEqual(exp_return, act_return)
-
-    def test_input_load(self):
-        """Core.input() should return the load command when selected
-        by the user.
-        """
-        exp = ('load',)
-        act = self._get_input_response('l')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_next(self):
-        """Core.next() should return the next command when selected
-        by the user.
-        """
-        exp = ('next',)
-        act = self._get_input_response('n')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_random(self):
-        """Core.random() should return the random command when
-        selected by the user.
-        """
-        exp = ('random',)
-        act = self._get_input_response('r')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_rule(self):
-        exp = ('rule',)
-        act = self._get_input_response('u')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_save(self):
-        exp = ('save',)
-        act = self._get_input_response('s')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_quit(self):
-        """Core.input() should return the quit command when selected
-        by the user.
-        """
-        exp = ('quit',)
-        act = self._get_input_response('q')
-        self.assertTupleEqual(exp, act)
 
     def test_cmd_autorun(self):
         """Core.autorun() should return an Autorun object."""
