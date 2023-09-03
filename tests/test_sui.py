@@ -127,6 +127,7 @@ def test_Autorun_run(autorun):
     ], dtype=bool)).all()
 
 
+# Tests for Autorun UI updates.
 def test_Autorun_update_ui(capsys, autorun, term):
     """When called, :meth:`Autorun.update_ui` should redraw the UI."""
     autorun.update_ui()
@@ -193,97 +194,107 @@ def test_Core_input_invalid(capsys, core, term):
 
 
 # Tests for Core commands.
-class CoreTestCase(ut.TestCase):
-    def _make_core(self):
-        return sui.Core(life.Grid(3, 3), blessed.Terminal())
+def test_Core_autorun(core):
+    """When called, :meth:`Core.autorun` should return an
+    :class:`Autorun` object.
+    """
+    state = core.autorun()
+    assert isinstance(state, sui.Autorun)
 
-    def test_cmd_autorun(self):
-        """Core.autorun() should return an Autorun object."""
-        exp = sui.Autorun
-        state = self._make_core()
-        act = state.autorun()
-        self.assertIsInstance(act, exp)
 
-    @patch('life.life.Grid.clear')
-    def test_cmd_clear(self, mock_clear):
-        """Core.clear() should clear the grid and return the Core
-        object.
-        """
-        exp = self._make_core()
-        act = exp.clear()
-        self.assertEqual(exp, act)
-        mock_clear.assert_called()
+def test_Core_clear(core):
+    """When called, :meth:`Core.clear` should clear the grid
+    and return its parent object.
+    """
+    state = core.clear()
+    assert state is core
+    assert (core.data._data == np.array([
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+    ], dtype=bool)).all()
 
-    def test_cmd_edit(self):
-        """Core.load() should return an Edit object."""
-        exp = sui.Edit
-        state = self._make_core()
-        act = state.edit()
-        self.assertIsInstance(act, exp)
 
-    def test_cmd_load(self):
-        """Core.load() should return an Load object."""
-        exp = sui.Load
-        state = self._make_core()
-        act = state.load()
-        self.assertIsInstance(act, exp)
+def test_Core_edit(core):
+    """When called, :meth:`Core.edit` should return an
+    :class:`Edit` object.
+    """
+    state = core.edit()
+    assert isinstance(state, sui.Edit)
 
-    @patch('life.life.Grid.next_generation')
-    def test_cmd_next(self, mock_next):
-        """Core.next() should advance the grid to the next generation
-        and return the Core object.
-        """
-        exp = self._make_core()
-        act = exp.next()
-        self.assertEqual(exp, act)
-        mock_next.assert_called()
 
-    def test_cmd_quit(self):
-        """Core.quit() should return an End object."""
-        exp = sui.End
-        state = self._make_core()
-        act = state.quit()
-        self.assertIsInstance(act, exp)
+def test_Core_load(core):
+    """When called, :meth:`Core.load` should return an
+    :class:`Load` object.
+    """
+    state = core.load()
+    assert isinstance(state, sui.Load)
 
-    @patch('life.life.Grid.randomize')
-    def test_cmd_random(self, mock_random):
-        """Core.random() should randomize the values of cells in the
-        grid and return the Core object.
-        """
-        exp = self._make_core()
-        act = exp.random()
-        self.assertEqual(exp, act)
-        mock_random.assert_called()
 
-    def test_cmd_rule(self):
-        """When called, Core.rule() should return a Rule object."""
-        exp = sui.Rule
-        state = self._make_core()
-        act = state.rule()
-        self.assertIsInstance(act, exp)
+def test_Core_next(core):
+    """When called, :meth:`Core.next` should advance the grid
+    and return its parent object.
+    """
+    state = core.next()
+    assert state is core
+    assert (core.data._data == np.array([
+        [1, 0, 1, 0],
+        [1, 0, 1, 0],
+        [1, 0, 1, 0],
+    ], dtype=bool)).all()
 
-    def test_cmd_save(self):
-        """When called, Core.save() should return a Save object."""
-        exp = sui.Save
-        state = self._make_core()
-        act = state.save()
-        self.assertIsInstance(act, exp)
 
-    @patch('life.sui.print')
-    def test_update_ui(self, mock_print):
-        """Core.update_ui() should redraw the UI for the core state."""
-        state = self._make_core()
-        exp = [
-            call(loc.format(1, 1) + '   '),
-            call(loc.format(2, 1) + '   '),
-            call(loc.format(3, 1) + '\u2500' * state.data.width),
-            call(loc.format(4, 1) + state.menu + clr_eol, end='', flush=True),
-        ]
+def test_Core_random(core):
+    """When called, :meth:`Core.random` should fill the grid
+    with random values and return its parent object.
+    """
+    core.data.rng = np.random.default_rng(seed=1138)
+    state = core.random()
+    assert state is core
+    assert (core.data._data == np.array([
+        [0, 0, 1, 1],
+        [0, 0, 1, 1],
+        [0, 1, 1, 0],
+    ], dtype=bool)).all()
 
-        state.update_ui()
-        act = mock_print.mock_calls
 
-        self.assertListEqual(exp, act)
+def test_Core_quit(core):
+    """When called, :meth:`Core.quit` should return an
+    :class:`End` object.
+    """
+    state = core.quit()
+    assert isinstance(state, sui.End)
+
+
+def test_Core_rule(core):
+    """When called, :meth:`Core.rule` should return a
+    :class:`Rule` object.
+    """
+    state = core.rule()
+    assert isinstance(state, sui.Rule)
+
+
+def test_Core_save(core):
+    """When called, :meth:`Core.save` should return a
+    :class:`Save` object.
+    """
+    state = core.save()
+    assert isinstance(state, sui.Save)
+
+
+# Tests for Core UI updates.
+def test_Core_update_ui(capsys, core, term):
+    """When called, :meth:`Core.update_ui` should redraw the UI
+    for the core state.
+    """
+    core.update_ui()
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + ' ▀ ▀\n'
+        + term.move(1, 0) + ' ▀  \n'
+        + term.move(2, 0) + '\u2500' * 4 + '\n'
+        + term.move(3, 0) + core.menu + term.clear_eol
+    )
 
 
 class EditTestCase(ut.TestCase):
