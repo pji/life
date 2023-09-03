@@ -8,14 +8,12 @@ import unittest as ut
 from unittest.mock import call, patch, PropertyMock
 
 import blessed
+import numpy as np
+import pytest as pt
 
-from life import grid, sui
+from life import life
+from life import sui
 
-
-# Terminal control sequence templates.
-clr_eol = '\x1b[K'
-color = '\x1b[{}m'
-loc = '\x1b[{};{}H'
 
 # Terminal colors.
 BG_BLACK = 40
@@ -30,114 +28,126 @@ UP = '\x1b[A'
 LEFT = '\x1b[D'
 RIGHT = '\x1b[C'
 
+# Terminal control sequence templates.
+term_ = blessed.Terminal()
+clr_eol = term_.clear_eol
 
-# Test cases.
-class AutorunTestCase(ut.TestCase):
-    def _make_autorun(self):
-        return sui.Autorun(grid.Grid(3, 3), blessed.Terminal())
 
-    @patch('blessed.Terminal.cbreak')
-    @patch('life.sui.print')
-    @patch('blessed.Terminal.inkey')
-    def _get_input_response(self, sym_input, mock_inkey, _, __):
-        mock_inkey.return_value = sym_input
-        state = self._make_autorun()
-        response = state.input()
-        return response
+class color:
+    @classmethod
+    def format(cls, n):
+        if term_.green:
+            return '\x1b[{}m'.format(n)
+        return ''
 
-    def test__init__with_parameters(self):
-        """Autorun.__init__() should accept given parameters and use
-        them as the initial values for the relevant attributes.
-        """
-        exp = {
-            'data': grid.Grid(3, 3),
-            'term': blessed.Terminal(),
-        }
-        state = sui.Autorun(**exp)
-        act = {
-            'data': state.data,
-            'term': state.term,
-        }
-        self.assertDictEqual(exp, act)
 
-    @patch('life.sui.print')
-    def test_cmd_exit(self, _):
-        """When called, Autorun.exit() should return a sui.Core
-        object populated with the grid and terminal objects.
-        """
-        state = self._make_autorun()
-        exp_class = sui.Core
-        exp_attrs = {
-            'data': state.data,
-            'term': state.term,
-        }
+class loc:
+    @classmethod
+    def format(cls, y, x):
+        return term_.move(y - 1, x - 1)
 
-        act_obj = state.exit()
-        act_attrs = {
-            'data': act_obj.data,
-            'term': act_obj.term,
-        }
 
-        self.assertIsInstance(act_obj, exp_class)
-        self.assertDictEqual(exp_attrs, act_attrs)
+# Common fixtures.
+@pt.fixture
+def grid():
+    """A :class:`Grid` object for testing."""
+    grid = life.Grid(4, 3)
+    grid._data[0, 1] = True
+    grid._data[0, 3] = True
+    grid._data[2, 1] = True
+    return grid
 
-    @patch('life.sui.print')
-    @patch('life.grid.Grid.next_generation')
-    def test_cmd_run(self, mock_ng, _):
-        """When called, Autorun.run() should advance the grid and
-        return the Autorun object.
-        """
-        exp_class = sui.Autorun
 
-        state = self._make_autorun()
-        act_obj = state.run()
+@pt.fixture
+def term(mocker):
+    """A :class:`blessed.Terminal` object for testing."""
+    mocker.patch('blessed.Terminal.inkey')
+    return blessed.Terminal()
 
-        self.assertIsInstance(act_obj, exp_class)
-        mock_ng.assert_called()
 
-    def test_input_exit(self):
-        """If a key is pressed, Autorun.input() should return the exit
-        command.
-        """
-        exp = ('exit',)
-        act = self._get_input_response(' ')
-        self.assertTupleEqual(exp, act)
+# Fixtures for Autorun.
+@pt.fixture
+def autorun(grid, term):
+    return sui.Autorun(grid, term)
 
-    def test_input_timeout(self):
-        """If timed out, Autorun.input() should return the run
-        command.
-        """
-        exp = ('run',)
-        act = self._get_input_response('')
-        self.assertTupleEqual(exp, act)
 
-    @patch('life.sui.print')
-    def test_update_ui(self, mock_print):
-        """Autorun.update_ui() should redraw the UI for the core state."""
-        state = self._make_autorun()
-        exp = [
-            call(loc.format(1, 1) + '   '),
-            call(loc.format(2, 1) + '   '),
-            call(loc.format(3, 1) + '\u2500' * state.data.width),
-            call(loc.format(4, 1) + state.menu + clr_eol, end='', flush=True),
-        ]
+# Tests for Autorun initialization.
+def test_Autorun_init(grid, term):
+    """When given required parameters, :class:`Autorun` should return
+    an instance with attributes set to the given values.
+    """
+    required = {
+        'data': grid,
+        'term': term,
+    }
+    obj = sui.Autorun(**required)
+    for attr in required:
+        assert getattr(obj, attr) is required[attr]
 
-        state.update_ui()
-        act = mock_print.mock_calls
 
-        self.assertListEqual(exp, act)
+# Tests for Autorun commands.
+def test_Autorun_cmd_exit(autorun):
+    """When called :func:`Autorun.exit` should return a :class:`Core`
+    object populated with its :class:`Grid` and :class:`blessed.Terminal`
+    objects.
+    """
+    state = autorun.exit()
+    assert isinstance(state, sui.Core)
+    assert state.data is autorun.data
+    assert state.term is autorun.term
+
+
+def test_Autorun_input_keypress(autorun):
+    """If a key is pressed, :meth:`Autorun.input` should return an
+    exit command string.
+    """
+    autorun.term.inkey.return_value = ' '
+    assert autorun.input() == ('exit',)
+
+
+def test_Autorun_input_timeout(autorun):
+    """If no key is pressed, :meth:`Autorun.input` should return a
+    run command string.
+    """
+    autorun.term.inkey.return_value = ''
+    assert autorun.input() == ('run',)
+
+
+def test_Autorun_run(autorun):
+    """When called, :meth:`Autorun.run` should advance the grid and
+    return the :class:`Autorun` object.
+    """
+    state = autorun.run()
+    assert state is autorun
+    assert (autorun.data._data == np.array([
+        [1, 0, 1, 0],
+        [1, 0, 1, 0],
+        [1, 0, 1, 0],
+    ], dtype=bool)).all()
+
+
+def test_Autorun_update_ui(capsys, autorun, term):
+    """When called, :meth:`Autorun.update_ui` should redraw the UI."""
+    autorun.update_ui()
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + ' ▀ ▀\n'
+        + term.move(1, 0) + ' ▀  \n'
+        + term.move(2, 0) + '\u2500' * 4 + '\n'
+        + term.move(3, 0) + autorun.menu + term.clear_eol
+    )
 
 
 class CoreTestCase(ut.TestCase):
     def _make_core(self):
-        return sui.Core(grid.Grid(3, 3), blessed.Terminal())
+        return sui.Core(life.Grid(3, 3), blessed.Terminal())
 
     def test__init__with_parameters(self):
         """Core.__init__() should accept given parameters and use them
         as the initial values for the relevant attributes.
         """
         exp = {
-            'data': grid.Grid(3, 3),
+            'data': life.Grid(3, 3),
             'term': blessed.Terminal(),
         }
         state = sui.Core(**exp)
@@ -258,7 +268,7 @@ class CoreTestCase(ut.TestCase):
         act = state.autorun()
         self.assertIsInstance(act, exp)
 
-    @patch('life.grid.Grid.clear')
+    @patch('life.life.Grid.clear')
     def test_cmd_clear(self, mock_clear):
         """Core.clear() should clear the grid and return the Core
         object.
@@ -282,7 +292,7 @@ class CoreTestCase(ut.TestCase):
         act = state.load()
         self.assertIsInstance(act, exp)
 
-    @patch('life.grid.Grid.next_generation')
+    @patch('life.life.Grid.next_generation')
     def test_cmd_next(self, mock_next):
         """Core.next() should advance the grid to the next generation
         and return the Core object.
@@ -299,7 +309,7 @@ class CoreTestCase(ut.TestCase):
         act = state.quit()
         self.assertIsInstance(act, exp)
 
-    @patch('life.grid.Grid.randomize')
+    @patch('life.life.Grid.randomize')
     def test_cmd_random(self, mock_random):
         """Core.random() should randomize the values of cells in the
         grid and return the Core object.
@@ -342,7 +352,7 @@ class CoreTestCase(ut.TestCase):
 
 class EditTestCase(ut.TestCase):
     def _make_edit(self):
-        return sui.Edit(grid.Grid(3, 3), blessed.Terminal())
+        return sui.Edit(life.Grid(3, 3), blessed.Terminal())
 
     @patch('life.sui.print')
     def _cmd_tests(self, exp_call, exp_row, exp_col, cmd, mock_print):
@@ -385,7 +395,7 @@ class EditTestCase(ut.TestCase):
         objects attributes with the given values.
         """
         exp = {
-            'data': grid.Grid(3, 3),
+            'data': life.Grid(3, 3),
             'term': blessed.Terminal(),
         }
         state = sui.Edit(**exp)
@@ -477,7 +487,7 @@ class EditTestCase(ut.TestCase):
         self._cmd_tests(exp_call, exp_row, exp_col, cmd)
 
     @patch('life.sui.print')
-    @patch('life.grid.Grid.replace')
+    @patch('life.life.Grid.replace')
     @patch('life.sui.open')
     def test_cmd_restore(self, mock_open, mock_replace, _):
         """When called, Edit.restore() should load the snapshot file
@@ -631,14 +641,14 @@ class EndTestCase(ut.TestCase):
 
 class LoadTestCase(ut.TestCase):
     def _make_load(self, height=3, width=3):
-        return sui.Load(grid.Grid(width, height), blessed.Terminal())
+        return sui.Load(life.Grid(width, height), blessed.Terminal())
 
     def test_init_with_parameters(self):
         """Given grid and term, Load.__init__() will set the Load
         objects attributes with the given values.
         """
         exp = {
-            'data': grid.Grid(3, 3),
+            'data': life.Grid(3, 3),
             'term': blessed.Terminal(),
         }
         state = sui.Load(**exp)
@@ -685,7 +695,7 @@ class LoadTestCase(ut.TestCase):
         self.assertDictEqual(exp_attrs, act_attrs)
 
     @patch('life.sui.print')
-    @patch('life.grid.Grid.replace')
+    @patch('life.life.Grid.replace')
     @patch('life.sui.open')
     def test_cmd_load(self, mock_open, mock_replace, _):
         """TerminalController.replace() should advance the generation of
@@ -834,7 +844,7 @@ class mainTestCase(ut.TestCase):
 
 class RuleTestCase(ut.TestCase):
     def _make_rule(self):
-        return sui.Rule(grid.Grid(3, 3), blessed.Terminal())
+        return sui.Rule(life.Grid(3, 3), blessed.Terminal())
 
     @patch('life.sui.print')
     @patch('life.sui.input')
@@ -849,7 +859,7 @@ class RuleTestCase(ut.TestCase):
         as the initial values for the relevant attributes.
         """
         exp = {
-            'data': grid.Grid(3, 3),
+            'data': life.Grid(3, 3),
             'term': blessed.Terminal(),
         }
         state = sui.Rule(**exp)
@@ -943,14 +953,14 @@ class RuleTestCase(ut.TestCase):
 
 class SaveTestCase(ut.TestCase):
     def _make_save(self):
-        return sui.Save(grid.Grid(3, 3), blessed.Terminal())
+        return sui.Save(life.Grid(3, 3), blessed.Terminal())
 
     def test__init__with_parameters(self):
         """Save.__init__() should accept given parameters and use them
         as the initial values for the relevant attributes.
         """
         exp = {
-            'data': grid.Grid(3, 3),
+            'data': life.Grid(3, 3),
             'term': blessed.Terminal(),
         }
         state = sui.Save(**exp)
@@ -1045,7 +1055,7 @@ class StartTestCase(ut.TestCase):
         if no parameters are passed to it.
         """
         exp = {
-            'data': grid.Grid,
+            'data': life.Grid,
             'term': blessed.Terminal,
         }
         state = sui.Start()
@@ -1060,7 +1070,7 @@ class StartTestCase(ut.TestCase):
         the initial attribute values.
         """
         exp = {
-            'data': grid.Grid(3, 3),
+            'data': life.Grid(3, 3),
             'term': blessed.Terminal(),
         }
         state = sui.Start(**exp)
@@ -1096,7 +1106,7 @@ class StartTestCase(ut.TestCase):
         """
         exp_class = sui.Core
         exp_attrs = {
-            'data': grid.Grid(3, 3),
+            'data': life.Grid(3, 3),
             'term': blessed.Terminal(),
         }
 
@@ -1113,7 +1123,7 @@ class StartTestCase(ut.TestCase):
     @patch('life.sui.print')
     def test_update_ui(self, mock_print):
         """Start.update_ui() should draw the initial UI."""
-        data = grid.Grid(3, 3)
+        data = life.Grid(3, 3)
         term = blessed.Terminal()
         state = sui.Start(data, term)
         exp = [

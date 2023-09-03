@@ -10,9 +10,10 @@ from copy import deepcopy
 from time import sleep
 from typing import Any, List, Optional, Sequence
 
+import numpy as np
 from blessed import Terminal
 
-from life.grid import Grid
+from life.life import Grid
 
 
 # Complex type aliases for type hints. See the following for more info:
@@ -32,7 +33,7 @@ class State(ABC):
     commands: dict = {}
 
     """An abstract base class for UI states."""
-    def __init__(self, data:Grid, term:Terminal):
+    def __init__(self, data: Grid, term: Terminal) -> None:
         """Initialize a State object.
 
         :param data: The grid object for the current game of life.
@@ -41,28 +42,30 @@ class State(ABC):
         self.term = term
         self.data = data
 
-    def _char_for_state(self, top, bottom):
+    def _char_for_state(self, top, bottom) -> str:
         """Return the character to draw based on the state of the cell."""
         if top and bottom:
             return '\u2588'
-        if top and not bottom:
+        elif top and not bottom:
             return '\u2580'
-        if not top and bottom:
+        elif not top and bottom:
             return '\u2584'
-        if not top and not bottom:
-            return ' '
+        return ' '
 
-    def _draw_commands(self, cmds: str = ''):
+    def _draw_commands(self, cmds: str = '') -> None:
         """Draw the available commands."""
         y = -(self.data.height // -2) + 1
-        print(self.term.move(y, 0) + cmds + self.term.clear_eol, end='',
-              flush=True)
+        print(
+            self.term.move(y, 0) + cmds + self.term.clear_eol,
+            end='',
+            flush=True
+        )
 
-    def _draw_state(self):
+    def _draw_state(self) -> None:
         """Draw the grid to the terminal."""
-        data = self.data[:]
+        data: np.ndarray = self.data._data[:]
         if len(data) % 2:
-            data.append([False for _ in range(len(data[0]))])
+            data = np.pad(data, ((0, 1), (0, 0)))
         for i in range(0, len(data), 2):
             cells = []
             for j in range(0, len(data[i])):
@@ -70,13 +73,16 @@ class State(ABC):
                 cells.append(char)
             print(self.term.move(i // 2, 0) + ''.join(cells))
 
-    def _draw_prompt(self, msg: str = '> '):
+    def _draw_prompt(self, msg: str = '> ') -> None:
         """Draw the command prompt."""
         y = -(self.data.height // -2) + 2
-        print(self.term.move(y, 0) + msg + self.term.clear_eol,
-              end='', flush=True)
+        print(
+            self.term.move(y, 0) + msg + self.term.clear_eol,
+            end='',
+            flush=True
+        )
 
-    def _draw_rule(self):
+    def _draw_rule(self) -> None:
         """Draw the a horizontal rule."""
         width = self.data.width
         y = -(self.data.height // -2)
@@ -99,7 +105,7 @@ class State(ABC):
         return (cmd,)
 
     @abstractmethod
-    def update_ui(self):
+    def update_ui(self) -> None:
         """Update the terminal display."""
 
 
@@ -290,7 +296,7 @@ class Edit(State):
 
     def flip(self) -> 'Edit':
         """Command method. Flip the state of the current cell."""
-        self.data.flip(self.row, self.col)
+        self.data.flip(self.col, self.row)
         self._draw_state()
         self._draw_cursor()
         return self
@@ -376,8 +382,11 @@ class Load(State):
             for y in range(len(self.files), height):
                 print(self.term.move(y, 0) + self.term.clear_eol)
 
-    def _normalize_loaded_text(self, text: list[str],
-                               live: str = 'x') -> List[list]:
+    def _normalize_loaded_text(
+        self,
+        text: list[str],
+        live: str = 'x'
+    ) -> List[list]:
         """Convert a pattern saved as a text file into grid data.
 
         :param text: The pattern as text.
@@ -386,6 +395,8 @@ class Load(State):
         new = []
         for line in text:
             row = []
+            if line.endswith('\n'):
+                line = line[:-1]
             for char in line:
                 if char.lower() == live:
                     row.append(True)
@@ -478,7 +489,7 @@ class Save(State):
             for y in range(len(self.files), height):
                 print(self.term.move(y, 0) + self.term.clear_eol)
 
-    def _remove_padding(self, data: Sequence[list]) -> list[Any]:
+    def _remove_padding(self, data: np.ndarray) -> list[Any]:
         """Remove empty rows and columns surrounding the pattern."""
         # Find the first row with the pattern.
         y_start = 0
@@ -516,7 +527,7 @@ class Save(State):
         :param filename: The name of the file to save.
         """
         grid_ = deepcopy(self.data)
-        grid_._data = self._remove_padding(grid_._data)
+        grid_._data = np.array(self._remove_padding(grid_._data), dtype=bool)
         with open(self.path + filename, 'w') as fh:
             fh.write(str(grid_))
         return Core(self.data, self.term)
@@ -532,7 +543,9 @@ class Start(State):
     menu = 'Copyright © 2020 Paul J. Iutzi'
     prompt = 'Press any key to continue.'
 
-    def __init__(self, data: Grid = None, term: Terminal = None):
+    def __init__(
+        self, data: Grid | None = None, term: Terminal | None = None
+    ):
         """Initialize a Start object.
 
         :param data: (Optional.) The grid object for the current
