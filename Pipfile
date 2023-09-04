@@ -14,6 +14,8 @@ rstcheck = "*"
 pytest = "*"
 pytest-mock = "*"
 build = "*"
+tox = "*"
+isort = "*"
 
 [requires]
 python_version = "3.10"

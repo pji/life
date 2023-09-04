@@ -4,16 +4,13 @@ test_sui
 
 This provides the unit tests for life.sui.py.
 """
-import unittest as ut
 from pathlib import Path
-from unittest.mock import call, patch, PropertyMock
 
 import blessed
 import numpy as np
 import pytest as pt
 
-from life import life
-from life import sui
+from life import life, sui
 
 
 # Terminal keys:
