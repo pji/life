@@ -576,7 +576,8 @@ class Start(State):
         if not data:
             data = Grid(term.width, (term.height - 3) * 2)
             load = Load(data, term)
-            load.load('pattern/title.txt')
+            pattern = files(life.pattern)
+            load.load(pattern / 'title.txt')
         super().__init__(data, term)
 
     def input(self) -> _Command:
