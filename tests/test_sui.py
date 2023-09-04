@@ -297,6 +297,157 @@ def test_Core_update_ui(capsys, core, term):
     )
 
 
+# Fixtures for Edit.
+@pt.fixture
+def edit(grid, term):
+    """An :class:`Edit` object for testing."""
+    return sui.Edit(grid, term)
+
+
+@pt.fixture
+def snapshot():
+    old_value = sui.SNAPSHOT
+    sui.SNAPSHOT = 'tests/data/.snapshot.txt'
+    yield sui.SNAPSHOT
+    sui.SNAPSHOT = old_value
+
+
+@pt.fixture
+def tmpshot(tmp_path):
+    """A temporary directory for the snapshot file."""
+    path = tmp_path / '.snapshot.txt'
+    old_value = sui.SNAPSHOT
+    sui.SNAPSHOT = path
+    yield path
+    sui.SNAPSHOT = old_value
+
+
+# Tests for Edit initialization.
+def test_Edit_init(grid, term):
+    """When given required parameters, :class:`Edit` should return
+    an instance with attributes set to the given values. It should
+    also initialize the cursor position.
+    """
+    required = {
+        'data': grid,
+        'term': term,
+    }
+    obj = sui.Edit(**required)
+    for attr in required:
+        assert getattr(obj, attr) is required[attr]
+    assert obj.row == 1
+    assert obj.col == 2
+
+
+# Tests for Edit commands.
+def test_Edit_down(capsys, edit, term):
+    """When called, :meth:`Edit.down` should subtract one from the row,
+    redraw the status, redraw the cursor, and return its parent object.
+    """
+    state = edit.down()
+    captured = capsys.readouterr()
+    assert state is edit
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + ' ▀ ▀\n'
+        + term.move(1, 0) + ' ▀  \n'
+        + term.move(1, 2) + term.green + '\u2580'
+        + term.bright_white_on_black + '\n'
+    )
+
+
+def test_Edit_exit(edit):
+    """When called, :meth:`Edit.exit` should return a :class:`Core`
+    object.
+    """
+    state = edit.exit()
+    assert isinstance(state, sui.Core)
+    assert state.data is edit.data
+    assert state.term is edit.term
+
+
+def test_Edit_flip(capsys, edit, term):
+    """When called, :meth:`Edit.flip` should flip the selected
+    location and return its parent object.
+    """
+    state = edit.flip()
+    captured = capsys.readouterr()
+    assert state is edit
+    assert (state.data._data == np.array([
+        [0, 1, 0, 1],
+        [0, 0, 1, 0],
+        [0, 1, 0, 0],
+    ], dtype=bool)).all()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + ' ▀▄▀\n'
+        + term.move(1, 0) + ' ▀  \n'
+        + term.move(0, 2) + term.bright_green + '\u2584'
+        + term.bright_white_on_black + '\n'
+    )
+
+
+def test_Edit_left(capsys, edit, term):
+    """When called, :meth:`Edit.left` should subtract one from the col,
+    redraw the status, redraw the cursor, and return its parent object.
+    """
+    state = edit.left()
+    captured = capsys.readouterr()
+    assert state is edit
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + ' ▀ ▀\n'
+        + term.move(1, 0) + ' ▀  \n'
+        + term.move(0, 1) + term.green_on_bright_white + '\u2584'
+        + term.bright_white_on_black + '\n'
+    )
+
+
+def test_Edit_right(capsys, edit, term):
+    """When called, :meth:`Edit.right` should add one to the col,
+    redraw the status, redraw the cursor, and return its parent
+    object.
+    """
+    state = edit.right()
+    captured = capsys.readouterr()
+    assert state is edit
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + ' ▀ ▀\n'
+        + term.move(1, 0) + ' ▀  \n'
+        + term.move(0, 3) + term.green_on_bright_white + '\u2584'
+        + term.bright_white_on_black + '\n'
+    )
+
+
+def test_Edit_restore(edit, snapshot, term):
+    """When called, :meth:`Edit.restore` should load the snapshot file
+    and return the parent object.
+    """
+    state = edit.restore()
+    assert state is edit
+    assert (edit.data._data == np.array([
+        [0, 1, 0, 1],
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ], dtype=bool)).all()
+
+
+def test_Edit_snapshot(capsys, edit, tmpshot, term):
+    """When called, :meth:`Edit.snapshot` should write the grid to
+    the snapshot file and return the parent object.
+    """
+    state = edit.snapshot()
+    with open(tmpshot) as fh:
+        saved = fh.read()
+    captured = capsys.readouterr()
+    assert state is edit
+    assert repr(saved) == repr(
+        'X.X\n'
+        '...\n'
+        'X..'
+    )
+    assert repr(captured.out) == repr(
+        term.move(4, 0) + 'Saving...' + term.clear_eol
+    )
+
+
 class EditTestCase(ut.TestCase):
     def _make_edit(self):
         return sui.Edit(life.Grid(3, 3), blessed.Terminal())
@@ -336,150 +487,6 @@ class EditTestCase(ut.TestCase):
 
         self.assertListEqual(exp_calls, act_calls)
         return response
-
-    def test__init__with_parameters(self):
-        """Given grid and term, Edit.__init__() will set the Edit
-        objects attributes with the given values.
-        """
-        exp = {
-            'data': life.Grid(3, 3),
-            'term': blessed.Terminal(),
-        }
-        state = sui.Edit(**exp)
-        act = {
-            'data': state.data,
-            'term': state.term,
-        }
-        self.assertDictEqual(exp, act)
-
-    def test_cmd_down(self):
-        """When called, Edit.down() should subtract one from the row,
-        redraw the status, redraw the cursor, and return the Edit
-        state.
-        """
-        exp_call = call(loc.format(2, 2) + color.format(FG_GREEN) + '\u2580'
-                        + color.format(FG_BWHITE) + color.format(BG_BLACK))
-        exp_row = 2
-        exp_col = 1
-        cmd = 'down'
-        self._cmd_tests(exp_call, exp_row, exp_col, cmd)
-
-    def test_cmd_exit(self):
-        """When called, Edit.exit should return a Core object."""
-        state = self._make_edit()
-        exp_class = sui.Core
-        exp_attrs = {
-            'data': state.data,
-            'term': state.term,
-        }
-
-        act_obj = state.exit()
-        act_attrs = {
-            'data': act_obj.data,
-            'term': act_obj.term,
-        }
-
-        self.assertIsInstance(act_obj, exp_class)
-        self.assertDictEqual(exp_attrs, act_attrs)
-
-    @patch('life.sui.print')
-    def test_cmd_flip(self, mock_print):
-        """When called, Edit.flip() should pass the current coordinates
-        to Grid.flip(), redraw the status and cursor,  and return the
-        Edit object.
-        """
-        state = self._make_edit()
-        exp_return = state
-        exp_row = 1
-        exp_col = 1
-        exp_calls = [
-            call(loc.format(1, 1) + ' \u2584 '),
-            call(loc.format(2, 1) + '   '),
-            call(loc.format(1, 2) + color.format(FG_BGREEN) + '\u2584'
-                 + color.format(FG_BWHITE) + color.format(BG_BLACK)),
-        ]
-
-        act_return = state.flip()
-        act_row = state.row
-        act_col = state.col
-        act_calls = mock_print.mock_calls
-
-        self.assertEqual(exp_return, act_return)
-        self.assertEqual(exp_row, act_row)
-        self.assertEqual(exp_col, act_col)
-        self.assertListEqual(exp_calls, act_calls)
-
-    def test_cmd_left(self):
-        """When called, Edit.left() should subtract one from the col,
-        redraw the status, redraw the cursor, and return the Edit
-        state.
-        """
-        exp_call = call(loc.format(1, 1) + color.format(FG_GREEN) + '\u2584'
-                        + color.format(FG_BWHITE) + color.format(BG_BLACK))
-        exp_row = 1
-        exp_col = 0
-        cmd = 'left'
-        self._cmd_tests(exp_call, exp_row, exp_col, cmd)
-
-    def test_cmd_right(self):
-        """When called, Edit.right() should add one from the col,
-        redraw the status, redraw the cursor, and return the Edit
-        state.
-        """
-        exp_call = call(loc.format(1, 3) + color.format(FG_GREEN) + '\u2584'
-                        + color.format(FG_BWHITE) + color.format(BG_BLACK))
-        exp_row = 1
-        exp_col = 2
-        cmd = 'right'
-        self._cmd_tests(exp_call, exp_row, exp_col, cmd)
-
-    @patch('life.sui.print')
-    @patch('life.life.Grid.replace')
-    @patch('life.sui.open')
-    def test_cmd_restore(self, mock_open, mock_replace, _):
-        """When called, Edit.restore() should load the snapshot file
-        and return the Edit object.
-        """
-        state = self._make_edit()
-        exp_class = sui.Edit
-        exp_attrs = {
-            'data': state.data,
-            'term': state.term,
-        }
-
-        mock_open().__enter__().readlines.return_value = ['xoxo',]
-        act_obj = state.restore()
-        act_attrs = {
-            'data': act_obj.data,
-            'term': act_obj.term,
-        }
-
-        self.assertIsInstance(act_obj, exp_class)
-        self.assertDictEqual(exp_attrs, act_attrs)
-        mock_replace.assert_called_with([[True, False, True, False],])
-        mock_open.assert_called_with('pattern/.snapshot.txt', 'r')
-
-    @patch('life.sui.print')
-    @patch('life.sui.open')
-    def test_cmd_snapshot(self, mock_open, _):
-        """When called, Edit.snapshot() should write the grid to
-        the snapshot file and return the Edit object.
-        """
-        exp_class = sui.Edit
-        exp_calls = [
-            call('pattern/.snapshot.txt', 'w'),
-            call().__enter__(),
-            call().__enter__().write('X'),
-            call().__exit__(None, None, None),
-        ]
-
-        state = self._make_edit()
-        state.data[1][1] = True
-        act_obj = state.snapshot()
-        act_calls = mock_open.mock_calls
-
-        self.assertIsInstance(act_obj, exp_class)
-        self.assertListEqual(exp_calls, act_calls)
 
     def test_cmd_up(self):
         """When called, Edit.up() should subtract one from the row,

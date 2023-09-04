@@ -5,6 +5,7 @@ sui
 The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
+from pathlib import Path
 from os import listdir
 from copy import deepcopy
 from time import sleep
@@ -26,6 +27,10 @@ DOWN = '\x1b[B'
 UP = '\x1b[A'
 LEFT = '\x1b[D'
 RIGHT = '\x1b[C'
+
+
+# File paths.
+SNAPSHOT = Path('pattern/.snapshot.txt')
 
 
 # Base class.
@@ -314,14 +319,14 @@ class Edit(State):
     def restore(self) -> 'Edit':
         """Restore the snapshot grid state."""
         load = Load(self.data, self.term)
-        load.load('pattern/.snapshot.txt')
+        load.load(SNAPSHOT)
         return self
 
     def snapshot(self) -> 'Edit':
         """Save the current grid state as a snapshot."""
         self._draw_prompt('Saving...')
         save = Save(self.data, self.term)
-        save.save('.snapshot.txt')
+        save.save(SNAPSHOT)
         return self
 
     def up(self) -> 'Edit':
@@ -528,7 +533,10 @@ class Save(State):
         """
         grid_ = deepcopy(self.data)
         grid_._data = np.array(self._remove_padding(grid_._data), dtype=bool)
-        with open(self.path + filename, 'w') as fh:
+        path = filename
+        if '/' not in str(filename):
+            path = self.path + filename
+        with open(path, 'w') as fh:
             fh.write(str(grid_))
         return Core(self.data, self.term)
 
