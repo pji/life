@@ -30,7 +30,8 @@ RIGHT = '\x1b[C'
 
 
 # File paths.
-SNAPSHOT = Path('pattern/.snapshot.txt')
+PATTERNS = Path('pattern')
+SNAPSHOT = '.snapshot.txt'
 
 
 # Base class.
@@ -366,7 +367,7 @@ class Load(State):
         '\n': 'load',
     }
     menu = '(\u2191\u2192) Move, (\u23ce) Select, (E)xit'
-    path = 'pattern/'
+    path = PATTERNS
     files: list[Any] = []
     selected = 0
 
@@ -423,7 +424,7 @@ class Load(State):
     def load(self, filename: Optional[str] = None) -> 'Core':
         """Load the selected file and return to core state."""
         if filename is None:
-            filename = self.path + self.files[self.selected]
+            filename = self.path / self.files[self.selected]
         with open(filename, 'r') as fh:
             raw = fh.readlines()
         normal = self._normalize_loaded_text(raw)
@@ -477,7 +478,7 @@ class Rule(State):
 class Save(State):
     """The state for saving the grid state to a file."""
     menu = 'Enter name for save file.'
-    path = 'pattern/'
+    path = Path('pattern/')
 
     def _draw_state(self):
         """List the files available to be loaded."""
@@ -535,7 +536,7 @@ class Save(State):
         grid_._data = np.array(self._remove_padding(grid_._data), dtype=bool)
         path = filename
         if '/' not in str(filename):
-            path = self.path + filename
+            path = self.path / filename
         with open(path, 'w') as fh:
             fh.write(str(grid_))
         return Core(self.data, self.term)

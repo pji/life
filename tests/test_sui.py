@@ -5,6 +5,7 @@ test_sui
 This provides the unit tests for life.sui.py.
 """
 import unittest as ut
+from pathlib import Path
 from unittest.mock import call, patch, PropertyMock
 
 import blessed
@@ -506,7 +507,7 @@ def test_Edit_update_ui(capsys, edit, term):
 
 
 # Test for End initialization.
-def test_Edit_init(grid, term):
+def test_End_init(grid, term):
     """When given required parameters, :class:`End` should return
     an instance with attributes set to the given values.
     """
@@ -516,408 +517,256 @@ def test_Edit_init(grid, term):
         assert getattr(obj, attr) is required[attr]
 
 
-class LoadTestCase(ut.TestCase):
-    def _make_load(self, height=3, width=3):
-        return sui.Load(life.Grid(width, height), blessed.Terminal())
-
-    def test_init_with_parameters(self):
-        """Given grid and term, Load.__init__() will set the Load
-        objects attributes with the given values.
-        """
-        exp = {
-            'data': life.Grid(3, 3),
-            'term': blessed.Terminal(),
-        }
-        state = sui.Load(**exp)
-        act = {
-            'data': state.data,
-            'term': state.term,
-        }
-        self.assertDictEqual(exp, act)
-
-    def test_cmd_down(self):
-        """When called, Load.down() should add one to Load.selected,
-        rolling over if the number is above the number of files, and
-        return the Load object.
-        """
-        state = self._make_load()
-        exp_selection = 1
-        exp_return = state
-
-        state.files = ['spam', 'eggs', 'ham']
-        act_return = state.down()
-        act_selection = exp_return.selected
-
-        self.assertEqual(exp_return, act_return)
-        self.assertEqual(exp_selection, act_selection)
-
-    def test_cmd_exit(self):
-        """When called, Load.exit() should return a Core object
-        populated with the grid and terminal objects.
-        """
-        state = self._make_load()
-        exp_class = sui.Core
-        exp_attrs = {
-            'data': state.data,
-            'term': state.term,
-        }
-
-        act_obj = state.exit()
-        act_attrs = {
-            'data': act_obj.data,
-            'term': act_obj.term,
-        }
-
-        self.assertIsInstance(act_obj, exp_class)
-        self.assertDictEqual(exp_attrs, act_attrs)
-
-    @patch('life.sui.print')
-    @patch('life.life.Grid.replace')
-    @patch('life.sui.open')
-    def test_cmd_load(self, mock_open, mock_replace, _):
-        """TerminalController.replace() should advance the generation of
-        the grid and update the display.
-        """
-        state = self._make_load()
-        exp_class = sui.Core
-        exp_attrs = {
-            'data': state.data,
-            'term': state.term,
-        }
-
-        mock_open().__enter__().readlines.return_value = ['xoxo',]
-        state.files = ['spam', 'eggs']
-        act_obj = state.load()
-        act_attrs = {
-            'data': act_obj.data,
-            'term': act_obj.term,
-        }
-
-        self.assertIsInstance(act_obj, exp_class)
-        self.assertDictEqual(exp_attrs, act_attrs)
-        mock_replace.assert_called_with([[True, False, True, False],])
-        mock_open.assert_called_with('pattern/spam', 'r')
-
-    def test_cmd_up(self):
-        """When called, Load.up() should subtract one from
-        Load.selected, rolling over if the number is below
-        zero, and return the Load object.
-        """
-        state = self._make_load()
-        exp_selection = 2
-        exp_return = state
-
-        state.files = ['spam', 'eggs', 'ham']
-        act_return = state.up()
-        act_selection = exp_return.selected
-
-        self.assertEqual(exp_return, act_return)
-        self.assertEqual(exp_selection, act_selection)
-
-    @patch('blessed.Terminal.cbreak')
-    @patch('blessed.Terminal.inkey')
-    @patch('life.sui.print')
-    def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
-        exp_calls = [
-            call(loc.format(5, 1) + '' + clr_eol, end='', flush=True),
-        ]
-
-        mock_inkey.return_value = sym_input
-        state = self._make_load()
-        state.files = ['spam', 'eggs']
-        response = state.input()
-        act_calls = mock_print.mock_calls
-
-        self.assertListEqual(exp_calls, act_calls)
-        return response
-
-    def test_input_down(self):
-        """Load.input() should return the down command when the down
-        arrow is pressed.
-        """
-        exp = ('down',)
-        act = self._get_input_response(DOWN)
-        self.assertTupleEqual(exp, act)
-
-    def test_input_exit(self):
-        """Load.input() should return the exit command when the exit
-        arrow is pressed.
-        """
-        exp = ('exit',)
-        act = self._get_input_response('e')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_load(self):
-        """Load.input() should return the load command when return is
-        pressed.
-        """
-        exp = ('load',)
-        act = self._get_input_response('\n')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_up(self):
-        """Load.input() should return the up command when the up arrow
-        is pressed.
-        """
-        exp = ('up',)
-        act = self._get_input_response(UP)
-        self.assertTupleEqual(exp, act)
-
-    @patch('life.sui.listdir', return_value=['spam', 'eggs'])
-    @patch('life.sui.print')
-    def test_update_ui(self, mock_print, _):
-        """When called, Load.update_ui should update the UI for the
-        load state.
-        """
-        exp = [
-            call(loc.format(1, 1) + color.format(BG_GREEN) + 'eggs'
-                 + color.format(BG_BLACK) + clr_eol),
-            call(loc.format(2, 1) + 'spam' + clr_eol),
-            call(loc.format(3, 1) + '\u2500' * 3),
-            call(loc.format(4, 1) + '(\u2191\u2192) Move, (\u23ce) Select, '
-                 + '(E)xit' + clr_eol.format(4, 10), end='', flush=True),
-        ]
-
-        state = self._make_load()
-        state.update_ui()
-        act = mock_print.mock_calls
-
-        self.assertListEqual(exp, act)
-
-    @patch('life.sui.listdir', return_value=['spam',])
-    @patch('life.sui.print')
-    def test_update_ui_clear_empty_lines(self, mock_print, _):
-        """When called, Load.update_ui should update the UI for the
-        load state.
-        """
-        exp = [
-            call(loc.format(1, 1) + color.format(BG_GREEN) + 'spam'
-                 + color.format(BG_BLACK) + clr_eol),
-            call(loc.format(2, 1) + clr_eol),
-            call(loc.format(3, 1) + '\u2500' * 3),
-            call(loc.format(4, 1) + '(\u2191\u2192) Move, (\u23ce) Select, '
-                 + '(E)xit' + clr_eol.format(4, 10), end='', flush=True),
-        ]
-
-        state = self._make_load()
-        state.update_ui()
-        act = mock_print.mock_calls
-
-        self.assertListEqual(exp, act)
+# Fixtures for Load.
+@pt.fixture
+def load(grid, term):
+    """A :class:`Load` object for testing."""
+    load = sui.Load(grid, term)
+    load.files = ['spam', 'eggs', 'ham']
+    load.path = Path('tests/data')
+    return load
 
 
-class mainTestCase(ut.TestCase):
-    @patch('life.sui.print')
-    @patch('blessed.Terminal.cbreak')
-    @patch('blessed.Terminal.inkey')
-    def test_full_loop(self, mock_inkey, _, __):
-        """The main() loop should start and end the game of life."""
-        mock_inkey.side_effect = (' ', 'q')
-
-        # The test fails if the input above doesn't terminate the
-        # loop in main().
-        sui.main()
-
-
-class RuleTestCase(ut.TestCase):
-    def _make_rule(self):
-        return sui.Rule(life.Grid(3, 3), blessed.Terminal())
-
-    @patch('life.sui.print')
-    @patch('life.sui.input')
-    def _get_input_response(self, sym_input, mock_input, __):
-        state = self._make_rule()
-        mock_input.return_value = sym_input
-        act = state.input()
-        return act
-
-    def test__init__with_parameters(self):
-        """Rule.__init__() should accept given parameters and use them
-        as the initial values for the relevant attributes.
-        """
-        exp = {
-            'data': life.Grid(3, 3),
-            'term': blessed.Terminal(),
-        }
-        state = sui.Rule(**exp)
-        act = {
-            'data': state.data,
-            'term': state.term,
-        }
-        self.assertDictEqual(exp, act)
-
-    @patch('life.sui.print')
-    def test_cmd_change(self, _):
-        """When called, Rule.change() should change the rules of the
-        grid and return an sui.Core object with the grid and terminal
-        objects.
-        """
-        state = self._make_rule()
-        exp_class = sui.Core
-        exp_attrs = {
-            'data': state.data,
-            'term': state.term,
-            'rule': 'B3/S23'
-        }
-
-        act_obj = state.change(exp_attrs['rule'])
-        act_attrs = {
-            'data': act_obj.data,
-            'term': act_obj.term,
-            'rule': act_obj.data.rule
-        }
-
-        self.assertIsInstance(act_obj, exp_class)
-        self.assertDictEqual(exp_attrs, act_attrs)
-
-    @patch('life.sui.print')
-    def test_cmd_exit(self, _):
-        """When called, Rule.exit() should return a sui.Core
-        object populated with the grid and terminal objects
-        without changing the rules of the grid object.
-        """
-        state = self._make_rule()
-        exp_class = sui.Core
-        exp_attrs = {
-            'data': state.data,
-            'term': state.term,
-            'rule': state.data.rule,
-        }
-
-        act_obj = state.exit()
-        act_attrs = {
-            'data': act_obj.data,
-            'term': act_obj.term,
-            'rule': act_obj.data.rule,
-        }
-
-        self.assertIsInstance(act_obj, exp_class)
-        self.assertDictEqual(exp_attrs, act_attrs)
-
-    def test_input_change(self):
-        """When given a rule, Rule.input() should return the change
-        command and the given rule.
-        """
-        rule = 'B0/S0'
-        exp = ('change', rule)
-        act = self._get_input_response(rule)
-        self.assertTupleEqual(exp, act)
-
-    def test_input_exit(self):
-        """When given no rule, Rule.input() should return the exit
-        command.
-        """
-        exp = ('exit',)
-        act = self._get_input_response('')
-        self.assertTupleEqual(exp, act)
-
-    @patch('life.sui.print')
-    def test_update_ui(self, mock_print):
-        """Rule.update_ui() should redraw the UI for the rule state."""
-        state = self._make_rule()
-        exp = [
-            call(loc.format(1, 1) + '   '),
-            call(loc.format(2, 1) + '   '),
-            call(loc.format(3, 1) + '\u2500' * state.data.width),
-            call(loc.format(4, 1) + state.menu + clr_eol, end='', flush=True),
-        ]
-
-        state.update_ui()
-        act = mock_print.mock_calls
-
-        self.assertListEqual(exp, act)
+# Tests for Load initialization.
+def test_Load_init(grid, term):
+    """When given required parameters, :class:`Load` should return
+    an instance with attributes set to the given values. It should
+    also initialize the cursor position.
+    """
+    required = {
+        'data': grid,
+        'term': term,
+    }
+    obj = sui.Load(**required)
+    for attr in required:
+        assert getattr(obj, attr) is required[attr]
 
 
-class SaveTestCase(ut.TestCase):
-    def _make_save(self):
-        return sui.Save(life.Grid(3, 3), blessed.Terminal())
+# Tests for Load commands.
+def test_Load_down(load):
+    """When called, :meth:`Load.down` should add one to
+    :attr:`Load.selected`, rolling over if the number is
+    above the number of files, and return the parent object.
+    """
+    state = load.down()
+    assert state is load
+    assert load.selected == 1
 
-    def test__init__with_parameters(self):
-        """Save.__init__() should accept given parameters and use them
-        as the initial values for the relevant attributes.
-        """
-        exp = {
-            'data': life.Grid(3, 3),
-            'term': blessed.Terminal(),
-        }
-        state = sui.Save(**exp)
-        act = {
-            'data': state.data,
-            'term': state.term,
-        }
-        self.assertDictEqual(exp, act)
 
-    @patch('life.sui.open')
-    def test_cmd_save(self, mock_open):
-        """Given a filename, Save.save() should save the current grid
-        to a file and return a Core object.
-        """
-        exp_class = sui.Core
-        exp_calls = [
-            call('pattern/spam', 'w'),
-            call().__enter__(),
-            call().__enter__().write('X'),
-            call().__exit__(None, None, None),
-        ]
+def test_Load_exit(load):
+    """When called, :meth:`Load.exit` should return a :class:`Core`
+    object populated with the grid and terminal objects.
+    """
+    state = load.exit()
+    assert isinstance(state, sui.Core)
+    assert state.data == load.data
+    assert state.term == load.term
 
-        state = self._make_save()
-        state.data[1][1] = True
-        act_obj = state.save('spam')
-        act_calls = mock_open.mock_calls
 
-        self.assertIsInstance(act_obj, exp_class)
-        self.assertListEqual(exp_calls, act_calls)
+def test_Load_load(load):
+    """When called, :meth:`Load.load` should load the selected file
+    and return a :class:`Core` object.
+    """
+    state = load.load()
+    assert isinstance(state, sui.Core)
+    assert state.data is load.data
+    assert state.term is load.term
+    assert (load.data._data == np.array([
+        [0, 1, 0, 1],
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+    ], dtype=bool)).all()
 
-    @patch('life.sui.input', return_value='spam.txt')
-    @patch('life.sui.print')
-    def test_input(self, _, __):
-        """When called, Save.input() should get a file name from the
-        user and return the save command with the filename.
-        """
-        exp = ('save', 'spam.txt')
-        state = self._make_save()
-        act = state.input()
-        self.assertTupleEqual(exp, act)
 
-    @patch('life.sui.listdir', return_value=['spam', 'eggs'])
-    @patch('life.sui.print')
-    def test_update_ui(self, mock_print, _):
-        """When called, Save.update_ui should update the UI for the
-        save state.
-        """
-        exp = [
-            call(loc.format(1, 1) + 'spam' + clr_eol),
-            call(loc.format(2, 1) + 'eggs' + clr_eol),
-            call(loc.format(3, 1) + '\u2500' * 3),
-            call(loc.format(4, 1) + 'Enter name for save file.'
-                 + clr_eol.format(4, 10), end='', flush=True),
-        ]
+def test_Load_up(load):
+    """When called, :meth:`Load.up` should subtract one from
+    :attr:`Load.selected`, rolling over if the number is
+    above the number of files, and return the parent object.
+    If the select would go above the top of the list, roll
+    it around to the bottom of the list.
+    """
+    state = load.up()
+    assert state is load
+    assert load.selected == 2
 
-        state = self._make_save()
-        state.update_ui()
-        act = mock_print.mock_calls
 
-        self.assertListEqual(exp, act)
+# Tests for Load input.
+def test_Load_input(load):
+    """When given input, :meth:`Load.input` should return the expected
+    command string.
+    """
+    load.term.inkey.side_effect = [DOWN, 'e', '\n', UP]
+    assert load.input() == ('down',)
+    assert load.input() == ('exit',)
+    assert load.input() == ('load',)
+    assert load.input() == ('up',)
 
-    @patch('life.sui.listdir', return_value=['spam',])
-    @patch('life.sui.print')
-    def test_update_ui_clear_empty_lines(self, mock_print, _):
-        """When called, Save.update_ui should update the UI for the
-        save state.
-        """
-        exp = [
-            call(loc.format(1, 1) + 'spam' + clr_eol),
-            call(loc.format(2, 1) + clr_eol),
-            call(loc.format(3, 1) + '\u2500' * 3),
-            call(loc.format(4, 1) + 'Enter name for save file.'
-                 + clr_eol.format(4, 10), end='', flush=True),
-        ]
 
-        state = self._make_save()
-        state.update_ui()
-        act = mock_print.mock_calls
+# Tests for Load UI updates.
+def test_Load_update_ui(capsys, load, term):
+    """When called, :meth:`Load.update_ui` should draw the UI for
+    load mode.
+    """
+    load.update_ui()
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + term.on_green + '.snapshot.txt'
+        + term.on_black + term.clear_eol + '\n'
+        + term.move(1, 0) + 'spam' + term.clear_eol + '\n'
+        + term.move(2, 0) + '\u2500' * 4 + '\n'
+        + term.move(3, 0) + load.menu + term.clear_eol
+    )
 
-        self.assertListEqual(exp, act)
+
+# Fixtures for Rule.
+@pt.fixture
+def rule(grid, term):
+    """A :class:`Rule` object for testing."""
+    return sui.Rule(grid, term)
+
+
+# Tests for Rule initialization.
+def test_Rule_init(grid, term):
+    """When given required parameters, :class:`Rule` should return
+    an instance with attributes set to the given values. It should
+    also initialize the cursor position.
+    """
+    required = {
+        'data': grid,
+        'term': term,
+    }
+    obj = sui.Rule(**required)
+    for attr in required:
+        assert getattr(obj, attr) is required[attr]
+
+
+# Tests for Rule commands.
+def test_Rule_change(rule):
+    """When given a rule, :meth:`Rule.change` should change the rules
+    of the grid and return an :class:`Core` object with the grid and
+    terminal objects.
+    """
+    state = rule.change('B36/S23')
+    assert isinstance(state, sui.Core)
+    assert state.data is rule.data
+    assert state.term is rule.term
+    assert rule.data.rule == 'B36/S23'
+
+
+def test_Rule_exit(rule):
+    """When called, :meth:`Rule.exit` should return a :class:`Core`
+    object populated with the grid and terminal objects.
+    """
+    state = rule.exit()
+    assert isinstance(state, sui.Core)
+    assert state.data == rule.data
+    assert state.term == rule.term
+
+
+# Tests for Rule input.
+def test_Rule_input(mocker, rule):
+    """When given input, :meth:`Rule.input` should return the expected
+    command string.
+    """
+    mocker.patch('life.sui.input', side_effect=['B0/S0', ''])
+    assert rule.input() == ('change', 'B0/S0')
+    assert rule.input() == ('exit',)
+
+
+# Tests for Rule UI updates.
+def test_Rule_update_ui(capsys, rule, term):
+    """When called, :meth:`Rule.update_ui` should redraw the UI
+    for the rule state.
+    """
+    rule.update_ui()
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + ' ▀ ▀\n'
+        + term.move(1, 0) + ' ▀  \n'
+        + term.move(2, 0) + '\u2500' * 4 + '\n'
+        + term.move(3, 0) + rule.menu + term.clear_eol
+    )
+
+
+# Fixtures for Save tests.
+@pt.fixture
+def save(grid, term, tmp_path):
+    save = sui.Save(grid, term)
+    save.path = tmp_path
+    yield save
+
+
+# Tests for Save initialization.
+def test_Save_init(grid, term):
+    """When given required parameters, :class:`Save` should return
+    an instance with attributes set to the given values. It should
+    also initialize the cursor position.
+    """
+    required = {
+        'data': grid,
+        'term': term,
+    }
+    obj = sui.Rule(**required)
+    for attr in required:
+        assert getattr(obj, attr) is required[attr]
+
+
+# Tests for Save commands.
+def test_Save_save(save):
+    """Given a filename, :meth:`Save.save` should save the current
+    grid to a file and return a :class:`Core` object.
+    """
+    state = save.save('spam')
+    with open(save.path / 'spam') as fh:
+        saved = fh.read()
+    assert isinstance(state, sui.Core)
+    assert state.data is save.data
+    assert state.term is save.term
+    assert repr(saved) == repr(
+        'X.X\n'
+        '...\n'
+        'X..'
+    )
+
+
+# Tests for Save input.
+def test_Save_input(mocker, save):
+    """When given input, :meth:`Save.input` should return the expected
+    command string.
+    """
+    mocker.patch('life.sui.input', side_effect=['spam'])
+    assert save.input() == ('save', 'spam')
+
+
+# Tests for Save UI updates.
+def test_Save_update_ui(capsys, mocker, save, term):
+    """When called, :meth:`Save.update_ui` should redraw the UI
+    for the save state.
+    """
+    mocker.patch('life.sui.listdir', return_value=['spam', 'eggs'])
+    save.update_ui()
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + 'spam' + term.clear_eol + '\n'
+        + term.move(1, 0) + 'eggs' + term.clear_eol + '\n'
+        + term.move(2, 0) + '\u2500' * 4 + '\n'
+        + term.move(3, 0) + save.menu + term.clear_eol
+    )
+
+
+def test_Save_update_ui_clear_lines(capsys, mocker, save, term):
+    """When called, :meth:`Save.update_ui` should redraw the UI
+    for the save state.
+    """
+    mocker.patch('life.sui.listdir', return_value=['spam',])
+    save.update_ui()
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + 'spam' + term.clear_eol + '\n'
+        + term.move(1, 0) + term.clear_eol + '\n'
+        + term.move(2, 0) + '\u2500' * 4 + '\n'
+        + term.move(3, 0) + save.menu + term.clear_eol
+    )
 
 
 class StartTestCase(ut.TestCase):
@@ -1014,3 +863,16 @@ class StartTestCase(ut.TestCase):
         act = mock_print.mock_calls
 
         self._listeq(exp, act)
+
+
+class mainTestCase(ut.TestCase):
+    @patch('life.sui.print')
+    @patch('blessed.Terminal.cbreak')
+    @patch('blessed.Terminal.inkey')
+    def test_full_loop(self, mock_inkey, _, __):
+        """The main() loop should start and end the game of life."""
+        mock_inkey.side_effect = (' ', 'q')
+
+        # The test fails if the input above doesn't terminate the
+        # loop in main().
+        sui.main()
