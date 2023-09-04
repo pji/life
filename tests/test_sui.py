@@ -448,149 +448,72 @@ def test_Edit_snapshot(capsys, edit, tmpshot, term):
     )
 
 
-class EditTestCase(ut.TestCase):
-    def _make_edit(self):
-        return sui.Edit(life.Grid(3, 3), blessed.Terminal())
-
-    @patch('life.sui.print')
-    def _cmd_tests(self, exp_call, exp_row, exp_col, cmd, mock_print):
-        state = self._make_edit()
-        exp_return = state
-        exp_calls = [
-            call(loc.format(1, 1) + '   '),
-            call(loc.format(2, 1) + '   '),
-            exp_call,
-        ]
-
-        act_return = getattr(state, cmd)()
-        act_row = state.row
-        act_col = state.col
-        act_calls = mock_print.mock_calls
-
-        self.assertEqual(exp_return, act_return)
-        self.assertEqual(exp_row, act_row)
-        self.assertEqual(exp_col, act_col)
-        self.assertListEqual(exp_calls, act_calls)
-
-    @patch('blessed.Terminal.cbreak')
-    @patch('blessed.Terminal.inkey')
-    @patch('life.sui.print')
-    def _get_input_response(self, sym_input, mock_print, mock_inkey, _):
-        exp_calls = [
-            call(loc.format(5, 1) + '' + clr_eol, end='', flush=True),
-        ]
-
-        mock_inkey.return_value = sym_input
-        state = self._make_edit()
-        response = state.input()
-        act_calls = mock_print.mock_calls
-
-        self.assertListEqual(exp_calls, act_calls)
-        return response
-
-    def test_cmd_up(self):
-        """When called, Edit.up() should subtract one from the row,
-        redraw the status, redraw the cursor, and return the Edit
-        state.
-        """
-        exp_call = call(loc.format(1, 2) + color.format(FG_GREEN) + '\u2580'
-                        + color.format(FG_BWHITE) + color.format(BG_BLACK))
-        exp_row = 0
-        exp_col = 1
-        cmd = 'up'
-        self._cmd_tests(exp_call, exp_row, exp_col, cmd)
-
-    def test_input_down(self):
-        """Edit.input() should return the down command when the down
-        key is pressed.
-        """
-        exp = ('down',)
-        act = self._get_input_response(DOWN)
-        self.assertTupleEqual(exp, act)
-
-    def test_input_exit(self):
-        """Edit.input() should return the exit command when the 'e'
-        key is pressed.
-        """
-        exp = ('exit',)
-        act = self._get_input_response('e')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_flip(self):
-        """Edit.input() should return the flip command when the space
-        bar is pressed.
-        """
-        exp = ('flip',)
-        act = self._get_input_response(' ')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_left(self):
-        """Edit.input() should return the left command when the left
-        key is pressed.
-        """
-        exp = ('left',)
-        act = self._get_input_response(LEFT)
-        self.assertTupleEqual(exp, act)
-
-    def test_input_restore(self):
-        """Edit.restore() should return the restore command when the
-        r key is pressed.
-        """
-        exp = ('restore',)
-        act = self._get_input_response('r')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_right(self):
-        """Edit.input() should return the right command when the right
-        key is pressed.
-        """
-        exp = ('right',)
-        act = self._get_input_response(RIGHT)
-        self.assertTupleEqual(exp, act)
-
-    def test_input_snapshot(self):
-        """Edit.snapshot() should return the snapshot command when the
-        s key is pressed.
-        """
-        exp = ('snapshot',)
-        act = self._get_input_response('s')
-        self.assertTupleEqual(exp, act)
-
-    def test_input_up(self):
-        """Edit.input() should return the up command when the up
-        key is pressed.
-        """
-        exp = ('up',)
-        act = self._get_input_response(UP)
-        self.assertTupleEqual(exp, act)
-
-    @patch('life.sui.print')
-    def test_update_ui(self, mock_print):
-        """When called, Edit.update_ui should draw the UI for edit
-        mode.
-        """
-        state = self._make_edit()
-        exp = [
-            call(loc.format(1, 1) + '   '),
-            call(loc.format(2, 1) + '   '),
-            call(loc.format(3, 1) + '\u2500' * state.data.width),
-            call(loc.format(4, 1) + state.menu + clr_eol, end='', flush=True),
-            call(loc.format(1, 2) + color.format(FG_GREEN) + '\u2584'
-                 + color.format(FG_BWHITE) + color.format(BG_BLACK)),
-        ]
-
-        state.update_ui()
-        act = mock_print.mock_calls
-
-        self.assertListEqual(exp, act)
+def test_Edit_up(capsys, edit, term):
+    """When called, :meth:`Edit.up` should add one to the row, redraw
+    the status, redraw the cursor, and return its parent object.
+    """
+    state = edit.up()
+    captured = capsys.readouterr()
+    assert state is edit
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + ' ▀ ▀\n'
+        + term.move(1, 0) + ' ▀  \n'
+        + term.move(0, 2) + term.green + '\u2580'
+        + term.bright_white_on_black + '\n'
+    )
 
 
-class EndTestCase(ut.TestCase):
-    def test_init_without_parameters(self):
-        """End.__init__() should not require parameters."""
-        exp = sui.End
-        act = exp()
-        self.assertIsInstance(act, exp)
+# Tests for Edit input.
+def test_Edit_input(edit):
+    """When given input, :meth:`Edit.input` should return the expected
+    command string.
+    """
+    edit.term.inkey.side_effect = [
+        DOWN,
+        'e',
+        ' ',
+        LEFT,
+        'r',
+        RIGHT,
+        's',
+        UP,
+    ]
+    assert edit.input() == ('down',)
+    assert edit.input() == ('exit',)
+    assert edit.input() == ('flip',)
+    assert edit.input() == ('left',)
+    assert edit.input() == ('restore',)
+    assert edit.input() == ('right',)
+    assert edit.input() == ('snapshot',)
+    assert edit.input() == ('up',)
+
+
+# Tests for Edit UI updates.
+def test_Edit_update_ui(capsys, edit, term):
+    """When called, :meth:`Edit.update_ui` should draw the UI for
+    edit mode.
+    """
+    edit.update_ui()
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + ' ▀ ▀\n'
+        + term.move(1, 0) + ' ▀  \n'
+        + term.move(2, 0) + '\u2500' * 4 + '\n'
+        + term.move(3, 0) + edit.menu + term.clear_eol
+        + term.move(0, 2) + term.green + '\u2584'
+        + term.bright_white_on_black + '\n'
+    )
+
+
+# Test for End initialization.
+def test_Edit_init(grid, term):
+    """When given required parameters, :class:`End` should return
+    an instance with attributes set to the given values.
+    """
+    required = {}
+    obj = sui.End(**required)
+    for attr in required:
+        assert getattr(obj, attr) is required[attr]
 
 
 class LoadTestCase(ut.TestCase):
