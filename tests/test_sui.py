@@ -538,6 +538,17 @@ def test_Load_exit(load):
     assert state.term == load.term
 
 
+def test_Load_file(load):
+    """When called, :meth:`Load.file` should return a :class:`Load`
+    object pointed at the current working directory.
+    """
+    state = load.file()
+    assert isinstance(state, sui.Load)
+    assert state.data is load.data
+    assert state.term is load.term
+    assert state.path == Path.cwd()
+
+
 def test_Load_load(load):
     """When called, :meth:`Load.load` should load the selected file
     and return a :class:`Core` object.
@@ -551,6 +562,19 @@ def test_Load_load(load):
         [1, 0, 1, 0],
         [0, 1, 0, 1],
     ], dtype=bool)).all()
+
+
+def test_Load_load_directory(load):
+    """When called with a directory selected, :meth:`Load.load` should
+    load the selected directory in :class:`Load` object and return it.
+    """
+    load.path = Path('tests')
+    load._get_files()
+    state = load.load()
+    assert isinstance(state, sui.Load)
+    assert state.data is load.data
+    assert state.term is load.term
+    assert state.path == Path('tests/data')
 
 
 def test_Load_up(load):
@@ -570,9 +594,10 @@ def test_Load_input(load):
     """When given input, :meth:`Load.input` should return the expected
     command string.
     """
-    load.term.inkey.side_effect = [DOWN, 'e', '\n', UP]
+    load.term.inkey.side_effect = [DOWN, 'e', 'f', '\n', UP]
     assert load.input() == ('down',)
     assert load.input() == ('exit',)
+    assert load.input() == ('file',)
     assert load.input() == ('load',)
     assert load.input() == ('up',)
 

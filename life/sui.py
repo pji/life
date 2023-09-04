@@ -9,7 +9,7 @@ from copy import deepcopy
 from importlib.resources import files
 from pathlib import Path
 from time import sleep
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Sequence, Union
 
 import numpy as np
 from blessed import Terminal
@@ -366,9 +366,10 @@ class Load(State):
         DOWN: 'down',
         UP: 'up',
         'e': 'exit',
+        'f': 'file',
         '\n': 'load',
     }
-    menu = '(\u2191\u2192) Move, (\u23ce) Select, (E)xit'
+    menu = '(\u2191\u2192) Move, (\u23ce) Select, (E)xit, (F)rom file'
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -377,15 +378,16 @@ class Load(State):
         self.selected = 0
 
     def _draw_state(self):
-        """List the files available to be loaded."""
+        """Display the files available to be loaded."""
         height = self.data.height // 2
         if self.data.height % 2:
             height += 1
 
-        self.files = sorted(path for path in self.path.iterdir())
-        for index, path in enumerate(self.files):
-            path = Path(path)
-            name = path.name
+        self._get_files()
+        for index, name in enumerate(self.files):
+            path = self.path / name
+            if path.is_dir():
+                name = '\u25b8 ' + name
             if index == self.selected:
                 name = self.term.on_green + name + self.term.normal
             print(self.term.move(index, 0) + name + self.term.clear_eol)
@@ -393,6 +395,13 @@ class Load(State):
         if len(self.files) < height:
             for y in range(len(self.files), height):
                 print(self.term.move(y, 0) + self.term.clear_eol)
+
+    def _get_files(self):
+        """List the files available to be loaded."""
+        files = sorted(path.name for path in self.path.iterdir())
+        self.files = [
+            name for name in files if not name.startswith('__')
+        ]
 
     def _normalize_loaded_text(
         self,
@@ -427,12 +436,26 @@ class Load(State):
         """Command method. Exit load state."""
         return Core(self.data, self.term)
 
-    def load(self, filename: Optional[str | Path] = None) -> 'Core':
+    def file(self, path: Path = Path.cwd()) -> 'Load':
+        """Command method. Select from files in the current working
+        directory.
+        """
+        self.path = path
+        return self
+
+    def load(
+        self, filename: Optional[str | Path] = None
+    ) -> Union['Core', 'Load']:
         """Load the selected file and return to core state."""
         if filename is None:
             filename = self.path / self.files[self.selected]
         filename = Path(filename)
-        if filename.exists():
+
+        if filename.is_dir():
+            self.path = filename
+            return self
+
+        elif filename.exists():
             with open(filename, 'r') as fh:
                 raw = fh.readlines()
             normal = self._normalize_loaded_text(raw)
@@ -577,7 +600,8 @@ class Start(State):
             data = Grid(term.width, (term.height - 3) * 2)
             load = Load(data, term)
             pattern = files(life.pattern)
-            load.load(pattern / 'title.txt')
+            path = Path(str(pattern))
+            load.load(path / 'title.txt')
         super().__init__(data, term)
 
     def input(self) -> _Command:
