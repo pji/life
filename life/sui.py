@@ -5,14 +5,16 @@ sui
 The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
-from pathlib import Path
 from copy import deepcopy
+from importlib.resources import files
+from pathlib import Path
 from time import sleep
 from typing import Any, List, Optional, Sequence
 
 import numpy as np
 from blessed import Terminal
 
+import life.pattern
 from life.life import Grid
 
 
@@ -367,9 +369,12 @@ class Load(State):
         '\n': 'load',
     }
     menu = '(\u2191\u2192) Move, (\u23ce) Select, (E)xit'
-    path = PATTERNS
-    files: list[Any] = []
-    selected = 0
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.files: list[Any] = []
+        self.path = files(life.pattern)
+        self.selected = 0
 
     def _draw_state(self):
         """List the files available to be loaded."""
@@ -481,7 +486,7 @@ class Rule(State):
 class Save(State):
     """The state for saving the grid state to a file."""
     menu = 'Enter name for save file.'
-    path = Path('pattern/')
+    path = Path('')
 
     def _draw_state(self):
         """List the files available to be loaded."""

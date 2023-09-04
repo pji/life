@@ -10,3 +10,7 @@ pattern/.snapshot.txt
 
 # Ignore the virtual environment
 .venv
+
+# Ignore build files
+dist
+life.egg-info

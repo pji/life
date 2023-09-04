@@ -35,5 +35,8 @@ dependencies = [
 "Documentation" = "https://github.com/pji/life"
 "Source" = "https://github.com/pji/life"
 
+[tool.setuptools.package-data]
+life = ['pattern/*',]
+
 [project.scripts]
-charex = "life.__main__:main"
+life = "life.__main__:main"
