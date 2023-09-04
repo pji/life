@@ -6,7 +6,6 @@ The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
 from pathlib import Path
-from os import listdir
 from copy import deepcopy
 from time import sleep
 from typing import Any, List, Optional, Sequence
@@ -237,6 +236,7 @@ class Edit(State):
         super().__init__(data, term)
         self.row = self.data.height // 2
         self.col = self.data.width // 2
+        self.path = Path('.snapshot.txt')
 
     def _draw_cursor(self):
         """Display the cursor in the state UI."""
@@ -320,14 +320,14 @@ class Edit(State):
     def restore(self) -> 'Edit':
         """Restore the snapshot grid state."""
         load = Load(self.data, self.term)
-        load.load(SNAPSHOT)
+        load.load(self.path)
         return self
 
     def snapshot(self) -> 'Edit':
         """Save the current grid state as a snapshot."""
         self._draw_prompt('Saving...')
         save = Save(self.data, self.term)
-        save.save(SNAPSHOT)
+        save.save(self.path)
         return self
 
     def up(self) -> 'Edit':
@@ -377,11 +377,12 @@ class Load(State):
         if self.data.height % 2:
             height += 1
 
-        self.files = sorted(listdir(self.path))
-        for index in range(len(self.files)):
-            name = self.files[index]
+        self.files = sorted(path for path in self.path.iterdir())
+        for index, path in enumerate(self.files):
+            path = Path(path)
+            name = path.name
             if index == self.selected:
-                name = self.term.on_green + name + self.term.on_black
+                name = self.term.on_green + name + self.term.normal
             print(self.term.move(index, 0) + name + self.term.clear_eol)
 
         if len(self.files) < height:
@@ -421,14 +422,16 @@ class Load(State):
         """Command method. Exit load state."""
         return Core(self.data, self.term)
 
-    def load(self, filename: Optional[str] = None) -> 'Core':
+    def load(self, filename: Optional[str | Path] = None) -> 'Core':
         """Load the selected file and return to core state."""
         if filename is None:
             filename = self.path / self.files[self.selected]
-        with open(filename, 'r') as fh:
-            raw = fh.readlines()
-        normal = self._normalize_loaded_text(raw)
-        self.data.replace(normal)
+        filename = Path(filename)
+        if filename.exists():
+            with open(filename, 'r') as fh:
+                raw = fh.readlines()
+            normal = self._normalize_loaded_text(raw)
+            self.data.replace(normal)
         return Core(self.data, self.term)
 
     def up(self) -> 'Load':
@@ -486,9 +489,10 @@ class Save(State):
         if self.data.height % 2:
             height += 1
 
-        self.files = listdir(self.path)
-        for index in range(len(self.files)):
-            name = self.files[index]
+        self.files = sorted(path for path in self.path.iterdir())
+        for index, path in enumerate(self.files):
+            path = Path(path)
+            name = path.name
             print(self.term.move(index, 0) + name + self.term.clear_eol)
 
         if len(self.files) < height:

@@ -6,13 +6,13 @@ Mainline for :mod:`life`.
 """
 import traceback as tb
 
-from life import sui
+from life import main
 
 
 try:
-    sui.main()
+    main()
 except Exception as ex:
-    with open('exception.log', 'w') as fh:
+    with open('exception.log', 'a') as fh:
         fh.write(str(type(ex)) + '\n')
         fh.write(str(ex.args) + '\n')
         tb_str = ''.join(tb.format_tb(ex.__traceback__))

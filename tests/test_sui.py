@@ -16,36 +16,11 @@ from life import life
 from life import sui
 
 
-# Terminal colors.
-BG_BLACK = 40
-BG_GREEN = 42
-FG_GREEN = 32
-FG_BGREEN = 92
-FG_BWHITE = 97
-
 # Terminal keys:
 DOWN = '\x1b[B'
 UP = '\x1b[A'
 LEFT = '\x1b[D'
 RIGHT = '\x1b[C'
-
-# Terminal control sequence templates.
-term_ = blessed.Terminal()
-clr_eol = term_.clear_eol
-
-
-class color:
-    @classmethod
-    def format(cls, n):
-        if term_.green:
-            return '\x1b[{}m'.format(n)
-        return ''
-
-
-class loc:
-    @classmethod
-    def format(cls, y, x):
-        return term_.move(y - 1, x - 1)
 
 
 # Common fixtures.
@@ -300,27 +275,11 @@ def test_Core_update_ui(capsys, core, term):
 
 # Fixtures for Edit.
 @pt.fixture
-def edit(grid, term):
+def edit(grid, term, tmp_path):
     """An :class:`Edit` object for testing."""
-    return sui.Edit(grid, term)
-
-
-@pt.fixture
-def snapshot():
-    old_value = sui.SNAPSHOT
-    sui.SNAPSHOT = 'tests/data/.snapshot.txt'
-    yield sui.SNAPSHOT
-    sui.SNAPSHOT = old_value
-
-
-@pt.fixture
-def tmpshot(tmp_path):
-    """A temporary directory for the snapshot file."""
-    path = tmp_path / '.snapshot.txt'
-    old_value = sui.SNAPSHOT
-    sui.SNAPSHOT = path
-    yield path
-    sui.SNAPSHOT = old_value
+    edit = sui.Edit(grid, term)
+    edit.path = tmp_path / '.snapshot.txt'
+    yield edit
 
 
 # Tests for Edit initialization.
@@ -417,10 +376,11 @@ def test_Edit_right(capsys, edit, term):
     )
 
 
-def test_Edit_restore(edit, snapshot, term):
+def test_Edit_restore(edit, term):
     """When called, :meth:`Edit.restore` should load the snapshot file
     and return the parent object.
     """
+    edit.path = Path('tests/data/.snapshot.txt')
     state = edit.restore()
     assert state is edit
     assert (edit.data._data == np.array([
@@ -430,12 +390,27 @@ def test_Edit_restore(edit, snapshot, term):
     ], dtype=bool)).all()
 
 
-def test_Edit_snapshot(capsys, edit, tmpshot, term):
+def test_Edit_restore_no_snapshot(edit, term, tmp_path):
+    """When called, :meth:`Edit.restore` should load the snapshot file
+    and return the parent object. If there is no snapshot, do not change
+    the grid.
+    """
+    edit.path = tmp_path / '.snapshot.txt'
+    state = edit.restore()
+    assert state is edit
+    assert (edit.data._data == np.array([
+        [0, 1, 0, 1],
+        [0, 0, 0, 0],
+        [0, 1, 0, 0],
+    ], dtype=bool)).all()
+
+
+def test_Edit_snapshot(capsys, edit, term):
     """When called, :meth:`Edit.snapshot` should write the grid to
     the snapshot file and return the parent object.
     """
     state = edit.snapshot()
-    with open(tmpshot) as fh:
+    with open(edit.path) as fh:
         saved = fh.read()
     captured = capsys.readouterr()
     assert state is edit
@@ -611,7 +586,7 @@ def test_Load_update_ui(capsys, load, term):
     captured = capsys.readouterr()
     assert repr(captured.out) == repr(
         term.move(0, 0) + term.on_green + '.snapshot.txt'
-        + term.on_black + term.clear_eol + '\n'
+        + term.normal + term.clear_eol + '\n'
         + term.move(1, 0) + 'spam' + term.clear_eol + '\n'
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + load.menu + term.clear_eol
@@ -743,12 +718,12 @@ def test_Save_update_ui(capsys, mocker, save, term):
     """When called, :meth:`Save.update_ui` should redraw the UI
     for the save state.
     """
-    mocker.patch('life.sui.listdir', return_value=['spam', 'eggs'])
+    mocker.patch('pathlib.Path.iterdir', return_value=['spam', 'eggs'])
     save.update_ui()
     captured = capsys.readouterr()
     assert repr(captured.out) == repr(
-        term.move(0, 0) + 'spam' + term.clear_eol + '\n'
-        + term.move(1, 0) + 'eggs' + term.clear_eol + '\n'
+        term.move(0, 0) + 'eggs' + term.clear_eol + '\n'
+        + term.move(1, 0) + 'spam' + term.clear_eol + '\n'
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + save.menu + term.clear_eol
     )
@@ -758,7 +733,7 @@ def test_Save_update_ui_clear_lines(capsys, mocker, save, term):
     """When called, :meth:`Save.update_ui` should redraw the UI
     for the save state.
     """
-    mocker.patch('life.sui.listdir', return_value=['spam',])
+    mocker.patch('pathlib.Path.iterdir', return_value=['spam',])
     save.update_ui()
     captured = capsys.readouterr()
     assert repr(captured.out) == repr(

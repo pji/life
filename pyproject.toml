@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.rstcheck]
+report_level = "WARNING"
+ignore_directives = ["autoclass", "autofunction"]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+
+[project]
+name = "life"
+version = "0.1.0"
+authors = [
+    {name="Paul J. Iutzi", email="pji@mac.com"},
+]
+description = "Another implementation of Conway's Game of Life."
+readme = "README.rst"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    'numpy',
+    'blessed',
+]
+
+[project.urls]
+"Homepage" = "https://github.com/pji/life"
+"Documentation" = "https://github.com/pji/life"
+"Source" = "https://github.com/pji/life"
+
+[project.scripts]
+charex = "life.__main__:main"
