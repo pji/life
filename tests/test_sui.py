@@ -706,7 +706,7 @@ def test_Save_init(grid, term):
         'data': grid,
         'term': term,
     }
-    obj = sui.Rule(**required)
+    obj = sui.Start(**required)
     for attr in required:
         assert getattr(obj, attr) is required[attr]
 
@@ -769,110 +769,78 @@ def test_Save_update_ui_clear_lines(capsys, mocker, save, term):
     )
 
 
-class StartTestCase(ut.TestCase):
-    def _dicteq(self, expected, actual):
-        self.assertDictEqual(expected, actual)
-
-    def _listeq(self, expected, actual):
-        self.assertListEqual(expected, actual)
-
-    def test_init_without_parameters(self):
-        """Start.__init__() should create default attribute values
-        if no parameters are passed to it.
-        """
-        exp = {
-            'data': life.Grid,
-            'term': blessed.Terminal,
-        }
-        state = sui.Start()
-        act = {
-            'data': type(state.data),
-            'term': type(state.term),
-        }
-        self._dicteq(exp, act)
-
-    def test_init_with_parameters(self):
-        """Start.__init__() should set the given parameters, as
-        the initial attribute values.
-        """
-        exp = {
-            'data': life.Grid(3, 3),
-            'term': blessed.Terminal(),
-        }
-        state = sui.Start(**exp)
-        act = {
-            'data': state.data,
-            'term': state.term,
-        }
-        self._dicteq(exp, act)
-
-    @patch('blessed.Terminal.cbreak')
-    @patch('blessed.Terminal.inkey', return_value=' ')
-    @patch('life.sui.print')
-    def test_input(self, mock_print, _, __):
-        """Start.input() should return the run command if any key is
-        pressed."""
-        term = blessed.Terminal()
-        exp = ('run',)
-        exp_calls = [
-            call(loc.format(term.height, 1) + 'Press any key to continue.'
-                 + clr_eol, end='', flush=True),
-        ]
-
-        state = sui.Start()
-        act = state.input()
-        act_calls = mock_print.mock_calls
-
-        self.assertTupleEqual(exp, act)
-        self.assertListEqual(exp_calls, act_calls)
-
-    def test_run(self):
-        """Start.run() should always return a Core object
-        initialized with the Start object's grid and term.
-        """
-        exp_class = sui.Core
-        exp_attrs = {
-            'data': life.Grid(3, 3),
-            'term': blessed.Terminal(),
-        }
-
-        state = sui.Start(**exp_attrs)
-        act = state.run()
-        act_attrs = {
-            'data': act.data,
-            'term': act.term,
-        }
-
-        self.assertIsInstance(act, exp_class)
-        self.assertDictEqual(exp_attrs, act_attrs)
-
-    @patch('life.sui.print')
-    def test_update_ui(self, mock_print):
-        """Start.update_ui() should draw the initial UI."""
-        data = life.Grid(3, 3)
-        term = blessed.Terminal()
-        state = sui.Start(data, term)
-        exp = [
-            call(loc.format(1, 1) + '   '),
-            call(loc.format(2, 1) + '   '),
-            call(loc.format(3, 1) + '\u2500' * data.width),
-            call(loc.format(4, 1) + state.menu + clr_eol, end='', flush=True),
-        ]
-
-        state.update_ui()
-        act = mock_print.mock_calls
-
-        self._listeq(exp, act)
+# Fixtures for Start.
+@pt.fixture
+def start(grid, term):
+    """A :class:`Start` object for testing."""
+    start = sui.Start(grid, term)
+    return start
 
 
-class mainTestCase(ut.TestCase):
-    @patch('life.sui.print')
-    @patch('blessed.Terminal.cbreak')
-    @patch('blessed.Terminal.inkey')
-    def test_full_loop(self, mock_inkey, _, __):
-        """The main() loop should start and end the game of life."""
-        mock_inkey.side_effect = (' ', 'q')
+# Tests for Start initialization.
+def test_Start_init_default(term):
+    """Given no parameters, :class:`Start` should initialize an
+    instance of itself using default attribute values.
+    """
+    start = sui.Start()
+    assert start.data.width == term.width
+    assert start.data.height == (term.height - 3) * 2
+    assert isinstance(start.term, blessed.Terminal)
 
-        # The test fails if the input above doesn't terminate the
-        # loop in main().
-        sui.main()
+
+def test_Start_init_optionals(grid, term):
+    """When given optional parameters, :class:`Start` should return
+    an instance with attributes set to the given values. It should
+    also initialize the cursor position.
+    """
+    optionals = {
+        'data': grid,
+        'term': term,
+    }
+    obj = sui.Start(**optionals)
+    for attr in optionals:
+        assert getattr(obj, attr) is optionals[attr]
+
+
+# Tests for Start commands.
+def test_Start_run(start):
+    """When called, :meth:`Start.run` should always return a
+    :class:`Core` object initialized with the parent object's
+    grid and term.
+    """
+    state = start.run()
+    assert isinstance(state, sui.Core)
+    assert state.data is start.data
+    assert state.term is start.term
+
+
+# Tests for Start input.
+def test_Start_input(capsys, start, term):
+    """When valid given input, :meth:`Start.input` should return the
+    expected command string.
+    """
+    start.term.inkey.side_effect = ' '
+    captured = capsys.readouterr()
+    assert start.input() == ('run',)
+
+
+# Tests for Start UI updates.
+def test_Start_update_ui(capsys, start, term):
+    """When called, :meth:`Start.update_ui` should redraw the UI
+    for the start state.
+    """
+    start.update_ui()
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + ' ▀ ▀\n'
+        + term.move(1, 0) + ' ▀  \n'
+        + term.move(2, 0) + '\u2500' * 4 + '\n'
+        + term.move(3, 0) + start.menu + term.clear_eol
+    )
+
+
+# Tests for main.
+def test_main_simple_loop(mocker):
+    """The :funct:`main` loop should start and end a game of life."""
+    mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
+    sui.main()

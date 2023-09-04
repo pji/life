@@ -527,14 +527,14 @@ class Save(State):
         filename = input(self.term.move(y, 0) + '> ')
         return ('save', filename)
 
-    def save(self, filename:str) -> 'Core':
+    def save(self, filename: str | Path) -> 'Core':
         """Save the current grid state to a file.
 
         :param filename: The name of the file to save.
         """
         grid_ = deepcopy(self.data)
         grid_._data = np.array(self._remove_padding(grid_._data), dtype=bool)
-        path = filename
+        path = Path(filename)
         if '/' not in str(filename):
             path = self.path / filename
         with open(path, 'w') as fh:
