@@ -565,13 +565,15 @@ def test_Load_load_directory(load):
     """When called with a directory selected, :meth:`Load.load` should
     load the selected directory in :class:`Load` object and return it.
     """
-    load.path = Path('tests')
+    load.path = Path('tests/data')
     load._get_files()
+    load.selected = -1
     state = load.load()
     assert isinstance(state, sui.Load)
     assert state.data is load.data
     assert state.term is load.term
-    assert state.path == Path('tests/data')
+    assert state.path == Path('tests/data/zeggs')
+    assert state.selected == 0
 
 
 def test_Load_up(load):
@@ -607,9 +609,11 @@ def test_Load_update_ui(capsys, load, term):
     load.update_ui()
     captured = capsys.readouterr()
     assert repr(captured.out) == repr(
-        term.move(0, 0) + term.on_green + '.snapshot.txt'
+        term.move(0, 0) + term.on_green + '▸ ..'
         + term.normal + term.clear_eol + '\n'
-        + term.move(1, 0) + 'spam' + term.clear_eol + '\n'
+        + term.move(1, 0) + '.snapshot.txt' + term.clear_eol + '\n'
+        + term.move(2, 0) + 'spam' + term.clear_eol + '\n'
+        + term.move(3, 0) + '▸ zeggs' + term.clear_eol + '\n'
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + load.menu + term.clear_eol
     )

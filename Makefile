@@ -13,6 +13,7 @@ clean:
 	rm -rf tests/*.pyc
 	rm -rf life/__pycache__
 	rm -rf life/*.pyc
+	rm -rf life/pattern/__pycache__
 	rm -f *.log
 	rm -f *.json
 

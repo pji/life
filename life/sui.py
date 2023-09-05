@@ -6,10 +6,11 @@ The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from importlib.abc import Traversable
 from importlib.resources import files
 from pathlib import Path
 from time import sleep
-from typing import Any, List, Optional, Sequence, Union
+from typing import Any, List, Sequence, Union
 
 import numpy as np
 from blessed import Terminal
@@ -18,21 +19,14 @@ import life.pattern
 from life.life import Grid
 
 
-# Complex type aliases for type hints. See the following for more info:
-# https://docs.python.org/3/library/typing.html
-_ArgList = Sequence[Any]
-_Command = Any
+# Types.
+Command = tuple[str] | tuple[str, str]
 
 # Useful terminal escape sequences:
 DOWN = '\x1b[B'
 UP = '\x1b[A'
 LEFT = '\x1b[D'
 RIGHT = '\x1b[C'
-
-
-# File paths.
-PATTERNS = Path('pattern')
-SNAPSHOT = '.snapshot.txt'
 
 
 # Base class.
@@ -95,7 +89,7 @@ class State(ABC):
         y = -(self.data.height // -2)
         print(self.term.move(y, 0) + '\u2500' * width)
 
-    def input(self) -> _Command:
+    def input(self) -> Command:
         """Get and handle input from the user."""
         cmd = None
         prompt = ''
@@ -125,7 +119,7 @@ class Autorun(State):
         """Exit autorun state."""
         return Core(self.data, self.term)
 
-    def input(self) -> _Command:
+    def input(self) -> Command:
         """Get and handle input from the user."""
         cmd = 'run'
         with self.term.cbreak():
@@ -136,7 +130,7 @@ class Autorun(State):
 
     def run(self) -> 'Autorun':
         """Advance the generation of the grid."""
-        self.data.next_generation()
+        self.data.tick()
         return self
 
     def update_ui(self):
@@ -191,7 +185,7 @@ class Core(State):
 
     def next(self) -> 'Core':
         """Command method. Run the next generation of the grid."""
-        self.data.next_generation()
+        self.data.tick()
         return self
 
     def quit(self) -> 'End':
@@ -373,7 +367,7 @@ class Load(State):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.files: list[Any] = []
+        self.files: list[str] = []
         self.path = files(life.pattern)
         self.selected = 0
 
@@ -402,6 +396,7 @@ class Load(State):
         self.files = [
             name for name in files if not name.startswith('__')
         ]
+        self.files.insert(0, '..')
 
     def _normalize_loaded_text(
         self,
@@ -444,15 +439,18 @@ class Load(State):
         return self
 
     def load(
-        self, filename: Optional[str | Path] = None
+        self, filename: str | Path | Traversable | None = None
     ) -> Union['Core', 'Load']:
         """Load the selected file and return to core state."""
         if filename is None:
             filename = self.path / self.files[self.selected]
+        if isinstance(filename, Traversable):
+            filename = str(filename)
         filename = Path(filename)
 
         if filename.is_dir():
             self.path = filename
+            self.selected = 0
             return self
 
         elif filename.exists():
@@ -491,7 +489,7 @@ class Rule(State):
         """Exit rule state."""
         return Core(self.data, self.term)
 
-    def input(self) -> _Command:
+    def input(self) -> Command:
         """Get a rule from the user."""
         y = self.data.height + 2
         rule = input(self.term.move(y, 0) + '> ')
@@ -553,7 +551,7 @@ class Save(State):
 
         return [row[x_start:x_end] for row in data[y_start:y_end]]
 
-    def input(self) -> _Command:
+    def input(self) -> Command:
         """Get a file name from the user."""
         y = self.data.height + 2
         filename = input(self.term.move(y, 0) + '> ')
@@ -604,7 +602,7 @@ class Start(State):
             load.load(path / 'title.txt')
         super().__init__(data, term)
 
-    def input(self) -> _Command:
+    def input(self) -> Command:
         """Return a Core object."""
         self._draw_prompt(self.prompt)
         with self.term.cbreak():

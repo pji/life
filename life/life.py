@@ -9,6 +9,7 @@ from collections.abc import Iterator, Sequence
 from itertools import chain, product
 
 import numpy as np
+from numpy.typing import NDArray
 
 from life import util
 
@@ -29,7 +30,7 @@ class Grid:
 
     # Class methods.
     @classmethod
-    def from_array(cls, a: np.ndarray, rule: str = 'B3/S23') -> 'Grid':
+    def from_array(cls, a: NDArray[np.bool_], rule: str = 'B3/S23') -> 'Grid':
         """Build a new :class:`Grid` from a :class:`numpy.ndarray`."""
         height, width = a.shape
         grid = cls(width, height, rule)
@@ -135,7 +136,7 @@ class Grid:
     def __getitem__(self, key) -> bool:
         return self._data.__getitem__(key)
 
-    def __iter__(self) -> Iterator[np.ndarray]:
+    def __iter__(self) -> Iterator[NDArray[np.bool_]]:
         while True:
             self.tick()
             yield self._data
@@ -143,7 +144,7 @@ class Grid:
     def __len__(self) -> int:
         return len(self._data)
 
-    def __reversed__(self) -> Iterator:
+    def __reversed__(self) -> Iterator[NDArray[np.bool_]]:
         a = self._data.copy()
         a = np.flip(a, axis=0)
         a = np.flip(a, axis=1)
@@ -173,10 +174,6 @@ class Grid:
         """
         value = (self._data[y][x] + 1) % 2
         self._data[y][x] = value
-
-    def next_generation(self) -> None:
-        """Alias for :meth:`Grid.tick` for backwards compatibility."""
-        self.tick()
 
     def randomize(self) -> None:
         """Randomize the values of the grid."""
