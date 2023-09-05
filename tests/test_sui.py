@@ -567,7 +567,7 @@ def test_Load_load_directory(load):
     """
     load.path = Path('tests/data')
     load._get_files()
-    load.selected = -1
+    load.selected = 1
     state = load.load()
     assert isinstance(state, sui.Load)
     assert state.data is load.data
@@ -611,9 +611,9 @@ def test_Load_update_ui(capsys, load, term):
     assert repr(captured.out) == repr(
         term.move(0, 0) + term.on_green + '▸ ..'
         + term.normal + term.clear_eol + '\n'
-        + term.move(1, 0) + '.snapshot.txt' + term.clear_eol + '\n'
-        + term.move(2, 0) + 'spam' + term.clear_eol + '\n'
-        + term.move(3, 0) + '▸ zeggs' + term.clear_eol + '\n'
+        + term.move(1, 0) + '▸ zeggs' + term.clear_eol + '\n'
+        + term.move(2, 0) + '.snapshot.txt' + term.clear_eol + '\n'
+        + term.move(3, 0) + 'spam' + term.clear_eol + '\n'
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + load.menu + term.clear_eol
     )

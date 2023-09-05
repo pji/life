@@ -392,10 +392,17 @@ class Load(State):
 
     def _get_files(self):
         """List the files available to be loaded."""
-        files = sorted(path.name for path in self.path.iterdir())
-        self.files = [
-            name for name in files if not name.startswith('__')
-        ]
+        files = sorted(
+            path.name for path in self.path.iterdir()
+            if path.is_file() and not path.name.startswith('__')
+        )
+        dirs = sorted(
+            path.name for path in self.path.iterdir()
+            if path.is_dir() and not path.name.startswith('__')
+        )
+        self.files = dirs
+        for name in files:
+            self.files.append(name)
         self.files.insert(0, '..')
 
     def _normalize_loaded_text(
