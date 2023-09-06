@@ -180,9 +180,12 @@ class Grid:
         new = self.rng.integers(0, 2, self.shape, dtype=bool)
         self._data = new
 
-    def replace(self, seq: Gridlike) -> None:
+    def replace(self, seq: Gridlike | NDArray[np.bool_]) -> None:
         """Replace the :class:`Grid` with the given values."""
-        new = np.array(seq, dtype=bool)
+        try:
+            new = np.array(seq, dtype=bool)
+        except ValueError:
+            raise ValueError(tuple(len(row) for row in seq))
         self._data = util.fit_array(new, self.shape)
 
     def tick(self) -> None:

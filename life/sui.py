@@ -14,8 +14,10 @@ from typing import Any, List, Sequence, Union
 
 import numpy as np
 from blessed import Terminal
+from numpy.typing import NDArray
 
 import life.pattern
+from life import util
 from life.life import Grid
 
 
@@ -405,29 +407,6 @@ class Load(State):
             self.files.append(name)
         self.files.insert(0, '..')
 
-    def _normalize_loaded_text(
-        self,
-        text: list[str],
-        live: str = 'x'
-    ) -> List[list]:
-        """Convert a pattern saved as a text file into grid data.
-
-        :param text: The pattern as text.
-        :param live: The character that represents an alive cell.
-        """
-        new = []
-        for line in text:
-            row = []
-            if line.endswith('\n'):
-                line = line[:-1]
-            for char in line:
-                if char.lower() == live:
-                    row.append(True)
-                else:
-                    row.append(False)
-            new.append(row)
-        return new
-
     def down(self) -> 'Load':
         """Command method. Select the next file in the list."""
         self.selected += 1
@@ -463,7 +442,10 @@ class Load(State):
         elif filename.exists():
             with open(filename, 'r') as fh:
                 raw = fh.readlines()
-            normal = self._normalize_loaded_text(raw)
+            if filename.suffix == '.cells':
+                normal = cells(raw)
+            else:
+                normal = pattern(raw)
             self.data.replace(normal)
         return Core(self.data, self.term)
 
@@ -627,6 +609,34 @@ class Start(State):
         self._draw_commands(self.menu)
 
 
+# File formats.
+def cells(lines: list[str]) -> NDArray[np.bool_]:
+    """Covert the contents of a .cells file into something :mod:`life`
+    can understand.
+    """
+    filtered = [line.rstrip() for line in lines if not line.startswith('!')]
+    width = max(len(line) for line in filtered)
+    normal = [util.normalize_width(line, width) for line in filtered]
+    return np.array(
+        [util.char_to_bool(line, 'O') for line in normal],
+        dtype=bool
+    )
+
+
+def pattern(lines: list[str]) -> NDArray[np.bool_]:
+    """Convert the contents of a .pattern file into something :mod:`life`
+    can understand.
+    """
+    lines = [line.rstrip() for line in lines]
+    width = max(len(line) for line in lines)
+    normal = [util.normalize_width(line, width) for line in lines]
+    return np.array(
+        [util.char_to_bool(line, 'X') for line in normal],
+        dtype=bool
+    )
+
+
+# Mainline.
 def main():
     term = Terminal()
     with term.fullscreen(), term.hidden_cursor():

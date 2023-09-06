@@ -15,6 +15,17 @@ Y, X = 0, 1
 
 
 # Functions.
+def char_to_bool(line: str, true: str = 'X') -> list[bool]:
+    """Convert the characters in a string to booleans."""
+    result: list[bool] = []
+    for char in line:
+        if char.casefold() == true.casefold():
+            result.append(True)
+        else:
+            result.append(False)
+    return result
+
+
 def fit_array(
     a: np.ndarray, shape: tuple[int, ...], fill: Any = 0
 ) -> np.ndarray:
@@ -41,3 +52,10 @@ def max_per_index(*seqs: Sequence[int]) -> tuple[int, ...]:
     """Return the maximum value for each index."""
     result = [max(group) for group in zip_longest(*seqs)]
     return tuple(result)
+
+
+def normalize_width(line: str, width: int, fill: str = '.') -> str:
+    """Extend line to match the list."""
+    if len(line) < width:
+        line += fill * (width - len(line))
+    return line

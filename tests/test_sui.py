@@ -840,6 +840,23 @@ def test_Start_update_ui(capsys, start, term):
     )
 
 
+# Tests for cells.
+def test_cells():
+    """Given the contents of a .cells file, :func:`cells` should
+    return an array containing the data from the file.
+    """
+    assert (sui.cells([
+        '!comment\n',
+        '.O.\n',
+        'O.O\n',
+        '.O.\n',
+    ]) == np.array([
+        [0, 1, 0],
+        [1, 0, 1],
+        [0, 1, 0],
+    ], dtype=bool)).all()
+
+
 # Tests for main.
 def test_main_simple_loop(mocker):
     """The :funct:`main` loop should start and end a game of life."""
