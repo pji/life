@@ -76,7 +76,7 @@ How to run the tests?
 To run the tests, clone this repository to your local system and run 
 the following from the root of the repository::
 
-    python3 -m unittest discover tests
+    python3 -m pytest
 
 That assumes you have a fairly recent version of Python 3 available 
 and it's at least aliased to `python3`.
@@ -86,10 +86,13 @@ To-do List
 ----------
 The following features are still planned to be implemented:
 
-* In Load, allow pattern list to wrap and page
-* Handle grids larger than the display area (windowing)
-* Handle window movement
-* Look at moving grid.Grid from lists to a memory view
-* Look at more efficient algorithms for GoL
-* Look at allowing pattern files to be saved anywhere
-* Move default pattern files into the package
+*   Handle grids larger than the display area (windowing)
+*   Terminate cells at the edge of the grid rather than letting
+    them wrap.
+*   In Load, allow pattern list to wrap and page
+*   Handle window movement
+*   Allow editing movement by 10.
+*   Display current generation number.
+*   Implement configuration screen.
+*   Read RLE files.
+*   Look at more efficient algorithms for GoL. (bitpack?)

@@ -36,14 +36,26 @@ class State(ABC):
     commands: dict = {}
 
     """An abstract base class for UI states."""
-    def __init__(self, data: Grid, term: Terminal) -> None:
+    def __init__(
+        self,
+        data: Grid,
+        term: Terminal,
+        origin_y: int | None = None,
+        origin_x: int | None = None
+    ) -> None:
         """Initialize a State object.
 
         :param data: The grid object for the current game of life.
         :param term: The terminal the game of life is being run in.
         """
-        self.term = term
         self.data = data
+        self.term = term
+        if origin_x is None:
+            origin_x = (data.width - term.width) // 2
+        self.origin_x = origin_x
+        if origin_y is None:
+            origin_y = (data.height - (term.height - 3) * 2) // 2
+        self.origin_y = origin_y
 
     def _char_for_state(self, top, bottom) -> str:
         """Return the character to draw based on the state of the cell."""
@@ -66,7 +78,7 @@ class State(ABC):
 
     def _draw_state(self) -> None:
         """Draw the grid to the terminal."""
-        data: np.ndarray = self.data._data[:]
+        data: np.ndarray = self._get_window()
         if len(data) % 2:
             data = np.pad(data, ((0, 1), (0, 0)))
         for i in range(0, len(data), 2):
@@ -90,6 +102,21 @@ class State(ABC):
         width = self.data.width
         y = -(self.data.height // -2)
         print(self.term.move(y, 0) + '\u2500' * width)
+
+    def _get_window(self) -> NDArray[np.bool_]:
+        """Get the visible area of the grid."""
+        origin = (self.origin_y, self.origin_x)
+        shape = (self.term.height, self.term.width)
+        return self.data.view(origin, shape)
+
+    def asdict(self) -> dict:
+        """Get the parameters of the state as a dictionary."""
+        return {
+            'data': self.data,
+            'term': self.term,
+            'origin_x': self.origin_x,
+            'origin_y': self.origin_y,
+        }
 
     def input(self) -> Command:
         """Get and handle input from the user."""
@@ -119,7 +146,7 @@ class Autorun(State):
 
     def exit(self) -> 'Core':
         """Exit autorun state."""
-        return Core(self.data, self.term)
+        return Core(**self.asdict())
 
     def input(self) -> Command:
         """Get and handle input from the user."""
@@ -170,7 +197,7 @@ class Core(State):
 
     def autorun(self) -> 'Autorun':
         """Command method. Switch to autorun state."""
-        return Autorun(self.data, self.term)
+        return Autorun(**self.asdict())
 
     def clear(self) -> 'Core':
         """Command method. Clear the grid."""
@@ -179,11 +206,11 @@ class Core(State):
 
     def edit(self) -> 'Edit':
         """Command method. Switch to edit state."""
-        return Edit(self.data, self.term)
+        return Edit(**self.asdict())
 
     def load(self) -> 'Load':
         """Command method. Switch to load state."""
-        return Load(self.data, self.term)
+        return Load(**self.asdict())
 
     def next(self) -> 'Core':
         """Command method. Run the next generation of the grid."""
@@ -201,11 +228,11 @@ class Core(State):
 
     def rule(self) -> 'Rule':
         """Command method. Switch to rule state."""
-        return Rule(self.data, self.term)
+        return Rule(**self.asdict())
 
     def save(self) -> 'Save':
         """Command method. Switch to save state."""
-        return Save(self.data, self.term)
+        return Save(**self.asdict())
 
     def update_ui(self):
         """Draw the UI for the core state."""
@@ -229,9 +256,9 @@ class Edit(State):
     menu = ('(\u2190\u2191\u2192\u2193) Move, (space) Flip, (E)xit, '
             '(R)estore, (S)napshot')
 
-    def __init__(self, data:Grid, term:Terminal):
+    def __init__(self, *args, **kwargs):
         """Initialize an instance of Edit."""
-        super().__init__(data, term)
+        super().__init__(*args, **kwargs)
         self.row = self.data.height // 2
         self.col = self.data.width // 2
         self.path = Path('.snapshot.txt')
@@ -296,7 +323,7 @@ class Edit(State):
 
     def exit(self) -> 'Core':
         """Command method, switch to the Core state."""
-        return Core(self.data, self.term)
+        return Core(**self.asdict())
 
     def flip(self) -> 'Edit':
         """Command method. Flip the state of the current cell."""
@@ -415,7 +442,7 @@ class Load(State):
 
     def exit(self) -> 'Core':
         """Command method. Exit load state."""
-        return Core(self.data, self.term)
+        return Core(**self.asdict())
 
     def file(self, path: Path = Path.cwd()) -> 'Load':
         """Command method. Select from files in the current working
@@ -447,7 +474,7 @@ class Load(State):
             else:
                 normal = pattern(raw)
             self.data.replace(normal)
-        return Core(self.data, self.term)
+        return Core(**self.asdict())
 
     def up(self) -> 'Load':
         """Command method. Select the previous file in the list."""
@@ -464,8 +491,8 @@ class Load(State):
 
 class Rule(State):
     """Change the rules of the grid."""
-    def __init__(self, data:Grid, term:Terminal):
-        super().__init__(data, term)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.menu = ('Enter the rules in BS notation. (Current rule: '
                      f'{self.data.rule})')
 
@@ -476,7 +503,7 @@ class Rule(State):
 
     def exit(self) -> 'Core':
         """Exit rule state."""
-        return Core(self.data, self.term)
+        return Core(**self.asdict())
 
     def input(self) -> Command:
         """Get a rule from the user."""
@@ -558,7 +585,7 @@ class Save(State):
             path = self.path / filename
         with open(path, 'w') as fh:
             fh.write(str(grid_))
-        return Core(self.data, self.term)
+        return Core(**self.asdict())
 
     def update_ui(self):
         self._draw_state()
@@ -572,7 +599,10 @@ class Start(State):
     prompt = 'Press any key to continue.'
 
     def __init__(
-        self, data: Grid | None = None, term: Terminal | None = None
+        self,
+        data: Grid | None = None,
+        term: Terminal | None = None,
+        *args, **kwargs
     ):
         """Initialize a Start object.
 
@@ -589,7 +619,7 @@ class Start(State):
             pattern = files(life.pattern)
             path = Path(str(pattern))
             load.load(path / 'title.txt')
-        super().__init__(data, term)
+        super().__init__(data, term, *args, **kwargs)
 
     def input(self) -> Command:
         """Return a Core object."""
@@ -600,7 +630,7 @@ class Start(State):
 
     def run(self) -> Core:
         """Return a Core object to start the game of life."""
-        return Core(self.data, self.term)
+        return Core(**self.asdict())
 
     def update_ui(self):
         """Draw the initial display state."""

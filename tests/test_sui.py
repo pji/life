@@ -22,6 +22,21 @@ RIGHT = '\x1b[C'
 
 # Common fixtures.
 @pt.fixture
+def big_grid():
+    """A 6x6 :class:`life.Grid` object for testing."""
+    grid = life.Grid(6, 6)
+    grid._data = np.array([
+        [0, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 1, 0],
+    ], dtype=bool)
+    return grid
+
+
+@pt.fixture
 def grid():
     """A :class:`Grid` object for testing."""
     grid = life.Grid(4, 3)
@@ -35,13 +50,49 @@ def grid():
 def term(mocker):
     """A :class:`blessed.Terminal` object for testing."""
     mocker.patch('blessed.Terminal.inkey')
+    mocker.patch(
+        'blessed.Terminal.height',
+        return_value=4,
+        new_callable=mocker.PropertyMock
+    )
+    mocker.patch(
+        'blessed.Terminal.width',
+        return_value=4,
+        new_callable=mocker.PropertyMock
+    )
     return blessed.Terminal()
+
+
+@pt.fixture
+def small_term(mocker):
+    """A 2x4 :class:`bless.Terminal` object for testing."""
+    mocker.patch('blessed.Terminal.inkey')
+    mocker.patch(
+        'blessed.Terminal.height',
+        return_value=4,
+        new_callable=mocker.PropertyMock
+    )
+    mocker.patch(
+        'blessed.Terminal.width',
+        return_value=2,
+        new_callable=mocker.PropertyMock
+    )
+    term = blessed.Terminal()
+    return term
 
 
 # Fixtures for Autorun.
 @pt.fixture
 def autorun(grid, term):
     return sui.Autorun(grid, term)
+
+
+@pt.fixture
+def window_autorun(big_grid, small_term):
+    autorun = sui.Autorun(big_grid, small_term)
+    autorun.origin_x = 1
+    autorun.origin_y = 3
+    return autorun
 
 
 # Tests for Autorun initialization.
@@ -87,6 +138,19 @@ def test_Autorun_exit(autorun):
     assert state.term is autorun.term
 
 
+def test_Autorun_exit(window_autorun):
+    """When called :func:`Autorun.exit` should return a :class:`Core`
+    object populated with its :class:`Grid` and :class:`blessed.Terminal`
+    objects.
+    """
+    state = window_autorun.exit()
+    assert isinstance(state, sui.Core)
+    assert state.data is window_autorun.data
+    assert state.term is window_autorun.term
+    assert state.origin_x == window_autorun.origin_x
+    assert state.origin_y == window_autorun.origin_y
+
+
 def test_Autorun_run(autorun):
     """When called, :meth:`Autorun.run` should advance the grid and
     return the :class:`Autorun` object.
@@ -120,6 +184,15 @@ def core(grid, term):
     return sui.Core(grid, term)
 
 
+@pt.fixture
+def window_core(big_grid, small_term):
+    """A :class:`Core` object for testing."""
+    core = sui.Core(big_grid, small_term)
+    core.origin_x = 1
+    core.origin_y = 3
+    return core
+
+
 # Tests for Core initialization.
 def test_Core_init(grid, term):
     """When given required parameters, :class:`Core` should return
@@ -134,38 +207,6 @@ def test_Core_init(grid, term):
         assert getattr(obj, attr) is required[attr]
 
 
-# Tests for Core input.
-def test_Core_input(core):
-    """When valid given input, :meth:`Core.input` should return the
-    expected command string.
-    """
-    core.term.inkey.side_effect = 'acelnrusq'
-    assert core.input() == ('autorun',)
-    assert core.input() == ('clear',)
-    assert core.input() == ('edit',)
-    assert core.input() == ('load',)
-    assert core.input() == ('next',)
-    assert core.input() == ('random',)
-    assert core.input() == ('rule',)
-    assert core.input() == ('save',)
-    assert core.input() == ('quit',)
-
-
-def test_Core_input_invalid(capsys, core, term):
-    """Given invalid input, :meth:`Core.input` should prompt the
-    user to try again.
-    """
-    core.term.inkey.side_effect = ('`', 'c')
-    assert core.input() == ('clear',)
-    captured = capsys.readouterr()
-    assert repr(captured.out) == repr(
-        term.move(4, 0) + term.clear_eol
-        + term.move(4, 0) + term.clear_eol
-        + term.move(4, 0) + 'Invalid command. Please try again.'
-        + term.clear_eol
-    )
-
-
 # Tests for Core commands.
 def test_Core_autorun(core):
     """When called, :meth:`Core.autorun` should return an
@@ -173,6 +214,20 @@ def test_Core_autorun(core):
     """
     state = core.autorun()
     assert isinstance(state, sui.Autorun)
+    assert state.data is core.data
+    assert state.term is core.term
+
+
+def test_Core_autorun_window(window_core):
+    """When called, :meth:`Core.autorun` should return an
+    :class:`Autorun` object.
+    """
+    state = window_core.autorun()
+    assert isinstance(state, sui.Autorun)
+    assert state.data is window_core.data
+    assert state.term is window_core.term
+    assert state.origin_x == window_core.origin_x
+    assert state.origin_y == window_core.origin_y
 
 
 def test_Core_clear(core):
@@ -194,6 +249,20 @@ def test_Core_edit(core):
     """
     state = core.edit()
     assert isinstance(state, sui.Edit)
+    assert state.data is core.data
+    assert state.term is core.term
+
+
+def test_Core_edit_window(window_core):
+    """When called, :meth:`Core.edit` should return an
+    :class:`Edit` object.
+    """
+    state = window_core.edit()
+    assert isinstance(state, sui.Edit)
+    assert state.data is window_core.data
+    assert state.term is window_core.term
+    assert state.origin_x == window_core.origin_x
+    assert state.origin_y == window_core.origin_y
 
 
 def test_Core_load(core):
@@ -202,6 +271,20 @@ def test_Core_load(core):
     """
     state = core.load()
     assert isinstance(state, sui.Load)
+    assert state.data is core.data
+    assert state.term is core.term
+
+
+def test_Core_load_window(window_core):
+    """When called, :meth:`Core.load` should return an
+    :class:`Load` object.
+    """
+    state = window_core.load()
+    assert isinstance(state, sui.Load)
+    assert state.data is window_core.data
+    assert state.term is window_core.term
+    assert state.origin_x == window_core.origin_x
+    assert state.origin_y == window_core.origin_y
 
 
 def test_Core_next(core):
@@ -245,6 +328,20 @@ def test_Core_rule(core):
     """
     state = core.rule()
     assert isinstance(state, sui.Rule)
+    assert state.data is core.data
+    assert state.term is core.term
+
+
+def test_Core_rule_window(window_core):
+    """When called, :meth:`Core.rule` should return a
+    :class:`Rule` object.
+    """
+    state = window_core.rule()
+    assert isinstance(state, sui.Rule)
+    assert state.data is window_core.data
+    assert state.term is window_core.term
+    assert state.origin_x == window_core.origin_x
+    assert state.origin_y == window_core.origin_y
 
 
 def test_Core_save(core):
@@ -253,6 +350,52 @@ def test_Core_save(core):
     """
     state = core.save()
     assert isinstance(state, sui.Save)
+    assert state.data is core.data
+    assert state.term is core.term
+
+
+def test_Core_save(window_core):
+    """When called, :meth:`Core.save` should return a
+    :class:`Save` object.
+    """
+    state = window_core.save()
+    assert isinstance(state, sui.Save)
+    assert state.data is window_core.data
+    assert state.term is window_core.term
+    assert state.origin_x == window_core.origin_x
+    assert state.origin_y == window_core.origin_y
+
+
+# Tests for Core input.
+def test_Core_input(core):
+    """When valid given input, :meth:`Core.input` should return the
+    expected command string.
+    """
+    core.term.inkey.side_effect = 'acelnrusq'
+    assert core.input() == ('autorun',)
+    assert core.input() == ('clear',)
+    assert core.input() == ('edit',)
+    assert core.input() == ('load',)
+    assert core.input() == ('next',)
+    assert core.input() == ('random',)
+    assert core.input() == ('rule',)
+    assert core.input() == ('save',)
+    assert core.input() == ('quit',)
+
+
+def test_Core_input_invalid(capsys, core, term):
+    """Given invalid input, :meth:`Core.input` should prompt the
+    user to try again.
+    """
+    core.term.inkey.side_effect = ('`', 'c')
+    assert core.input() == ('clear',)
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(4, 0) + term.clear_eol
+        + term.move(4, 0) + term.clear_eol
+        + term.move(4, 0) + 'Invalid command. Please try again.'
+        + term.clear_eol
+    )
 
 
 # Tests for Core UI updates.
@@ -276,6 +419,16 @@ def edit(grid, term, tmp_path):
     """An :class:`Edit` object for testing."""
     edit = sui.Edit(grid, term)
     edit.path = tmp_path / '.snapshot.txt'
+    yield edit
+
+
+@pt.fixture
+def window_edit(big_grid, small_term, tmp_path):
+    """An :class:`Edit` object for testing."""
+    edit = sui.Edit(big_grid, small_term)
+    edit.path = tmp_path / '.snapshot.txt'
+    edit.origin_x = 1
+    edit.origin_y = 3
     yield edit
 
 
@@ -320,6 +473,18 @@ def test_Edit_exit(edit):
     assert isinstance(state, sui.Core)
     assert state.data is edit.data
     assert state.term is edit.term
+
+
+def test_Edit_exit_window(window_edit):
+    """When called, :meth:`Edit.exit` should return a :class:`Core`
+    object.
+    """
+    state = window_edit.exit()
+    assert isinstance(state, sui.Core)
+    assert state.data is window_edit.data
+    assert state.term is window_edit.term
+    assert state.origin_x == window_edit.origin_x
+    assert state.origin_y == window_edit.origin_y
 
 
 def test_Edit_flip(capsys, edit, term):
@@ -499,6 +664,17 @@ def load(grid, term):
     return load
 
 
+@pt.fixture
+def window_load(big_grid, small_term):
+    """A :class:`Load` object for testing."""
+    load = sui.Load(big_grid, small_term)
+    load.files = ['spam', 'eggs', 'ham']
+    load.path = Path('tests/data')
+    load.origin_x = 1
+    load.origin_y = 3
+    return load
+
+
 # Tests for Load initialization.
 def test_Load_init(grid, term):
     """When given required parameters, :class:`Load` should return
@@ -535,6 +711,18 @@ def test_Load_exit(load):
     assert state.term == load.term
 
 
+def test_Load_exit_window(window_load):
+    """When called, :meth:`Load.exit` should return a :class:`Core`
+    object populated with the grid and terminal objects.
+    """
+    state = window_load.exit()
+    assert isinstance(state, sui.Core)
+    assert state.data == window_load.data
+    assert state.term == window_load.term
+    assert state.origin_x == window_load.origin_x
+    assert state.origin_y == window_load.origin_y
+
+
 def test_Load_file(load):
     """When called, :meth:`Load.file` should return a :class:`Load`
     object pointed at the current working directory.
@@ -554,7 +742,7 @@ def test_Load_load(load):
     assert isinstance(state, sui.Core)
     assert state.data is load.data
     assert state.term is load.term
-    assert (load.data._data == np.array([
+    assert (state.data._data == np.array([
         [0, 1, 0, 1],
         [1, 0, 1, 0],
         [0, 1, 0, 1],
@@ -574,6 +762,26 @@ def test_Load_load_directory(load):
     assert state.term is load.term
     assert state.path == Path('tests/data/zeggs')
     assert state.selected == 0
+
+
+def test_Load_load_window(window_load):
+    """When called, :meth:`Load.load` should load the selected file
+    and return a :class:`Core` object.
+    """
+    state = window_load.load()
+    assert isinstance(state, sui.Core)
+    assert state.data is window_load.data
+    assert state.term is window_load.term
+    assert state.origin_x == window_load.origin_x
+    assert state.origin_y == window_load.origin_y
+    assert (state.data._data == np.array([
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 0, 0],
+        [0, 0, 1, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0],
+    ], dtype=bool)).all()
 
 
 def test_Load_up(load):
@@ -626,6 +834,12 @@ def rule(grid, term):
     return sui.Rule(grid, term)
 
 
+@pt.fixture
+def window_rule(big_grid, small_term):
+    """A :class:`Rule` object for testing."""
+    return sui.Rule(big_grid, small_term)
+
+
 # Tests for Rule initialization.
 def test_Rule_init(grid, term):
     """When given required parameters, :class:`Rule` should return
@@ -654,6 +868,20 @@ def test_Rule_change(rule):
     assert rule.data.rule == 'B36/S23'
 
 
+def test_Rule_change_window(window_rule):
+    """When given a rule, :meth:`Rule.change` should change the rules
+    of the grid and return an :class:`Core` object with the grid and
+    terminal objects.
+    """
+    state = window_rule.change('B36/S23')
+    assert isinstance(state, sui.Core)
+    assert state.data is window_rule.data
+    assert state.term is window_rule.term
+    assert window_rule.data.rule == 'B36/S23'
+    assert state.origin_x == window_rule.origin_x
+    assert state.origin_y == window_rule.origin_y
+
+
 def test_Rule_exit(rule):
     """When called, :meth:`Rule.exit` should return a :class:`Core`
     object populated with the grid and terminal objects.
@@ -662,6 +890,18 @@ def test_Rule_exit(rule):
     assert isinstance(state, sui.Core)
     assert state.data == rule.data
     assert state.term == rule.term
+
+
+def test_Rule_exit_window(window_rule):
+    """When called, :meth:`Rule.exit` should return a :class:`Core`
+    object populated with the grid and terminal objects.
+    """
+    state = window_rule.exit()
+    assert isinstance(state, sui.Core)
+    assert state.data == window_rule.data
+    assert state.term == window_rule.term
+    assert state.origin_x == window_rule.origin_x
+    assert state.origin_y == window_rule.origin_y
 
 
 # Tests for Rule input.
@@ -697,8 +937,15 @@ def save(grid, term, tmp_path):
     yield save
 
 
+@pt.fixture
+def window_save(big_grid, small_term, tmp_path):
+    save = sui.Save(big_grid, small_term)
+    save.path = tmp_path
+    yield save
+
+
 # Tests for Save initialization.
-def test_Save_init(grid, term):
+def test_Save_init_all_defaults(grid, term):
     """When given required parameters, :class:`Save` should return
     an instance with attributes set to the given values. It should
     also initialize the cursor position.
@@ -707,9 +954,31 @@ def test_Save_init(grid, term):
         'data': grid,
         'term': term,
     }
+    optional = {
+        'origin_x': 0,
+        'origin_y': 0,
+    }
     obj = sui.Start(**required)
     for attr in required:
         assert getattr(obj, attr) is required[attr]
+    for attr in optional:
+        assert getattr(obj, attr) == optional[attr]
+
+
+def test_Save_init_all_optionals(grid, term):
+    """When given optional parameters, :class:`Save` should return
+    an instance with attributes set to the given values. It should
+    also initialize the cursor position.
+    """
+    optional = {
+        'data': grid,
+        'term': term,
+        'origin_x': 2,
+        'origin_y': 3,
+    }
+    obj = sui.Start(**optional)
+    for attr in optional:
+        assert getattr(obj, attr) == optional[attr]
 
 
 # Tests for Save commands.
@@ -727,6 +996,28 @@ def test_Save_save(save):
         'X.X\n'
         '...\n'
         'X..'
+    )
+
+
+def test_Save_save_window(window_save):
+    """Given a filename, :meth:`Save.save` should save the current
+    grid to a file and return a :class:`Core` object.
+    """
+    state = window_save.save('spam')
+    with open(window_save.path / 'spam') as fh:
+        saved = fh.read()
+    assert isinstance(state, sui.Core)
+    assert state.data is window_save.data
+    assert state.term is window_save.term
+    assert state.origin_x == window_save.origin_x
+    assert state.origin_y == window_save.origin_y
+    assert repr(saved) == repr(
+        '.X.X.X\n'
+        'X.X.X.\n'
+        '.X.X.X\n'
+        'X.X.X.\n'
+        '.X.X.X\n'
+        'X.X.X.'
     )
 
 
@@ -778,18 +1069,29 @@ def start(grid, term):
     return start
 
 
+@pt.fixture
+def window_start(big_grid, small_term):
+    """A :class:`Start` object with a window for testing."""
+    start = sui.Start(big_grid, small_term)
+    start.origin_x = 1
+    start.origin_y = 3
+    return start
+
+
 # Tests for Start initialization.
-def test_Start_init_default(term):
+def test_Start_init_all_default(term):
     """Given no parameters, :class:`Start` should initialize an
     instance of itself using default attribute values.
     """
     start = sui.Start()
     assert start.data.width == term.width
     assert start.data.height == (term.height - 3) * 2
+    assert start.origin_y == 0
+    assert start.origin_x == 0
     assert isinstance(start.term, blessed.Terminal)
 
 
-def test_Start_init_optionals(grid, term):
+def test_Start_init_all_optionals(grid, term):
     """When given optional parameters, :class:`Start` should return
     an instance with attributes set to the given values. It should
     also initialize the cursor position.
@@ -797,10 +1099,22 @@ def test_Start_init_optionals(grid, term):
     optionals = {
         'data': grid,
         'term': term,
+        'origin_x': 2,
+        'origin_y': 3,
     }
     obj = sui.Start(**optionals)
     for attr in optionals:
         assert getattr(obj, attr) is optionals[attr]
+
+
+def test_Start_init_big_grid(big_grid, small_term):
+    """Given a grid bigger than the terminal, :class:`Start` should
+    initialize an instance of itself using the given grid. The origin
+    for the window should be set to the middle of the grid.
+    """
+    start = sui.Start(big_grid, small_term)
+    assert start.origin_y == 2
+    assert start.origin_x == 2
 
 
 # Tests for Start commands.
@@ -813,6 +1127,21 @@ def test_Start_run(start):
     assert isinstance(state, sui.Core)
     assert state.data is start.data
     assert state.term is start.term
+
+
+def test_Start_run_window(window_start):
+    """When called, :meth:`Start.run` should always return a
+    :class:`Core` object initialized with the parent object's
+    grid and term. If grid is larger than the terminal, the
+    origin of the window should be initialized with the parent
+    objects values.
+    """
+    state = window_start.run()
+    assert isinstance(state, sui.Core)
+    assert state.data is window_start.data
+    assert state.term is window_start.term
+    assert state.origin_x == window_start.origin_x
+    assert state.origin_y == window_start.origin_y
 
 
 # Tests for Start input.

@@ -359,3 +359,24 @@ def test_tick(grid):
         '................',
         '................',
     ])._data).all()
+
+
+def test_view(grid):
+    """When called, :meth:`Grid.view` should return the data in
+    the grid.
+    """
+    assert (grid.view() == np.array([
+        [0, 1, 0, 1],
+        [0, 0, 0, 0],
+        [0, 1, 0, 0],
+    ], dtype=bool)).all()
+
+
+def test_view_with_window(grid):
+    """When called with anchor coordinates and a shape, :meth:`Grid.view`
+    should return a subsection of the data in the :class:`Grid`.
+    """
+    assert (grid.view((1, 1), (2, 2)) == np.array([
+        [0, 0,],
+        [1, 0,],
+    ], dtype=bool)).all()

@@ -216,3 +216,17 @@ class Grid:
         a[a < 9] = 0
         a[a == 9] = 1
         self._data = np.array(a, dtype=bool)
+
+    def view(
+        self,
+        anchor: Sequence[int] = (0, 0),
+        shape: Sequence[int] | None = None
+    ) -> NDArray[np.bool_]:
+        """Return a section of the data of the current grid."""
+        if shape is None:
+            shape = self._data.shape
+        starty, startx = anchor
+        leny, lenx = shape
+        stopy = starty + leny
+        stopx = startx + lenx
+        return self._data[starty:stopy, startx:stopx]
