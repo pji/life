@@ -39,12 +39,13 @@ class Grid:
 
     # Initialization.
     def __init__(
-        self, width: int, height: int, rule: str = 'B3/S23'
+        self, width: int, height: int, rule: str = 'B3/S23', wrap: bool = True
     ) -> None:
         """Initialize an instance of the class."""
         self.height = height
         self.rule = rule
         self.width = int(width)
+        self.wrap = wrap
 
         self._data: np.ndarray = np.zeros(
             (self.height, self.width),
@@ -199,8 +200,22 @@ class Grid:
 
         # Perform the roll.
         for y_shift, x_shift in shifts:
+            # Roll the array in the given direction along the given axis.
             b = np.roll(self._data, y_shift, Y)
             b = np.roll(b, x_shift, X)
+
+            # If values shouldn't wrap, set the values of what did wrap
+            # to zero.
+            if not self.wrap and y_shift != 0:
+                if y_shift == 1:
+                    b[0, :] = np.zeros((b.shape[X],), dtype=bool)
+                b[-1, :] = np.zeros((b.shape[X],), dtype=bool)
+            if not self.wrap and x_shift != 0:
+                if x_shift == 1:
+                    b[:, 0] = np.zeros((b.shape[Y],), dtype=bool)
+                b[:, -1] = np.zeros((b.shape[Y],), dtype=bool)
+
+            # Add to the cumulative total.
             a += b
 
         # Apply the rules.

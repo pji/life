@@ -5,6 +5,7 @@ sui
 The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
+from argparse import ArgumentParser
 from copy import deepcopy
 from importlib.abc import Traversable
 from importlib.resources import files
@@ -106,7 +107,7 @@ class State(ABC):
     def _get_window(self) -> NDArray[np.bool_]:
         """Get the visible area of the grid."""
         origin = (self.origin_y, self.origin_x)
-        shape = (self.term.height, self.term.width)
+        shape = ((self.term.height - 3) * 2, self.term.width)
         return self.data.view(origin, shape)
 
     def asdict(self) -> dict:
@@ -602,6 +603,9 @@ class Start(State):
         self,
         data: Grid | None = None,
         term: Terminal | None = None,
+        file: str | Path = Path(str(files(life.pattern))) / 'title.txt',
+        rule: str = 'B3/S23',
+        wrap: bool = True,
         *args, **kwargs
     ):
         """Initialize a Start object.
@@ -616,10 +620,27 @@ class Start(State):
         if not data:
             data = Grid(term.width, (term.height - 3) * 2)
             load = Load(data, term)
-            pattern = files(life.pattern)
-            path = Path(str(pattern))
-            load.load(path / 'title.txt')
+            load.load(file)
         super().__init__(data, term, *args, **kwargs)
+        self.file = file
+        self.wrap = wrap
+        self.rule = rule
+
+    @property
+    def rule(self) -> str:
+        return self.data.rule
+
+    @rule.setter
+    def rule(self, value: str) -> None:
+        self.data.rule = value
+
+    @property
+    def wrap(self) -> bool:
+        return self.data.wrap
+
+    @wrap.setter
+    def wrap(self, value: bool) -> None:
+        self.data.wrap = value
 
     def input(self) -> Command:
         """Return a Core object."""
@@ -668,9 +689,39 @@ def pattern(lines: list[str]) -> NDArray[np.bool_]:
 
 # Mainline.
 def main():
+    p = ArgumentParser(
+        description='A Python implementation of Conway\'s Game of Life.',
+        prog='life'
+    )
+    p.add_argument(
+        '-f', '--file',
+        help='A file to load into the Game of Life.',
+        action='store',
+        type=str
+    )
+    p.add_argument(
+        '-r', '--rule',
+        help='The rule for the Game of Life.',
+        action='store',
+        type=str
+    )
+    p.add_argument(
+        '-W', '--no_wrap',
+        help='The grid should not wrap at the edges.',
+        action='store_true'
+    )
+    args = p.parse_args()
+
     term = Terminal()
     with term.fullscreen(), term.hidden_cursor():
-        state = Start(term=term)
+        kwargs = {'term': term,}
+        if args.file:
+            kwargs['file'] = args.file.strip()
+        if args.no_wrap:
+            kwargs['wrap'] = False
+        if args.rule:
+            kwargs['rule'] = args.rule.strip()
+        state = Start(**kwargs)
         while not isinstance(state, End):
             state.update_ui()
             cmd, *args = state.input()

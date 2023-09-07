@@ -68,7 +68,8 @@ def test_init_all_default():
         'width': 2,
     }
     optional = {
-        'rule': 'B3/S23'
+        'rule': 'B3/S23',
+        'wrap': True,
     }
     grid = life.Grid(**required)
     for attr in required:
@@ -86,7 +87,8 @@ def test_init_all_optional():
         'width': 2,
     }
     optional = {
-        'rule': 'B4/S234'
+        'rule': 'B4/S234',
+        'wrap': False,
     }
     grid = life.Grid(**required, **optional)
     for attr in required:
@@ -359,6 +361,74 @@ def test_tick(grid):
         '................',
         '................',
     ])._data).all()
+
+
+def test_tick_no_wrap(grid):
+    """When called, :meth:`Grid.tick` should advance the game
+    one generation. If :attr:`Grid.wrap` is `False`, then the
+    values at the edges should not roll to affect the other
+    side.
+    """
+    grid.wrap = False
+    grid.tick()
+    assert (grid._data == np.array([
+        [0, 0, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 0],
+    ], dtype=bool)).all()
+
+#     grid._data = np.array([
+#         [0, 1, 1, 0],
+#         [0, 0, 1, 0],
+#         [0, 0, 1, 1],
+#         [0, 0, 0, 0],
+#     ], dtype=bool)
+#     grid.tick()
+#     assert (grid._data == np.array([
+#         [0, 1, 1, 0],
+#         [0, 0, 0, 0],
+#         [0, 0, 1, 1],
+#         [0, 1, 0, 1],
+#     ], dtype=bool)).all()
+#
+#     grid = pat_to_grid([
+#         '........X.......',
+#         '.......X..X.....',
+#         '........XXXX....',
+#         '........XXXXX...',
+#         '....X..X..XX....',
+#         '...X.XX...XX.X..',
+#         '.....XX..X..X...',
+#         '....XXXXX.......',
+#         '.....XXXX.......',
+#         '......X..X......',
+#         '........X.......',
+#         '................',
+#         '................',
+#         '................',
+#         '................',
+#         '................',
+#     ])
+#     grid.rule = 'B36/S23'
+#     grid.tick()
+#     assert (grid._data == pat_to_grid([
+#         '................',
+#         '.......X..XX....',
+#         '.......X....X...',
+#         '.......X....X...',
+#         '....XXXXX.......',
+#         '.......X.X......',
+#         '........XXXXX...',
+#         '....X....X......',
+#         '....X....X......',
+#         '.....XX..X......',
+#         '................',
+#         '................',
+#         '................',
+#         '................',
+#         '................',
+#         '................',
+#     ])._data).all()
 
 
 def test_view(grid):

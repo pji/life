@@ -86,13 +86,16 @@ To-do List
 ----------
 The following features are still planned to be implemented:
 
-*   Handle grids larger than the display area (windowing)
-*   Terminate cells at the edge of the grid rather than letting
+*   (Done.) Handle grids larger than the display area (windowing)
+*   (Done.) Terminate cells at the edge of the grid rather than letting
     them wrap.
+*   (Done.) Allow wrap to be set as a command line argument.
+*   (Done.) Allow rules to be set by command line argument.
+*   Load a file from command line argument.
+*   Implement configuration screen.
 *   In Load, allow pattern list to wrap and page
 *   Handle window movement
 *   Allow editing movement by 10.
 *   Display current generation number.
-*   Implement configuration screen.
 *   Read RLE files.
-*   Look at more efficient algorithms for GoL. (bitpack?)
+*   Look at more efficient algorithms for GoL. (bitpack?, striding?)

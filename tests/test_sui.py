@@ -19,8 +19,37 @@ UP = '\x1b[A'
 LEFT = '\x1b[D'
 RIGHT = '\x1b[C'
 
+# Common arrays.
+data_next = np.array([
+    [1, 0, 1, 0],
+    [1, 0, 1, 0],
+    [0, 0, 0, 0],
+    [0, 1, 0, 0],
+], dtype=bool)
+
+# Common lines.
+term_ = blessed.Terminal()
+grid_start_lines = (
+    term_.move(0, 0) + ' \u2580 \u2580\n'
+    + term_.move(1, 0) + ' \u2588  \n'
+)
+grid_next_lines = (
+    term_.move(0, 0) + '\u2588 \u2588 \n'
+    + term_.move(1, 0) + ' \u2584  \n'
+)
+
 
 # Common fixtures.
+@pt.fixture
+def data_start():
+    return np.array([
+        [0, 1, 0, 1],
+        [0, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 1, 0, 0],
+    ], dtype=bool)
+
+
 @pt.fixture
 def big_grid():
     """A 6x6 :class:`life.Grid` object for testing."""
@@ -37,12 +66,10 @@ def big_grid():
 
 
 @pt.fixture
-def grid():
+def grid(data_start):
     """A :class:`Grid` object for testing."""
-    grid = life.Grid(4, 3)
-    grid._data[0, 1] = True
-    grid._data[0, 3] = True
-    grid._data[2, 1] = True
+    grid = life.Grid(4, 4)
+    grid._data = data_start
     return grid
 
 
@@ -52,7 +79,7 @@ def term(mocker):
     mocker.patch('blessed.Terminal.inkey')
     mocker.patch(
         'blessed.Terminal.height',
-        return_value=4,
+        return_value=5,
         new_callable=mocker.PropertyMock
     )
     mocker.patch(
@@ -157,11 +184,7 @@ def test_Autorun_run(autorun):
     """
     state = autorun.run()
     assert state is autorun
-    assert (autorun.data._data == np.array([
-        [1, 0, 1, 0],
-        [1, 0, 1, 0],
-        [1, 0, 1, 0],
-    ], dtype=bool)).all()
+    assert (autorun.data._data == data_next).all()
 
 
 # Tests for Autorun UI updates.
@@ -170,8 +193,7 @@ def test_Autorun_update_ui(capsys, autorun, term):
     autorun.update_ui()
     captured = capsys.readouterr()
     assert repr(captured.out) == repr(
-        term.move(0, 0) + ' ▀ ▀\n'
-        + term.move(1, 0) + ' ▀  \n'
+        grid_start_lines
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + autorun.menu + term.clear_eol
     )
@@ -240,6 +262,7 @@ def test_Core_clear(core):
         [0, 0, 0, 0],
         [0, 0, 0, 0],
         [0, 0, 0, 0],
+        [0, 0, 0, 0],
     ], dtype=bool)).all()
 
 
@@ -293,11 +316,7 @@ def test_Core_next(core):
     """
     state = core.next()
     assert state is core
-    assert (core.data._data == np.array([
-        [1, 0, 1, 0],
-        [1, 0, 1, 0],
-        [1, 0, 1, 0],
-    ], dtype=bool)).all()
+    assert (core.data._data == data_next).all()
 
 
 def test_Core_random(core):
@@ -311,6 +330,7 @@ def test_Core_random(core):
         [0, 0, 1, 1],
         [0, 0, 1, 1],
         [0, 1, 1, 0],
+        [1, 0, 1, 0],
     ], dtype=bool)).all()
 
 
@@ -406,8 +426,7 @@ def test_Core_update_ui(capsys, core, term):
     core.update_ui()
     captured = capsys.readouterr()
     assert repr(captured.out) == repr(
-        term.move(0, 0) + ' ▀ ▀\n'
-        + term.move(1, 0) + ' ▀  \n'
+        grid_start_lines
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + core.menu + term.clear_eol
     )
@@ -445,7 +464,7 @@ def test_Edit_init(grid, term):
     obj = sui.Edit(**required)
     for attr in required:
         assert getattr(obj, attr) is required[attr]
-    assert obj.row == 1
+    assert obj.row == 2
     assert obj.col == 2
 
 
@@ -458,9 +477,8 @@ def test_Edit_down(capsys, edit, term):
     captured = capsys.readouterr()
     assert state is edit
     assert repr(captured.out) == repr(
-        term.move(0, 0) + ' ▀ ▀\n'
-        + term.move(1, 0) + ' ▀  \n'
-        + term.move(1, 2) + term.green + '\u2580'
+        grid_start_lines
+        + term.move(1, 2) + term.green + '\u2584'
         + term.bright_white_on_black + '\n'
     )
 
@@ -496,13 +514,14 @@ def test_Edit_flip(capsys, edit, term):
     assert state is edit
     assert (state.data._data == np.array([
         [0, 1, 0, 1],
-        [0, 0, 1, 0],
+        [0, 0, 0, 0],
+        [0, 1, 1, 0],
         [0, 1, 0, 0],
     ], dtype=bool)).all()
     assert repr(captured.out) == repr(
-        term.move(0, 0) + ' ▀▄▀\n'
-        + term.move(1, 0) + ' ▀  \n'
-        + term.move(0, 2) + term.bright_green + '\u2584'
+        term_.move(0, 0) + ' \u2580 \u2580\n'
+        + term_.move(1, 0) + ' \u2588\u2580 \n'
+        + term.move(1, 2) + term.bright_green + '\u2580'
         + term.bright_white_on_black + '\n'
     )
 
@@ -515,9 +534,9 @@ def test_Edit_left(capsys, edit, term):
     captured = capsys.readouterr()
     assert state is edit
     assert repr(captured.out) == repr(
-        term.move(0, 0) + ' ▀ ▀\n'
-        + term.move(1, 0) + ' ▀  \n'
-        + term.move(0, 1) + term.green_on_bright_white + '\u2584'
+        term_.move(0, 0) + ' \u2580 \u2580\n'
+        + term_.move(1, 0) + ' \u2588  \n'
+        + term.move(1, 1) + term.bright_green_on_bright_white + '\u2580'
         + term.bright_white_on_black + '\n'
     )
 
@@ -531,9 +550,9 @@ def test_Edit_right(capsys, edit, term):
     captured = capsys.readouterr()
     assert state is edit
     assert repr(captured.out) == repr(
-        term.move(0, 0) + ' ▀ ▀\n'
-        + term.move(1, 0) + ' ▀  \n'
-        + term.move(0, 3) + term.green_on_bright_white + '\u2584'
+        term_.move(0, 0) + ' \u2580 \u2580\n'
+        + term_.move(1, 0) + ' \u2588  \n'
+        + term.move(1, 3) + term.green + '\u2580'
         + term.bright_white_on_black + '\n'
     )
 
@@ -549,10 +568,11 @@ def test_Edit_restore(edit, term):
         [0, 1, 0, 1],
         [1, 0, 1, 0],
         [0, 1, 0, 1],
+        [0, 0, 0, 0],
     ], dtype=bool)).all()
 
 
-def test_Edit_restore_no_snapshot(edit, term, tmp_path):
+def test_Edit_restore_no_snapshot(edit, term, data_start, tmp_path):
     """When called, :meth:`Edit.restore` should load the snapshot file
     and return the parent object. If there is no snapshot, do not change
     the grid.
@@ -560,11 +580,7 @@ def test_Edit_restore_no_snapshot(edit, term, tmp_path):
     edit.path = tmp_path / '.snapshot.txt'
     state = edit.restore()
     assert state is edit
-    assert (edit.data._data == np.array([
-        [0, 1, 0, 1],
-        [0, 0, 0, 0],
-        [0, 1, 0, 0],
-    ], dtype=bool)).all()
+    assert (edit.data._data == data_start).all()
 
 
 def test_Edit_snapshot(capsys, edit, term):
@@ -579,6 +595,7 @@ def test_Edit_snapshot(capsys, edit, term):
     assert repr(saved) == repr(
         'X.X\n'
         '...\n'
+        'X..\n'
         'X..'
     )
     assert repr(captured.out) == repr(
@@ -594,9 +611,8 @@ def test_Edit_up(capsys, edit, term):
     captured = capsys.readouterr()
     assert state is edit
     assert repr(captured.out) == repr(
-        term.move(0, 0) + ' ▀ ▀\n'
-        + term.move(1, 0) + ' ▀  \n'
-        + term.move(0, 2) + term.green + '\u2580'
+        grid_start_lines
+        + term.move(0, 2) + term.green + '\u2584'
         + term.bright_white_on_black + '\n'
     )
 
@@ -634,11 +650,10 @@ def test_Edit_update_ui(capsys, edit, term):
     edit.update_ui()
     captured = capsys.readouterr()
     assert repr(captured.out) == repr(
-        term.move(0, 0) + ' ▀ ▀\n'
-        + term.move(1, 0) + ' ▀  \n'
+        grid_start_lines
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + edit.menu + term.clear_eol
-        + term.move(0, 2) + term.green + '\u2584'
+        + term.move(1, 2) + term.green + '\u2580'
         + term.bright_white_on_black + '\n'
     )
 
@@ -746,6 +761,7 @@ def test_Load_load(load):
         [0, 1, 0, 1],
         [1, 0, 1, 0],
         [0, 1, 0, 1],
+        [0, 0, 0, 0],
     ], dtype=bool)).all()
 
 
@@ -922,8 +938,7 @@ def test_Rule_update_ui(capsys, rule, term):
     rule.update_ui()
     captured = capsys.readouterr()
     assert repr(captured.out) == repr(
-        term.move(0, 0) + ' ▀ ▀\n'
-        + term.move(1, 0) + ' ▀  \n'
+        grid_start_lines
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + rule.menu + term.clear_eol
     )
@@ -995,6 +1010,7 @@ def test_Save_save(save):
     assert repr(saved) == repr(
         'X.X\n'
         '...\n'
+        'X..\n'
         'X..'
     )
 
@@ -1088,6 +1104,8 @@ def test_Start_init_all_default(term):
     assert start.data.height == (term.height - 3) * 2
     assert start.origin_y == 0
     assert start.origin_x == 0
+    assert start.rule == 'B3/S23'
+    assert start.wrap
     assert isinstance(start.term, blessed.Terminal)
 
 
@@ -1101,6 +1119,8 @@ def test_Start_init_all_optionals(grid, term):
         'term': term,
         'origin_x': 2,
         'origin_y': 3,
+        'rule': 'B36/S23',
+        'wrap': False,
     }
     obj = sui.Start(**optionals)
     for attr in optionals:
@@ -1115,6 +1135,36 @@ def test_Start_init_big_grid(big_grid, small_term):
     start = sui.Start(big_grid, small_term)
     assert start.origin_y == 2
     assert start.origin_x == 2
+
+
+def test_Start_init_file(term):
+    """Given a path to a file, :class:`Start` should generate a grid
+    from the contents of the file.
+    """
+    start = sui.Start(term=term, file='tests/data/spam')
+    assert start.file == 'tests/data/spam'
+    assert (start.data._data == np.array([
+        [0, 1, 0, 1],
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+        [0, 0, 0, 0],
+    ], dtype=bool)).all()
+
+
+def test_Start_init_no_wrap():
+    """Given wrap of `False`, :class:`Start` should generate a grid
+    then set the grid's wrap to `False`.
+    """
+    start = sui.Start(wrap=False)
+    assert not start.data.wrap
+
+
+def test_Start_init_rule():
+    """Given a valid rule string, :class:`Start` should generate a grid
+    then set the grid's rule to the given value.
+    """
+    start = sui.Start(rule='B36/S23')
+    assert start.data.rule == 'B36/S23'
 
 
 # Tests for Start commands.
@@ -1162,8 +1212,7 @@ def test_Start_update_ui(capsys, start, term):
     start.update_ui()
     captured = capsys.readouterr()
     assert repr(captured.out) == repr(
-        term.move(0, 0) + ' ▀ ▀\n'
-        + term.move(1, 0) + ' ▀  \n'
+        grid_start_lines
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + start.menu + term.clear_eol
     )
@@ -1189,5 +1238,46 @@ def test_cells():
 # Tests for main.
 def test_main_simple_loop(mocker):
     """The :funct:`main` loop should start and end a game of life."""
+    mocker.patch('sys.argv', ['life',])
     mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
     sui.main()
+
+
+def test_main_f(mocker):
+    """When invoked from the command line with `-f` followed by a
+    the path to a valid pattern file, :func:`main` should create a
+    :class:`Start` object with :attr:`Start.file` set to the given
+    path.
+    """
+    start = sui.Start()
+    mock_start = mocker.patch('life.sui.Start', return_value=start)
+    mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
+    mocker.patch('sys.argv', ['life', '-f tests/data/spam'])
+    sui.main()
+    assert mock_start.call_args[1]['file'] == 'tests/data/spam'
+
+
+def test_main_r(mocker):
+    """When invoked from the command line with `-r` followed by a
+    valid rule string, :func:`main` should create a :class:`Start`
+    object with :attr:`Start.rule` set to the given rule string.
+    """
+    start = sui.Start()
+    mock_start = mocker.patch('life.sui.Start', return_value=start)
+    mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
+    mocker.patch('sys.argv', ['life', '-r B36/S23'])
+    sui.main()
+    assert mock_start.call_args[1]['rule'] == 'B36/S23'
+
+
+def test_main_W(mocker):
+    """When invoked from the command line with `-W`, :func:`main`
+    should create a :class:`Start` object with :attr:`Start.wrap`
+    set to `False`.
+    """
+    start = sui.Start()
+    mock_start = mocker.patch('life.sui.Start', return_value=start)
+    mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
+    mocker.patch('sys.argv', ['life', '-W'])
+    sui.main()
+    assert mock_start.call_args[1]['wrap'] is False
