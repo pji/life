@@ -199,6 +199,142 @@ def test_Autorun_update_ui(capsys, autorun, term):
     )
 
 
+# Fixtures for Config.
+@pt.fixture
+def config(grid, term):
+    """A :class:`Config` object for testing."""
+    config = sui.Config(grid, term)
+    return config
+
+
+# Tests for Config initialization.
+def test_Config_init_all_defaults(grid, term):
+    """When given required parameters, :class:`Config` should return
+    an instance with attributes set to the default values.
+    """
+    required = {
+        'data': grid,
+        'term': term,
+    }
+    optional = {
+        'origin_x': 0,
+        'origin_y': 0,
+    }
+    obj = sui.Config(**required)
+    for attr in required:
+        assert getattr(obj, attr) is required[attr]
+    for attr in optional:
+        assert getattr(obj, attr) is optional[attr]
+
+
+def test_Config_init_all_optional(grid, term):
+    """When given optional parameters, :class:`Config` should return
+    an instance with attributes set to the given values.
+    """
+    optional = {
+        'data': grid,
+        'term': term,
+        'origin_x': 2,
+        'origin_y': 1,
+    }
+    obj = sui.Config(**optional)
+    for attr in optional:
+        assert getattr(obj, attr) is optional[attr]
+
+
+# Tests for Config commands.
+def test_Config_down(config):
+    """When called, :meth:`Config.down` should increment
+    :attr:`Config.selected` and return itself.
+    """
+    state = config.down()
+    assert state is config
+    assert config.selected == 1
+
+
+def test_Config_down_wrap(config):
+    """When called, :meth:`Config.down` should increment
+    :attr:`Config.selected` and return itself. If down is
+    called when the last setting is selected, select the
+    first setting.
+    """
+    config.selected = 1
+    state = config.down()
+    assert state is config
+    assert config.selected == 0
+
+
+def test_Config_exit(config):
+    """When called, :meth:`Config.exit` should return a
+    :class:`Core` object.
+    """
+    state = config.exit()
+    assert isinstance(state, sui.Core)
+    assert state.data is config.data
+    assert state.term is config.term
+    assert state.origin_x == config.origin_x
+    assert state.origin_y == config.origin_y
+
+
+def test_Config_select(config):
+    """When called, :meth:`Config.select` should change the selected
+    setting then return itself.
+    """
+    config.selected = -1
+    state = config.select()
+    assert state is config
+    assert not state.wrap
+    assert not state.data.wrap
+
+
+def test_Config_up(config):
+    """When called, :meth:`Config.up` should decrement
+    :attr:`Config.selected` and return itself.
+    """
+    config.selected = 1
+    state = config.up()
+    assert state is config
+    assert config.selected == 0
+
+
+def test_Config_up(config):
+    """When called, :meth:`Config.up` should decrement
+    :attr:`Config.selected` and return itself. If the
+    first setting is selected, select the last setting.
+    """
+    state = config.up()
+    assert state is config
+    assert config.selected == 1
+
+
+# Tests for Config input.
+def test_Config_input(config):
+    """When valid given input, :meth:`Config.input` should return the
+    expected command string.
+    """
+    config.term.inkey.side_effect = [DOWN, UP, 'x', '\n',]
+    assert config.input() == ('down',)
+    assert config.input() == ('up',)
+    assert config.input() == ('exit',)
+    assert config.input() == ('select',)
+
+
+# Tests for Config UI updates.
+def test_Config_update_ui(capsys, config, term):
+    """When called, :meth:`Config.update_ui` should redraw the UI
+    for the config state.
+    """
+    config.update_ui()
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + term.bright_white_on_green
+        + 'Rule: B3/S23' + term.normal + '\n'
+        + term.move(1, 0) + 'Wrap: True\n'
+        + term.move(2, 0) + '\u2500' * 4 + '\n'
+        + term.move(3, 0) + config.menu + term.clear_eol
+    )
+
+
 # Fixtures for Core.
 @pt.fixture
 def core(grid, term):
@@ -264,6 +400,18 @@ def test_Core_clear(core):
         [0, 0, 0, 0],
         [0, 0, 0, 0],
     ], dtype=bool)).all()
+
+
+def test_core_config(core):
+    """When called, :meth:`Core.config` should return a :class:`Config`
+    object.
+    """
+    state = core.config()
+    assert isinstance(state, sui.Config)
+    assert state.data is core.data
+    assert state.term is core.term
+    assert state.origin_x == core.origin_x
+    assert state.origin_y == core.origin_y
 
 
 def test_Core_edit(core):
@@ -391,14 +539,14 @@ def test_Core_input(core):
     """When valid given input, :meth:`Core.input` should return the
     expected command string.
     """
-    core.term.inkey.side_effect = 'acelnrusq'
+    core.term.inkey.side_effect = 'aceflnrsq'
     assert core.input() == ('autorun',)
     assert core.input() == ('clear',)
     assert core.input() == ('edit',)
+    assert core.input() == ('config',)
     assert core.input() == ('load',)
     assert core.input() == ('next',)
     assert core.input() == ('random',)
-    assert core.input() == ('rule',)
     assert core.input() == ('save',)
     assert core.input() == ('quit',)
 

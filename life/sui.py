@@ -170,6 +170,90 @@ class Autorun(State):
         self._draw_commands(self.menu)
 
 
+class Config(State):
+    """The state for changing the configuration settings of the grid."""
+    commands = {
+        DOWN: 'down',
+        UP: 'up',
+        'x': 'exit',
+        '\n': 'select',
+    }
+    menu = '(\u2191\u2192) Move, (\u23ce) Select, e(X)it'
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.selected = 0
+        self.settings = [
+            'rule',
+            'wrap',
+        ]
+
+    @property
+    def rule(self) -> str:
+        return self.data.rule
+
+    @rule.setter
+    def rule(self, value: str) -> None:
+        self.data.rule = value
+
+    @property
+    def wrap(self) -> bool:
+        return self.data.wrap
+
+    @wrap.setter
+    def wrap(self, value) -> None:
+        self.data.wrap = value
+
+    def _draw_state(self) -> None:
+        """Draw the configuration to the screen."""
+        height = self.data.height // 2
+        if self.data.height % 2:
+            height += 1
+
+        for i, setting in enumerate(self.settings):
+            value = getattr(self, setting)
+            line = str(self.term.move(i, 0))
+            if self.selected == i:
+                line += self.term.bright_white_on_green
+            line += f'{setting.title()}: {value}'
+            if self.selected == i:
+                line += self.term.normal
+            print(line)
+
+        if len(self.settings) < height:
+            for y in range(len(self.settings), height):
+                print(self.term.move(y, 0) + self.term.clear_eol)
+
+    def down(self) -> 'Config':
+        """Command method. Select the next setting in the list."""
+        self.selected += 1
+        self.selected %= len(self.settings)
+        return self
+
+    def exit(self) -> 'Core':
+        """Command method. Exit config mode and return to the core."""
+        return Core(**self.asdict())
+
+    def select(self) -> 'Config':
+        """Command method. Change the selected setting."""
+        setting = self.settings[self.selected]
+        current = getattr(self, setting)
+        setattr(self, setting, not current)
+        return self
+
+    def up(self) -> 'Config':
+        """Command method. Select the previous setting in the list."""
+        self.selected -= 1
+        self.selected %= len(self.settings)
+        return self
+
+    def update_ui(self) -> None:
+        """Update the terminal display."""
+        self._draw_state()
+        self._draw_rule()
+        self._draw_commands(self.menu)
+
+
 class Core(State):
     """The standard state of the UI. This is used to manually progress
     the grid and switch to other states.
@@ -178,11 +262,11 @@ class Core(State):
         'a': 'autorun',
         'c': 'clear',
         'e': 'edit',
+        'f': 'config',
         'l': 'load',
         'n': 'next',
         'r': 'random',
         's': 'save',
-        'u': 'rule',
         'q': 'quit',
     }
 
@@ -204,6 +288,10 @@ class Core(State):
         """Command method. Clear the grid."""
         self.data.clear()
         return self
+
+    def config(self) -> 'Config':
+        """Command method. Switch to config state."""
+        return Config(**self.asdict())
 
     def edit(self) -> 'Edit':
         """Command method. Switch to edit state."""
