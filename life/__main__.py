@@ -6,7 +6,7 @@ Mainline for :mod:`life`.
 """
 import traceback as tb
 
-from life import main
+from life.main import main
 
 
 try:

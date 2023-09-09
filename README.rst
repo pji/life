@@ -92,10 +92,16 @@ The following features are still planned to be implemented:
 *   (Done.) Allow wrap to be set as a command line argument.
 *   (Done.) Allow rules to be set by command line argument.
 *   (Done.) Load a file from command line argument.
-*   Implement configuration screen.
-*   In Load, allow pattern list to wrap and page
-*   Handle window movement
-*   Allow editing movement by 10.
+*   (Done.) Implement configuration screen.
+*   (Done.) In Load, allow pattern list to scroll.
+*   (Done.) Set autorun rate.
+*   (Done.) Move `main` to `main`.
+*   (Done.) Allow editing movement by 10.
+*   Allow editing to place -ominos.
+*   Allow editing to place rotated -ominoes.
+*   Allow editing to place agars.
 *   Display current generation number.
 *   Read RLE files.
+*   Move "exit" command to X from E.
+*   Handle window movement
 *   Look at more efficient algorithms for GoL. (bitpack?, striding?)

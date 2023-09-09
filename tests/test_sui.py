@@ -18,6 +18,10 @@ DOWN = '\x1b[B'
 UP = '\x1b[A'
 LEFT = '\x1b[D'
 RIGHT = '\x1b[C'
+SDOWN = '\x1b[1;2B'
+SUP = '\x1b[1;2A'
+SLEFT = '\x1b[1;2D'
+SRIGHT = '\x1b[1;2C'
 
 # Common arrays.
 data_next = np.array([
@@ -74,6 +78,13 @@ def grid(data_start):
 
 
 @pt.fixture
+def grid_40(data_start):
+    """A :class:`Grid` object for testing."""
+    grid = life.Grid(40, 40)
+    return grid
+
+
+@pt.fixture
 def term(mocker):
     """A :class:`blessed.Terminal` object for testing."""
     mocker.patch('blessed.Terminal.inkey')
@@ -85,6 +96,23 @@ def term(mocker):
     mocker.patch(
         'blessed.Terminal.width',
         return_value=4,
+        new_callable=mocker.PropertyMock
+    )
+    return blessed.Terminal()
+
+
+@pt.fixture
+def term_40(mocker):
+    """A :class:`blessed.Terminal` object for testing."""
+    mocker.patch('blessed.Terminal.inkey')
+    mocker.patch(
+        'blessed.Terminal.height',
+        return_value=40,
+        new_callable=mocker.PropertyMock
+    )
+    mocker.patch(
+        'blessed.Terminal.width',
+        return_value=40,
         new_callable=mocker.PropertyMock
     )
     return blessed.Terminal()
@@ -131,17 +159,26 @@ def test_Autorun_init(grid, term):
         'data': grid,
         'term': term,
     }
+    optional = {
+        'origin_x': 0,
+        'origin_y': 0,
+        'pace': 0,
+    }
     obj = sui.Autorun(**required)
     for attr in required:
         assert getattr(obj, attr) is required[attr]
+    for attr in optional:
+        assert getattr(obj, attr) is optional[attr]
 
 
 # Tests for Autorun input.
-def test_Autorun_input_keypress(autorun):
+def test_Autorun_input(autorun):
     """If a key is pressed, :meth:`Autorun.input` should return an
-    exit command string.
+    command string.
     """
-    autorun.term.inkey.return_value = ' '
+    autorun.term.inkey.side_effect = [LEFT, RIGHT, 'x',]
+    assert autorun.input() == ('slower',)
+    assert autorun.input() == ('faster',)
     assert autorun.input() == ('exit',)
 
 
@@ -178,6 +215,16 @@ def test_Autorun_exit(window_autorun):
     assert state.origin_y == window_autorun.origin_y
 
 
+def test_Autorun_faster(autorun):
+    """When called :func:`Autorun.faster` should decrement the pace
+    and return itself.
+    """
+    autorun.pace = 0.03
+    state = autorun.faster()
+    assert state is autorun
+    assert state.pace == 0.03 - 0.01
+
+
 def test_Autorun_run(autorun):
     """When called, :meth:`Autorun.run` should advance the grid and
     return the :class:`Autorun` object.
@@ -185,6 +232,30 @@ def test_Autorun_run(autorun):
     state = autorun.run()
     assert state is autorun
     assert (autorun.data._data == data_next).all()
+
+
+def test_Autorun_run_pace(mocker, autorun):
+    """When called, :meth:`Autorun.run` should advance the grid and
+    return the :class:`Autorun` object.
+    """
+    mock_sleep = mocker.patch('life.sui.sleep')
+    autorun.pace = 0.01
+    state = autorun.run()
+    assert state is autorun
+    assert (autorun.data._data == data_next).all()
+    assert mock_sleep.mock_calls == [
+        mocker.call(0.01),
+    ]
+
+
+def test_Autorun_slower(autorun):
+    """When called :func:`Autorun.slower` should increment the pace
+    and return itself.
+    """
+    autorun.pace = 0.03
+    state = autorun.slower()
+    assert state is autorun
+    assert state.pace == 0.03 + 0.01
 
 
 # Tests for Autorun UI updates.
@@ -287,6 +358,19 @@ def test_Config_select(config):
     assert not state.data.wrap
 
 
+def test_Config_select_rule(config):
+    """When called, :meth:`Config.select` should return a :class:`Rule`
+    object.
+    """
+    config.selected = 0
+    state = config.select()
+    assert isinstance(state, sui.Rule)
+    assert state.data is config.data
+    assert state.term is config.term
+    assert state.origin_x == config.origin_x
+    assert state.origin_y == config.origin_y
+
+
 def test_Config_up(config):
     """When called, :meth:`Config.up` should decrement
     :attr:`Config.selected` and return itself.
@@ -327,9 +411,9 @@ def test_Config_update_ui(capsys, config, term):
     config.update_ui()
     captured = capsys.readouterr()
     assert repr(captured.out) == repr(
-        term.move(0, 0) + term.bright_white_on_green
-        + 'Rule: B3/S23' + term.normal + '\n'
-        + term.move(1, 0) + 'Wrap: True\n'
+        term.move(0, 0) + term.black_on_green
+        + 'Rule: B3/S23' + term.clear_eol + term.normal + '\n'
+        + term.move(1, 0) + 'Wrap: True' + term.clear_eol + '\n'
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + config.menu + term.clear_eol
     )
@@ -380,12 +464,14 @@ def test_Core_autorun_window(window_core):
     """When called, :meth:`Core.autorun` should return an
     :class:`Autorun` object.
     """
+    window_core.pace = 0.01
     state = window_core.autorun()
     assert isinstance(state, sui.Autorun)
     assert state.data is window_core.data
     assert state.term is window_core.term
     assert state.origin_x == window_core.origin_x
     assert state.origin_y == window_core.origin_y
+    assert state.pace == 0.01
 
 
 def test_Core_clear(core):
@@ -490,28 +576,6 @@ def test_Core_quit(core):
     assert isinstance(state, sui.End)
 
 
-def test_Core_rule(core):
-    """When called, :meth:`Core.rule` should return a
-    :class:`Rule` object.
-    """
-    state = core.rule()
-    assert isinstance(state, sui.Rule)
-    assert state.data is core.data
-    assert state.term is core.term
-
-
-def test_Core_rule_window(window_core):
-    """When called, :meth:`Core.rule` should return a
-    :class:`Rule` object.
-    """
-    state = window_core.rule()
-    assert isinstance(state, sui.Rule)
-    assert state.data is window_core.data
-    assert state.term is window_core.term
-    assert state.origin_x == window_core.origin_x
-    assert state.origin_y == window_core.origin_y
-
-
 def test_Core_save(core):
     """When called, :meth:`Core.save` should return a
     :class:`Save` object.
@@ -590,6 +654,14 @@ def edit(grid, term, tmp_path):
 
 
 @pt.fixture
+def edit_40(grid_40, term_40, tmp_path):
+    """An :class:`Edit` object for testing."""
+    edit = sui.Edit(grid_40, term_40)
+    edit.path = tmp_path / '.snapshot.txt'
+    yield edit
+
+
+@pt.fixture
 def window_edit(big_grid, small_term, tmp_path):
     """An :class:`Edit` object for testing."""
     edit = sui.Edit(big_grid, small_term)
@@ -618,7 +690,7 @@ def test_Edit_init(grid, term):
 
 # Tests for Edit commands.
 def test_Edit_down(capsys, edit, term):
-    """When called, :meth:`Edit.down` should subtract one from the row,
+    """When called, :meth:`Edit.down` should add one from the row,
     redraw the status, redraw the cursor, and return its parent object.
     """
     state = edit.down()
@@ -629,6 +701,17 @@ def test_Edit_down(capsys, edit, term):
         + term.move(1, 2) + term.green + '\u2584'
         + term.bright_white_on_black + '\n'
     )
+
+
+def test_Edit_down_10(edit_40):
+    """When called, :meth:`Edit.down_10` should add ten to the
+    row, redraw the status, redraw the cursor, and return its parent
+    object.
+    """
+    state = edit_40.down_10()
+    assert state is edit_40
+    assert state.row == 30
+    assert state.col == 20
 
 
 def test_Edit_exit(edit):
@@ -689,6 +772,17 @@ def test_Edit_left(capsys, edit, term):
     )
 
 
+def test_Edit_left_10(edit_40):
+    """When called, :meth:`Edit.left_10` should subtract ten from the
+    col, redraw the status, redraw the cursor, and return its parent
+    object.
+    """
+    state = edit_40.left_10()
+    assert state is edit_40
+    assert state.row == 20
+    assert state.col == 10
+
+
 def test_Edit_right(capsys, edit, term):
     """When called, :meth:`Edit.right` should add one to the col,
     redraw the status, redraw the cursor, and return its parent
@@ -703,6 +797,17 @@ def test_Edit_right(capsys, edit, term):
         + term.move(1, 3) + term.green + '\u2580'
         + term.bright_white_on_black + '\n'
     )
+
+
+def test_Edit_right_10(edit_40):
+    """When called, :meth:`Edit.right_10` should add ten to the
+    col, redraw the status, redraw the cursor, and return its parent
+    object.
+    """
+    state = edit_40.right_10()
+    assert state is edit_40
+    assert state.row == 20
+    assert state.col == 30
 
 
 def test_Edit_restore(edit, term):
@@ -765,20 +870,35 @@ def test_Edit_up(capsys, edit, term):
     )
 
 
+def test_Edit_up_10(edit_40):
+    """When called, :meth:`Edit.up_10` should subtract ten from the
+    row, redraw the status, redraw the cursor, and return its parent
+    object.
+    """
+    state = edit_40.up_10()
+    assert state is edit_40
+    assert state.row == 10
+    assert state.col == 20
+
+
 # Tests for Edit input.
-def test_Edit_input(edit):
+def test_Edit_input(edit, term):
     """When given input, :meth:`Edit.input` should return the expected
     command string.
     """
     edit.term.inkey.side_effect = [
         DOWN,
-        'e',
+        'x',
         ' ',
         LEFT,
         'r',
         RIGHT,
         's',
         UP,
+        SDOWN,
+        SLEFT,
+        SRIGHT,
+        SUP,
     ]
     assert edit.input() == ('down',)
     assert edit.input() == ('exit',)
@@ -788,6 +908,10 @@ def test_Edit_input(edit):
     assert edit.input() == ('right',)
     assert edit.input() == ('snapshot',)
     assert edit.input() == ('up',)
+    assert edit.input() == ('down_10',)
+    assert edit.input() == ('left_10',)
+    assert edit.input() == ('right_10',)
+    assert edit.input() == ('up_10',)
 
 
 # Tests for Edit UI updates.
@@ -965,12 +1089,12 @@ def test_Load_input(load):
     """When given input, :meth:`Load.input` should return the expected
     command string.
     """
-    load.term.inkey.side_effect = [DOWN, 'e', 'f', '\n', UP]
+    load.term.inkey.side_effect = [DOWN, UP, 'f', 'x', '\n',]
     assert load.input() == ('down',)
-    assert load.input() == ('exit',)
-    assert load.input() == ('file',)
-    assert load.input() == ('load',)
     assert load.input() == ('up',)
+    assert load.input() == ('file',)
+    assert load.input() == ('exit',)
+    assert load.input() == ('load',)
 
 
 # Tests for Load UI updates.
@@ -984,8 +1108,24 @@ def test_Load_update_ui(capsys, load, term):
         term.move(0, 0) + term.on_green + '▸ ..'
         + term.normal + term.clear_eol + '\n'
         + term.move(1, 0) + '▸ zeggs' + term.clear_eol + '\n'
-        + term.move(2, 0) + '.snapshot.txt' + term.clear_eol + '\n'
-        + term.move(3, 0) + 'spam' + term.clear_eol + '\n'
+        + term.move(2, 0) + '\u2500' * 4 + '\n'
+        + term.move(3, 0) + load.menu + term.clear_eol
+    )
+
+
+def test_Load_update_ui_scroll_down(capsys, load, term):
+    """When called, :meth:`Load.update_ui` should draw the UI for
+    load mode. If the selected file is below the bottom of the
+    displayable area, the displayed list should scroll down to
+    show the selected file.
+    """
+    load.selected = 3
+    load.update_ui()
+    captured = capsys.readouterr()
+    assert repr(captured.out) == repr(
+        term.move(0, 0) + '.snapshot.txt' + term.clear_eol + '\n'
+        + term.move(1, 0) + term.on_green + 'spam'
+        + term.normal + term.clear_eol + '\n'
         + term.move(2, 0) + '\u2500' * 4 + '\n'
         + term.move(3, 0) + load.menu + term.clear_eol
     )
@@ -1252,6 +1392,7 @@ def test_Start_init_all_default(term):
     assert start.data.height == (term.height - 3) * 2
     assert start.origin_y == 0
     assert start.origin_x == 0
+    assert start.pace == 0
     assert start.rule == 'B3/S23'
     assert start.wrap
     assert isinstance(start.term, blessed.Terminal)
@@ -1267,6 +1408,7 @@ def test_Start_init_all_optionals(grid, term):
         'term': term,
         'origin_x': 2,
         'origin_y': 3,
+        'pace': 0.01,
         'rule': 'B36/S23',
         'wrap': False,
     }
@@ -1381,51 +1523,3 @@ def test_cells():
         [1, 0, 1],
         [0, 1, 0],
     ], dtype=bool)).all()
-
-
-# Tests for main.
-def test_main_simple_loop(mocker):
-    """The :funct:`main` loop should start and end a game of life."""
-    mocker.patch('sys.argv', ['life',])
-    mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
-    sui.main()
-
-
-def test_main_f(mocker):
-    """When invoked from the command line with `-f` followed by a
-    the path to a valid pattern file, :func:`main` should create a
-    :class:`Start` object with :attr:`Start.file` set to the given
-    path.
-    """
-    start = sui.Start()
-    mock_start = mocker.patch('life.sui.Start', return_value=start)
-    mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
-    mocker.patch('sys.argv', ['life', '-f tests/data/spam'])
-    sui.main()
-    assert mock_start.call_args[1]['file'] == 'tests/data/spam'
-
-
-def test_main_r(mocker):
-    """When invoked from the command line with `-r` followed by a
-    valid rule string, :func:`main` should create a :class:`Start`
-    object with :attr:`Start.rule` set to the given rule string.
-    """
-    start = sui.Start()
-    mock_start = mocker.patch('life.sui.Start', return_value=start)
-    mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
-    mocker.patch('sys.argv', ['life', '-r B36/S23'])
-    sui.main()
-    assert mock_start.call_args[1]['rule'] == 'B36/S23'
-
-
-def test_main_W(mocker):
-    """When invoked from the command line with `-W`, :func:`main`
-    should create a :class:`Start` object with :attr:`Start.wrap`
-    set to `False`.
-    """
-    start = sui.Start()
-    mock_start = mocker.patch('life.sui.Start', return_value=start)
-    mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
-    mocker.patch('sys.argv', ['life', '-W'])
-    sui.main()
-    assert mock_start.call_args[1]['wrap'] is False

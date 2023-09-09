@@ -30,6 +30,10 @@ DOWN = '\x1b[B'
 UP = '\x1b[A'
 LEFT = '\x1b[D'
 RIGHT = '\x1b[C'
+SDOWN = '\x1b[1;2B'
+SUP = '\x1b[1;2A'
+SLEFT = '\x1b[1;2D'
+SRIGHT = '\x1b[1;2C'
 
 
 # Base class.
@@ -42,7 +46,8 @@ class State(ABC):
         data: Grid,
         term: Terminal,
         origin_y: int | None = None,
-        origin_x: int | None = None
+        origin_x: int | None = None,
+        pace: float = 0
     ) -> None:
         """Initialize a State object.
 
@@ -57,6 +62,7 @@ class State(ABC):
         if origin_y is None:
             origin_y = (data.height - (term.height - 3) * 2) // 2
         self.origin_y = origin_y
+        self.pace = pace
 
     def _char_for_state(self, top, bottom) -> str:
         """Return the character to draw based on the state of the cell."""
@@ -117,6 +123,7 @@ class State(ABC):
             'term': self.term,
             'origin_x': self.origin_x,
             'origin_y': self.origin_y,
+            'pace': self.pace,
         }
 
     def input(self) -> Command:
@@ -143,24 +150,44 @@ class State(ABC):
 # State classes.
 class Autorun(State):
     """Automatically advance the generation of the grid."""
-    menu = 'Press any key to exit autorun.'
+    commands = {
+        LEFT: ('slower',),
+        RIGHT: ('faster',),
+        'x': ('exit',),
+    }
+    menu = '(\u2190) Slower, (\u2192) Faster, e(X)it'
 
     def exit(self) -> 'Core':
         """Exit autorun state."""
         return Core(**self.asdict())
 
+    def faster(self) -> 'Autorun':
+        """Command method. Decrease the time between ticks."""
+        self.pace -= 0.01
+        if self.pace < 0.0:
+            self.pace = 0.0
+        return self
+
     def input(self) -> Command:
         """Get and handle input from the user."""
-        cmd = 'run'
+        cmd = ('run',)
         with self.term.cbreak():
-            raw_input = self.term.inkey(timeout=0.005)
+            raw_input = self.term.inkey(timeout=0.001)
         if raw_input:
-            cmd = 'exit'
-        return (cmd,)
+            if raw_input in self.commands:
+                cmd = self.commands[raw_input]
+        return cmd
 
     def run(self) -> 'Autorun':
         """Advance the generation of the grid."""
+        if self.pace:
+            sleep(self.pace)
         self.data.tick()
+        return self
+
+    def slower(self) -> 'Autorun':
+        """Command method. Increase the time between ticks."""
+        self.pace += 0.01
         return self
 
     def update_ui(self):
@@ -214,8 +241,8 @@ class Config(State):
             value = getattr(self, setting)
             line = str(self.term.move(i, 0))
             if self.selected == i:
-                line += self.term.bright_white_on_green
-            line += f'{setting.title()}: {value}'
+                line += self.term.black_on_green
+            line += f'{setting.title()}: {value}' + self.term.clear_eol
             if self.selected == i:
                 line += self.term.normal
             print(line)
@@ -234,12 +261,19 @@ class Config(State):
         """Command method. Exit config mode and return to the core."""
         return Core(**self.asdict())
 
-    def select(self) -> 'Config':
+    def select(self) -> Union['Config', 'Rule']:
         """Command method. Change the selected setting."""
+        state: Union['Config', 'Rule'] = self
         setting = self.settings[self.selected]
-        current = getattr(self, setting)
-        setattr(self, setting, not current)
-        return self
+
+        if setting == 'rule':
+            state = Rule(**self.asdict())
+
+        else:
+            current = getattr(self, setting)
+            setattr(self, setting, not current)
+
+        return state
 
     def up(self) -> 'Config':
         """Command method. Select the previous setting in the list."""
@@ -315,10 +349,6 @@ class Core(State):
         self.data.randomize()
         return self
 
-    def rule(self) -> 'Rule':
-        """Command method. Switch to rule state."""
-        return Rule(**self.asdict())
-
     def save(self) -> 'Save':
         """Command method. Switch to save state."""
         return Save(**self.asdict())
@@ -333,17 +363,23 @@ class Core(State):
 class Edit(State):
     """The state for manually editing the grid."""
     commands = {
-        UP: 'up',
         DOWN: 'down',
         LEFT: 'left',
         RIGHT: 'right',
-        'e': 'exit',
+        UP: 'up',
+        SDOWN: 'down_10',
+        SLEFT: 'left_10',
+        SRIGHT: 'right_10',
+        SUP: 'up_10',
         ' ': 'flip',
+        'x': 'exit',
         'r': 'restore',
         's': 'snapshot',
     }
-    menu = ('(\u2190\u2191\u2192\u2193) Move, (space) Flip, (E)xit, '
-            '(R)estore, (S)napshot')
+    menu = (
+        '(\u2190\u2191\u2192\u2193) Move, (space) Flip, '
+        '(R)estore, (S)napshot, e(X)it'
+    )
 
     def __init__(self, *args, **kwargs):
         """Initialize an instance of Edit."""
@@ -410,6 +446,11 @@ class Edit(State):
         self._move_cursor(1, 0)
         return self
 
+    def down_10(self) -> 'Edit':
+        """Command method. Move the cursor down one row."""
+        self._move_cursor(10, 0)
+        return self
+
     def exit(self) -> 'Core':
         """Command method, switch to the Core state."""
         return Core(**self.asdict())
@@ -426,9 +467,19 @@ class Edit(State):
         self._move_cursor(0, -1)
         return self
 
+    def left_10(self) -> 'Edit':
+        """Command method. Move the cursor left ten columns."""
+        self._move_cursor(0, -10)
+        return self
+
     def right(self) -> 'Edit':
         """Command method. Move the cursor right one column."""
         self._move_cursor(0, 1)
+        return self
+
+    def right_10(self) -> 'Edit':
+        """Command method. Move the cursor right ten columns."""
+        self._move_cursor(0, 10)
         return self
 
     def restore(self) -> 'Edit':
@@ -447,6 +498,11 @@ class Edit(State):
     def up(self) -> 'Edit':
         """Command method. Move the cursor up one row."""
         self._move_cursor(-1, 0)
+        return self
+
+    def up_10(self) -> 'Edit':
+        """Command method. Move the cursor up ten rows."""
+        self._move_cursor(-10, 0)
         return self
 
     def update_ui(self):
@@ -477,11 +533,11 @@ class Load(State):
     commands = {
         DOWN: 'down',
         UP: 'up',
-        'e': 'exit',
         'f': 'file',
+        'x': 'exit',
         '\n': 'load',
     }
-    menu = '(\u2191\u2192) Move, (\u23ce) Select, (E)xit, (F)rom file'
+    menu = '(\u2191\u2192) Move, (\u23ce) Select, (F)rom file, e(X)it'
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -491,16 +547,19 @@ class Load(State):
 
     def _draw_state(self):
         """Display the files available to be loaded."""
-        height = self.data.height // 2
-        if self.data.height % 2:
-            height += 1
+        height = self.term.height - 3
 
         self._get_files()
-        for index, name in enumerate(self.files):
+        start = 0
+        stop = height
+        if self.selected > height - 1:
+            stop = self.selected + 1
+            start = stop - height
+        for index, name in enumerate(self.files[start:stop]):
             path = self.path / name
             if path.is_dir():
                 name = '\u25b8 ' + name
-            if index == self.selected:
+            if index + start == self.selected:
                 name = self.term.on_green + name + self.term.normal
             print(self.term.move(index, 0) + name + self.term.clear_eol)
 
@@ -588,7 +647,7 @@ class Rule(State):
     def change(self, rule:str) -> 'Core':
         """Change the rules of the grid."""
         self.data.rule = rule
-        return Core(self.data, self.term)
+        return Core(**self.asdict())
 
     def exit(self) -> 'Core':
         """Exit rule state."""
@@ -788,6 +847,12 @@ def main():
         type=str
     )
     p.add_argument(
+        '-p', '--pace',
+        help='The delay between ticks when autorunning.',
+        action='store',
+        type=float
+    )
+    p.add_argument(
         '-r', '--rule',
         help='The rule for the Game of Life.',
         action='store',
@@ -807,6 +872,8 @@ def main():
             kwargs['file'] = args.file.strip()
         if args.no_wrap:
             kwargs['wrap'] = False
+        if args.pace:
+            kwargs['pace'] = args.pace
         if args.rule:
             kwargs['rule'] = args.rule.strip()
         state = Start(**kwargs)
