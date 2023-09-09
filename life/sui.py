@@ -715,19 +715,25 @@ class Save(State):
         cmd: Command | None = None
         with self.term.cbreak():
             while not cmd:
-                raw_input = self.term.inkey()
-                if raw_input == '\n':
+                key = self.term.inkey()
+                if key == '\n':
                     cmd = ('save', buffer)
-                elif raw_input == '\b':
+                elif key == '\b' or key == '\x7f':
                     buffer = buffer[:-1]
-                elif raw_input == '\t':
+                    x -= 1
+                    print(
+                        self.term.move(y, x) + ' ',
+                        end='',
+                        flush=True
+                    )
+                elif key == '\t':
                     buffer += self._expand_dir(buffer)
-                elif raw_input == ESC:
+                elif key == ESC:
                     cmd = ('exit',)
                 else:
-                    buffer += raw_input
+                    buffer += key
                     print(
-                        self.term.move(y, x) + raw_input,
+                        self.term.move(y, x) + key,
                         end='',
                         flush=True
                     )
