@@ -64,10 +64,10 @@ The initial commands available are:
 * (C)lear: turn all live cells to dead cells.
 * (E)dit: Enter edit mode, where you can manually set which cells are 
   alive and dead.
+* con(F)ig: Change configuration settings.
 * (L)oad: load a saved pattern.
 * (N)ext: advance to the next generation.
 * (S)ave: save the current pattern.
-* r(U)le: change the Game of Life rules used by the grid.
 * (Q)uit: quit this Game of Life.
 
 
@@ -99,6 +99,7 @@ The following features are still planned to be implemented:
 *   (Done.) Allow editing movement by 10.
 *   Manage different data entry types for configuration settings.
 *   Allow scrolling and selection of files when saving.
+*   Allow editing to increase and decrease brush size.
 *   Allow editing to place -ominos.
 *   Allow editing to place rotated -ominoes.
 *   Allow editing to place agars.

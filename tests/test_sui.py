@@ -136,22 +136,22 @@ def small_term(mocker):
     return term
 
 
-# Fixtures for Autorun.
-@pt.fixture
-def autorun(grid, term):
-    return sui.Autorun(grid, term)
-
-
-@pt.fixture
-def window_autorun(big_grid, small_term):
-    autorun = sui.Autorun(big_grid, small_term)
-    autorun.origin_x = 1
-    autorun.origin_y = 3
-    return autorun
-
-
 # Tests for Autorun.
 class TestAutorun():
+    # Fixtures for Autorun.
+    @pt.fixture
+    def autorun(self, grid, term):
+        """An :class:`Autorun` object for testing."""
+        return sui.Autorun(grid, term)
+
+    @pt.fixture
+    def window_autorun(self, big_grid, small_term):
+        """An :class:`Autorun` object for testing windowing."""
+        autorun = sui.Autorun(big_grid, small_term)
+        autorun.origin_x = 1
+        autorun.origin_y = 3
+        return autorun
+
     # Tests for Autorun initialization.
     def test_Autorun_init(self, grid, term):
         """When given required parameters, :class:`Autorun` should return
@@ -263,16 +263,15 @@ class TestAutorun():
         )
 
 
-# Fixtures for Config.
-@pt.fixture
-def config(grid, term):
-    """A :class:`Config` object for testing."""
-    config = sui.Config(grid, term)
-    return config
-
-
 # Tests for Config.
 class TestConfig:
+    # Fixtures for Config.
+    @pt.fixture
+    def config(self, grid, term):
+        """A :class:`Config` object for testing."""
+        config = sui.Config(grid, term)
+        return config
+
     # Tests for Config initialization.
     def test_Config_init_all_defaults(self, grid, term):
         """When given required parameters, :class:`Config` should return
@@ -404,24 +403,22 @@ class TestConfig:
         )
 
 
-# Fixtures for Core.
-@pt.fixture
-def core(grid, term):
-    """A :class:`Core` object for testing."""
-    return sui.Core(grid, term)
-
-
-@pt.fixture
-def window_core(big_grid, small_term):
-    """A :class:`Core` object for testing."""
-    core = sui.Core(big_grid, small_term)
-    core.origin_x = 1
-    core.origin_y = 3
-    return core
-
-
 # Tests for Core.
 class TestCore:
+    # Fixtures for Core.
+    @pt.fixture
+    def core(self, grid, term):
+        """A :class:`Core` object for testing."""
+        return sui.Core(grid, term)
+
+    @pt.fixture
+    def window_core(self, big_grid, small_term):
+        """A :class:`Core` object for testing."""
+        core = sui.Core(big_grid, small_term)
+        core.origin_x = 1
+        core.origin_y = 3
+        return core
+
     # Tests for Core initialization.
     def test_Core_init(self, grid, term):
         """When given required parameters, :class:`Core` should return
@@ -615,35 +612,32 @@ class TestCore:
         )
 
 
-# Fixtures for Edit.
-@pt.fixture
-def edit(grid, term, tmp_path):
-    """An :class:`Edit` object for testing."""
-    edit = sui.Edit(grid, term)
-    edit.path = tmp_path / '.snapshot.txt'
-    yield edit
-
-
-@pt.fixture
-def edit_40(grid_40, term_40, tmp_path):
-    """An :class:`Edit` object for testing."""
-    edit = sui.Edit(grid_40, term_40)
-    edit.path = tmp_path / '.snapshot.txt'
-    yield edit
-
-
-@pt.fixture
-def window_edit(big_grid, small_term, tmp_path):
-    """An :class:`Edit` object for testing."""
-    edit = sui.Edit(big_grid, small_term)
-    edit.path = tmp_path / '.snapshot.txt'
-    edit.origin_x = 1
-    edit.origin_y = 3
-    yield edit
-
-
 # Tests for Edit.
 class TestEdit:
+    # Fixtures for Edit.
+    @pt.fixture
+    def edit(self, grid, term, tmp_path):
+        """An :class:`Edit` object for testing."""
+        edit = sui.Edit(grid, term)
+        edit.path = tmp_path / '.snapshot.txt'
+        yield edit
+
+    @pt.fixture
+    def edit_40(self, grid_40, term_40, tmp_path):
+        """An :class:`Edit` object for testing."""
+        edit = sui.Edit(grid_40, term_40)
+        edit.path = tmp_path / '.snapshot.txt'
+        yield edit
+
+    @pt.fixture
+    def window_edit(self, big_grid, small_term, tmp_path):
+        """An :class:`Edit` object for testing."""
+        edit = sui.Edit(big_grid, small_term)
+        edit.path = tmp_path / '.snapshot.txt'
+        edit.origin_x = 1
+        edit.origin_y = 3
+        yield edit
+
     # Tests for Edit initialization.
     def test_Edit_init(self, grid, term):
         """When given required parameters, :class:`Edit` should return
@@ -900,29 +894,27 @@ class TestEnd:
             assert getattr(obj, attr) is required[attr]
 
 
-# Fixtures for Load.
-@pt.fixture
-def load(grid, term):
-    """A :class:`Load` object for testing."""
-    load = sui.Load(grid, term)
-    load.files = ['spam', 'eggs', 'ham']
-    load.path = Path('tests/data')
-    return load
-
-
-@pt.fixture
-def window_load(big_grid, small_term):
-    """A :class:`Load` object for testing."""
-    load = sui.Load(big_grid, small_term)
-    load.files = ['spam', 'eggs', 'ham']
-    load.path = Path('tests/data')
-    load.origin_x = 1
-    load.origin_y = 3
-    return load
-
-
 # Tests for Load.
 class TestLoad:
+    # Fixtures for Load.
+    @pt.fixture
+    def load(self, grid, term):
+        """A :class:`Load` object for testing."""
+        load = sui.Load(grid, term)
+        load.files = ['spam', 'eggs', 'ham']
+        load.path = Path('tests/data')
+        return load
+
+    @pt.fixture
+    def window_load(self, big_grid, small_term):
+        """A :class:`Load` object for testing."""
+        load = sui.Load(big_grid, small_term)
+        load.files = ['spam', 'eggs', 'ham']
+        load.path = Path('tests/data')
+        load.origin_x = 1
+        load.origin_y = 3
+        return load
+
     # Tests for Load initialization.
     def test_Load_init(self, grid, term):
         """When given required parameters, :class:`Load` should return
@@ -1081,21 +1073,19 @@ class TestLoad:
         )
 
 
-# Fixtures for Rule.
-@pt.fixture
-def rule(grid, term):
-    """A :class:`Rule` object for testing."""
-    return sui.Rule(grid, term)
-
-
-@pt.fixture
-def window_rule(big_grid, small_term):
-    """A :class:`Rule` object for testing."""
-    return sui.Rule(big_grid, small_term)
-
-
 # Tests for Rule.
 class TestRule:
+    # Fixtures for Rule.
+    @pt.fixture
+    def rule(self, grid, term):
+        """A :class:`Rule` object for testing."""
+        return sui.Rule(grid, term)
+
+    @pt.fixture
+    def window_rule(self, big_grid, small_term):
+        """A :class:`Rule` object for testing."""
+        return sui.Rule(big_grid, small_term)
+
     # Tests for Rule initialization.
     def test_Rule_init(self, grid, term):
         """When given required parameters, :class:`Rule` should return
@@ -1178,23 +1168,21 @@ class TestRule:
         )
 
 
-# Fixtures for Save tests.
-@pt.fixture
-def save(grid, term, tmp_path):
-    save = sui.Save(grid, term)
-    save.path = tmp_path
-    yield save
-
-
-@pt.fixture
-def window_save(big_grid, small_term, tmp_path):
-    save = sui.Save(big_grid, small_term)
-    save.path = tmp_path
-    yield save
-
-
 # Tests for Save.
 class TestSave:
+    # Fixtures for Save tests.
+    @pt.fixture
+    def save(self, grid, term, tmp_path):
+        save = sui.Save(grid, term)
+        save.path = tmp_path
+        yield save
+
+    @pt.fixture
+    def window_save(self, big_grid, small_term, tmp_path):
+        save = sui.Save(big_grid, small_term)
+        save.path = tmp_path
+        yield save
+
     # Tests for Save initialization.
     def test_Save_init_all_defaults(self, grid, term):
         """When given required parameters, :class:`Save` should return
@@ -1307,25 +1295,23 @@ class TestSave:
         )
 
 
-# Fixtures for Start.
-@pt.fixture
-def start(grid, term):
-    """A :class:`Start` object for testing."""
-    start = sui.Start(grid, term)
-    return start
-
-
-@pt.fixture
-def window_start(big_grid, small_term):
-    """A :class:`Start` object with a window for testing."""
-    start = sui.Start(big_grid, small_term)
-    start.origin_x = 1
-    start.origin_y = 3
-    return start
-
-
 # Tests for Start.
 class TestStart:
+    # Fixtures for Start.
+    @pt.fixture
+    def start(self, grid, term):
+        """A :class:`Start` object for testing."""
+        start = sui.Start(grid, term)
+        return start
+
+    @pt.fixture
+    def window_start(self, big_grid, small_term):
+        """A :class:`Start` object with a window for testing."""
+        start = sui.Start(big_grid, small_term)
+        start.origin_x = 1
+        start.origin_y = 3
+        return start
+
     # Tests for Start initialization.
     def test_Start_init_all_default(self, term):
         """Given no parameters, :class:`Start` should initialize an
