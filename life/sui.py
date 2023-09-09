@@ -128,7 +128,7 @@ class State(ABC):
 
     def input(self) -> Command:
         """Get and handle input from the user."""
-        cmd = None
+        cmd: Command | str | None = None
         prompt = ''
         while not cmd:
             self._draw_prompt(prompt)
@@ -140,7 +140,9 @@ class State(ABC):
                 self._draw_prompt('')
                 sleep(.05)
                 prompt = 'Invalid command. Please try again.'
-        return (cmd,)
+        if isinstance(cmd, str):
+            cmd = (cmd,)
+        return cmd
 
     @abstractmethod
     def update_ui(self) -> None:
@@ -363,14 +365,14 @@ class Core(State):
 class Edit(State):
     """The state for manually editing the grid."""
     commands = {
-        DOWN: 'down',
-        LEFT: 'left',
-        RIGHT: 'right',
-        UP: 'up',
-        SDOWN: 'down_10',
-        SLEFT: 'left_10',
-        SRIGHT: 'right_10',
-        SUP: 'up_10',
+        DOWN: ('down', 1),
+        LEFT: ('left', 1),
+        RIGHT: ('right', 1),
+        UP: ('up', 1),
+        SDOWN: ('down', 10),
+        SLEFT: ('left', 10),
+        SRIGHT: ('right', 10),
+        SUP: ('up', 10),
         ' ': 'flip',
         'x': 'exit',
         'r': 'restore',
@@ -428,7 +430,7 @@ class Edit(State):
         print(self.term.move(y, self.col) + color + char
               + self.term.bright_white_on_black)
 
-    def _move_cursor(self, d_row:int, d_col:int):
+    def _move_cursor(self, d_row: int, d_col: int):
         """Move the cursor and update the UI.
 
         :param d_row: How much to change the row by.
@@ -441,14 +443,9 @@ class Edit(State):
         self._draw_state()
         self._draw_cursor()
 
-    def down(self) -> 'Edit':
-        """Command method. Move the cursor down one row."""
-        self._move_cursor(1, 0)
-        return self
-
-    def down_10(self) -> 'Edit':
-        """Command method. Move the cursor down one row."""
-        self._move_cursor(10, 0)
+    def down(self, distance: int = 1) -> 'Edit':
+        """Command method. Move the cursor down."""
+        self._move_cursor(distance, 0)
         return self
 
     def exit(self) -> 'Core':
@@ -462,24 +459,14 @@ class Edit(State):
         self._draw_cursor()
         return self
 
-    def left(self) -> 'Edit':
-        """Command method. Move the cursor left one column."""
-        self._move_cursor(0, -1)
+    def left(self, distance: int = 1) -> 'Edit':
+        """Command method. Move the cursor left."""
+        self._move_cursor(0, distance * -1)
         return self
 
-    def left_10(self) -> 'Edit':
-        """Command method. Move the cursor left ten columns."""
-        self._move_cursor(0, -10)
-        return self
-
-    def right(self) -> 'Edit':
-        """Command method. Move the cursor right one column."""
-        self._move_cursor(0, 1)
-        return self
-
-    def right_10(self) -> 'Edit':
-        """Command method. Move the cursor right ten columns."""
-        self._move_cursor(0, 10)
+    def right(self, distance: int = 1) -> 'Edit':
+        """Command method. Move the cursor right."""
+        self._move_cursor(0, distance)
         return self
 
     def restore(self) -> 'Edit':
@@ -495,9 +482,9 @@ class Edit(State):
         save.save(self.path)
         return self
 
-    def up(self) -> 'Edit':
-        """Command method. Move the cursor up one row."""
-        self._move_cursor(-1, 0)
+    def up(self, distance: int = 1) -> 'Edit':
+        """Command method. Move the cursor up."""
+        self._move_cursor(distance * -1, 0)
         return self
 
     def up_10(self) -> 'Edit':
@@ -641,10 +628,12 @@ class Rule(State):
     """Change the rules of the grid."""
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.menu = ('Enter the rules in BS notation. (Current rule: '
-                     f'{self.data.rule})')
+        self.menu = (
+            'Enter the rules in BS notation. (Current rule: '
+            f'{self.data.rule})'
+        )
 
-    def change(self, rule:str) -> 'Core':
+    def change(self, rule: str) -> 'Core':
         """Change the rules of the grid."""
         self.data.rule = rule
         return Core(**self.asdict())

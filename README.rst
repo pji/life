@@ -86,7 +86,7 @@ To-do List
 ----------
 The following features are still planned to be implemented:
 
-*   (Done.) Handle grids larger than the display area (windowing)
+*   (Done.) Handle grids larger than the display area. (windowing)
 *   (Done.) Terminate cells at the edge of the grid rather than letting
     them wrap.
 *   (Done.) Allow wrap to be set as a command line argument.
@@ -97,11 +97,14 @@ The following features are still planned to be implemented:
 *   (Done.) Set autorun rate.
 *   (Done.) Move `main` to `main`.
 *   (Done.) Allow editing movement by 10.
+*   Manage different data entry types for configuration settings.
+*   Allow scrolling and selection of files when saving.
 *   Allow editing to place -ominos.
 *   Allow editing to place rotated -ominoes.
 *   Allow editing to place agars.
 *   Display current generation number.
 *   Read RLE files.
 *   Move "exit" command to X from E.
-*   Handle window movement
+*   Show previous generation as a different color.
+*   Handle window movement.
 *   Look at more efficient algorithms for GoL. (bitpack?, striding?)
