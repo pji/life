@@ -14,6 +14,7 @@ from life import life, sui
 
 
 # Terminal keys:
+ESC = '\x1b'
 DOWN = '\x1b[B'
 UP = '\x1b[A'
 LEFT = '\x1b[D'
@@ -1219,6 +1220,15 @@ class TestSave:
             assert getattr(obj, attr) == optional[attr]
 
     # Tests for Save commands.
+    def test_Save_exit(self, save):
+        """When called, :meth:`Save.exit` should return a :class:`Core`
+        object.
+        """
+        state = save.exit()
+        assert isinstance(state, sui.Core)
+        assert state.data is save.data
+        assert state.term is save.term
+
     def test_Save_save(self, save):
         """Given a filename, :meth:`Save.save` should save the current
         grid to a file and return a :class:`Core` object.
@@ -1262,8 +1272,37 @@ class TestSave:
         """When given input, :meth:`Save.input` should return the expected
         command string.
         """
-        mocker.patch('life.sui.input', side_effect=['spam'])
+        # mocker.patch('life.sui.input', side_effect=['spam'])
+        save.term.inkey.side_effect = ['s', 'p', 'a', 'm', '\n']
         assert save.input() == ('save', 'spam')
+
+    def test_Save_backspace(self, mocker, save):
+        """When given input, :meth:`Save.input` should return the expected
+        command string. Backspace should delete characters.
+        """
+        # mocker.patch('life.sui.input', side_effect=['spam'])
+        save.term.inkey.side_effect = ['s', 'p', 'a', 'a', '\b', 'm', '\n']
+        assert save.input() == ('save', 'spam')
+
+    def test_Save_escape(self, mocker, save):
+        """When given input, :meth:`Save.input` should return the expected
+        command string. Escape should exit without saving.
+        """
+        # mocker.patch('life.sui.input', side_effect=['spam'])
+        save.term.inkey.side_effect = ['s', 'p', 'a', 'm', ESC]
+        assert save.input() == ('exit',)
+
+    def test_Save_tab(self, mocker, save):
+        """When given input, :meth:`Save.input` should return the expected
+        command string. Tab should complete directory names.
+        """
+        # mocker.patch('life.sui.input', side_effect=['spam'])
+        save.path = Path.cwd()
+        save.term.inkey.side_effect = [
+            't', 'e', '\t',
+            's', 'p', 'a', 'm', '\n'
+        ]
+        assert save.input() == ('save', 'tests/spam')
 
     # Tests for Save UI updates.
     def test_Save_update_ui(self, capsys, mocker, save, term):
@@ -1274,22 +1313,7 @@ class TestSave:
         save.update_ui()
         captured = capsys.readouterr()
         assert repr(captured.out) == repr(
-            term.move(0, 0) + 'eggs' + term.clear_eol + '\n'
-            + term.move(1, 0) + 'spam' + term.clear_eol + '\n'
-            + term.move(2, 0) + '\u2500' * 4 + '\n'
-            + term.move(3, 0) + save.menu + term.clear_eol
-        )
-
-    def test_Save_update_ui_clear_lines(self, capsys, mocker, save, term):
-        """When called, :meth:`Save.update_ui` should redraw the UI
-        for the save state.
-        """
-        mocker.patch('pathlib.Path.iterdir', return_value=['spam',])
-        save.update_ui()
-        captured = capsys.readouterr()
-        assert repr(captured.out) == repr(
-            term.move(0, 0) + 'spam' + term.clear_eol + '\n'
-            + term.move(1, 0) + term.clear_eol + '\n'
+            grid_start_lines
             + term.move(2, 0) + '\u2500' * 4 + '\n'
             + term.move(3, 0) + save.menu + term.clear_eol
         )

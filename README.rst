@@ -97,8 +97,8 @@ The following features are still planned to be implemented:
 *   (Done.) Set autorun rate.
 *   (Done.) Move `main` to `main`.
 *   (Done.) Allow editing movement by 10.
+*   (Done.) Improve text entry when saving patterns.
 *   Manage different data entry types for configuration settings.
-*   Allow scrolling and selection of files when saving.
 *   Allow editing to increase and decrease brush size.
 *   Allow editing to place -ominos.
 *   Allow editing to place rotated -ominoes.

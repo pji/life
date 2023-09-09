@@ -26,6 +26,7 @@ from life.life import Grid
 Command = tuple[str] | tuple[str, str]
 
 # Useful terminal escape sequences:
+ESC = '\x1b'
 DOWN = '\x1b[B'
 UP = '\x1b[A'
 LEFT = '\x1b[D'
@@ -487,11 +488,6 @@ class Edit(State):
         self._move_cursor(distance * -1, 0)
         return self
 
-    def up_10(self) -> 'Edit':
-        """Command method. Move the cursor up ten rows."""
-        self._move_cursor(-10, 0)
-        return self
-
     def update_ui(self):
         """Draw the UI for the edit state."""
         self._draw_state()
@@ -662,21 +658,22 @@ class Save(State):
     menu = 'Enter name for save file.'
     path = Path('')
 
-    def _draw_state(self):
-        """List the files available to be loaded."""
-        height = self.data.height // 2
-        if self.data.height % 2:
-            height += 1
-
-        self.files = sorted(path for path in self.path.iterdir())
-        for index, path in enumerate(self.files):
-            path = Path(path)
-            name = path.name
-            print(self.term.move(index, 0) + name + self.term.clear_eol)
-
-        if len(self.files) < height:
-            for y in range(len(self.files), height):
-                print(self.term.move(y, 0) + self.term.clear_eol)
+    def _expand_dir(self, path: str | Path) -> str:
+        """Given the start of the name of a directory, if there is only
+        one file or directory that starts with that name, return the
+        rest of the characters of the name of that file or directory.
+        """
+        path = Path(path)
+        matches = [
+            child for child in path.parent.iterdir()
+            if child.name.startswith(path.name)
+        ]
+        if len(matches) == 1:
+            result = matches[0].name[len(path.name):]
+            if matches[0].is_dir():
+                result += '/'
+            return result
+        return ''
 
     def _remove_padding(self, data: np.ndarray) -> list[Any]:
         """Remove empty rows and columns surrounding the pattern."""
@@ -704,11 +701,38 @@ class Save(State):
 
         return [row[x_start:x_end] for row in data[y_start:y_end]]
 
+    def exit(self) -> 'Core':
+        """Command method. Return to core without saving."""
+        return Core(**self.asdict())
+
     def input(self) -> Command:
         """Get a file name from the user."""
-        y = self.data.height + 2
-        filename = input(self.term.move(y, 0) + '> ')
-        return ('save', filename)
+        self._draw_prompt()
+        y = -(self.data.height // -2) + 2
+        x = 2
+
+        buffer = ''
+        cmd: Command | None = None
+        with self.term.cbreak():
+            while not cmd:
+                raw_input = self.term.inkey()
+                if raw_input == '\n':
+                    cmd = ('save', buffer)
+                elif raw_input == '\b':
+                    buffer = buffer[:-1]
+                elif raw_input == '\t':
+                    buffer += self._expand_dir(buffer)
+                elif raw_input == ESC:
+                    cmd = ('exit',)
+                else:
+                    buffer += raw_input
+                    print(
+                        self.term.move(y, x) + raw_input,
+                        end='',
+                        flush=True
+                    )
+                    x += 1
+        return cmd
 
     def save(self, filename: str | Path) -> 'Core':
         """Save the current grid state to a file.
