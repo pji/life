@@ -111,6 +111,46 @@ class State(ABC):
         y = -(self.data.height // -2)
         print(self.term.move(y, 0) + '\u2500' * width)
 
+    def _expand_dir(self, path: str | Path) -> str:
+        """Given the start of the name of a directory, if there is only
+        one file or directory that starts with that name, return the
+        rest of the characters of the name of that file or directory.
+        """
+        path = Path(path)
+        matches = [
+            child for child in path.parent.iterdir()
+            if child.name.startswith(path.name)
+        ]
+        if len(matches) == 1:
+            result = matches[0].name[len(path.name):]
+            if matches[0].is_dir():
+                result += '/'
+            return result
+        return ''
+
+    def _get_text(self, y: int, x: int, is_path: bool = False) -> str:
+        buffer = ''
+        key = ''
+        with self.term.cbreak():
+            while key not in [ESC, '\n']:
+                if key in ['\b', '\x7f']:
+                    buffer = buffer[:-1]
+                    key = ' '
+                elif is_path and key == '\t':
+                    key = self._expand_dir(buffer)
+                    buffer += key
+                else:
+                    buffer += key
+                print(
+                    self.term.move(y, x + len(buffer) - len(key)) + key,
+                    end='',
+                    flush=True
+                )
+                key = self.term.inkey()
+        if key == ESC:
+            return ESC
+        return buffer
+
     def _get_window(self) -> NDArray[np.bool_]:
         """Get the visible area of the grid."""
         origin = (self.origin_y, self.origin_x)
@@ -658,23 +698,6 @@ class Save(State):
     menu = 'Enter name for save file.'
     path = Path('')
 
-    def _expand_dir(self, path: str | Path) -> str:
-        """Given the start of the name of a directory, if there is only
-        one file or directory that starts with that name, return the
-        rest of the characters of the name of that file or directory.
-        """
-        path = Path(path)
-        matches = [
-            child for child in path.parent.iterdir()
-            if child.name.startswith(path.name)
-        ]
-        if len(matches) == 1:
-            result = matches[0].name[len(path.name):]
-            if matches[0].is_dir():
-                result += '/'
-            return result
-        return ''
-
     def _remove_padding(self, data: np.ndarray) -> list[Any]:
         """Remove empty rows and columns surrounding the pattern."""
         # Find the first row with the pattern.
@@ -709,36 +732,11 @@ class Save(State):
         """Get a file name from the user."""
         self._draw_prompt()
         y = -(self.data.height // -2) + 2
-        x = 2
 
-        buffer = ''
-        cmd: Command | None = None
-        with self.term.cbreak():
-            while not cmd:
-                key = self.term.inkey()
-                if key == '\n':
-                    cmd = ('save', buffer)
-                elif key == '\b' or key == '\x7f':
-                    buffer = buffer[:-1]
-                    x -= 1
-                    print(
-                        self.term.move(y, x) + ' ',
-                        end='',
-                        flush=True
-                    )
-                elif key == '\t':
-                    buffer += self._expand_dir(buffer)
-                elif key == ESC:
-                    cmd = ('exit',)
-                else:
-                    buffer += key
-                    print(
-                        self.term.move(y, x) + key,
-                        end='',
-                        flush=True
-                    )
-                    x += 1
-        return cmd
+        result = self._get_text(y, 2, is_path=True)
+        if result == ESC:
+            return ('exit',)
+        return ('save', result)
 
     def save(self, filename: str | Path) -> 'Core':
         """Save the current grid state to a file.

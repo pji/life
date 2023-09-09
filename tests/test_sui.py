@@ -1281,7 +1281,7 @@ class TestSave:
         command string. Backspace should delete characters.
         """
         # mocker.patch('life.sui.input', side_effect=['spam'])
-        save.term.inkey.side_effect = ['s', 'p', 'a', 'a', '\b', 'm', '\n']
+        save.term.inkey.side_effect = ['s', 'p', 'a', 'a', '\x7f', 'm', '\n']
         assert save.input() == ('save', 'spam')
 
     def test_Save_escape(self, mocker, save):
