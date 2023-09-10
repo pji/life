@@ -321,7 +321,7 @@ class TestConfig:
         called when the last setting is selected, select the
         first setting.
         """
-        config.selected = 1
+        config.selected = len(config.settings) - 1
         state = config.down()
         assert state is config
         assert config.selected == 0
@@ -337,7 +337,39 @@ class TestConfig:
         assert state.origin_x == config.origin_x
         assert state.origin_y == config.origin_y
 
-    def test_Config_select(self, config):
+    def test_Config_select_pace(self, config):
+        """When called, :meth:`Config.select` should set
+        :attr:`Config.pace` and return the parent object.
+        """
+        config.term.inkey.side_effect = [
+            '0', '.', '0', '9', '\n',
+        ]
+        config.selected = 0
+        state = config.select()
+        assert state is config
+        assert state.data is config.data
+        assert state.term is config.term
+        assert state.origin_x == config.origin_x
+        assert state.origin_y == config.origin_y
+        assert state.pace == 0.09
+
+    def test_Config_select_rule(self, config):
+        """When called, :meth:`Config.select` should set
+        :attr:`Config.rule` and return the parent object.
+        """
+        config.term.inkey.side_effect = [
+            'B', '3', '6', '/', 'S', '2', '3', '\n',
+        ]
+        config.selected = 1
+        state = config.select()
+        assert state is config
+        assert state.data is config.data
+        assert state.term is config.term
+        assert state.origin_x == config.origin_x
+        assert state.origin_y == config.origin_y
+        assert state.rule == 'B36/S23'
+
+    def test_Config_select_wrap(self, config):
         """When called, :meth:`Config.select` should change the selected
         setting then return itself.
         """
@@ -346,18 +378,6 @@ class TestConfig:
         assert state is config
         assert not state.wrap
         assert not state.data.wrap
-
-    def test_Config_select_rule(self, config):
-        """When called, :meth:`Config.select` should return a :class:`Rule`
-        object.
-        """
-        config.selected = 0
-        state = config.select()
-        assert isinstance(state, sui.Rule)
-        assert state.data is config.data
-        assert state.term is config.term
-        assert state.origin_x == config.origin_x
-        assert state.origin_y == config.origin_y
 
     def test_Config_up(self, config):
         """When called, :meth:`Config.up` should decrement
@@ -368,14 +388,14 @@ class TestConfig:
         assert state is config
         assert config.selected == 0
 
-    def test_Config_up(self, config):
+    def test_Config_up_from_top(self, config):
         """When called, :meth:`Config.up` should decrement
         :attr:`Config.selected` and return itself. If the
         first setting is selected, select the last setting.
         """
         state = config.up()
         assert state is config
-        assert config.selected == 1
+        assert config.selected == len(config.settings) - 1
 
     # Tests for Config input.
     def test_Config_input(self, config):
@@ -397,8 +417,9 @@ class TestConfig:
         captured = capsys.readouterr()
         assert repr(captured.out) == repr(
             term.move(0, 0) + term.black_on_green
-            + 'Rule: B3/S23' + term.clear_eol + term.normal + '\n'
-            + term.move(1, 0) + 'Wrap: True' + term.clear_eol + '\n'
+            + 'Pace: 0' + term.clear_eol + term.normal + '\n'
+            + term.move(1, 0) + 'Rule: B3/S23' + term.clear_eol + '\n'
+            + term.move(2, 0) + 'Wrap: True' + term.clear_eol + '\n'
             + term.move(2, 0) + '\u2500' * 4 + '\n'
             + term.move(3, 0) + config.menu + term.clear_eol
         )
@@ -1074,101 +1095,6 @@ class TestLoad:
         )
 
 
-# Tests for Rule.
-class TestRule:
-    # Fixtures for Rule.
-    @pt.fixture
-    def rule(self, grid, term):
-        """A :class:`Rule` object for testing."""
-        return sui.Rule(grid, term)
-
-    @pt.fixture
-    def window_rule(self, big_grid, small_term):
-        """A :class:`Rule` object for testing."""
-        return sui.Rule(big_grid, small_term)
-
-    # Tests for Rule initialization.
-    def test_Rule_init(self, grid, term):
-        """When given required parameters, :class:`Rule` should return
-        an instance with attributes set to the given values. It should
-        also initialize the cursor position.
-        """
-        required = {
-            'data': grid,
-            'term': term,
-        }
-        obj = sui.Rule(**required)
-        for attr in required:
-            assert getattr(obj, attr) is required[attr]
-
-    # Tests for Rule commands.
-    def test_Rule_change(self, rule):
-        """When given a rule, :meth:`Rule.change` should change the rules
-        of the grid and return an :class:`Core` object with the grid and
-        terminal objects.
-        """
-        state = rule.change('B36/S23')
-        assert isinstance(state, sui.Core)
-        assert state.data is rule.data
-        assert state.term is rule.term
-        assert rule.data.rule == 'B36/S23'
-
-    def test_Rule_change_window(self, window_rule):
-        """When given a rule, :meth:`Rule.change` should change the rules
-        of the grid and return an :class:`Core` object with the grid and
-        terminal objects.
-        """
-        state = window_rule.change('B36/S23')
-        assert isinstance(state, sui.Core)
-        assert state.data is window_rule.data
-        assert state.term is window_rule.term
-        assert window_rule.data.rule == 'B36/S23'
-        assert state.origin_x == window_rule.origin_x
-        assert state.origin_y == window_rule.origin_y
-
-    def test_Rule_exit(self, rule):
-        """When called, :meth:`Rule.exit` should return a :class:`Core`
-        object populated with the grid and terminal objects.
-        """
-        state = rule.exit()
-        assert isinstance(state, sui.Core)
-        assert state.data == rule.data
-        assert state.term == rule.term
-
-    def test_Rule_exit_window(self, window_rule):
-        """When called, :meth:`Rule.exit` should return a :class:`Core`
-        object populated with the grid and terminal objects.
-        """
-        state = window_rule.exit()
-        assert isinstance(state, sui.Core)
-        assert state.data == window_rule.data
-        assert state.term == window_rule.term
-        assert state.origin_x == window_rule.origin_x
-        assert state.origin_y == window_rule.origin_y
-
-    # Tests for Rule input.
-    def test_Rule_input(self, mocker, rule):
-        """When given input, :meth:`Rule.input` should return the expected
-        command string.
-        """
-        mocker.patch('life.sui.input', side_effect=['B0/S0', ''])
-        assert rule.input() == ('change', 'B0/S0')
-        assert rule.input() == ('exit',)
-
-    # Tests for Rule UI updates.
-    def test_Rule_update_ui(self, capsys, rule, term):
-        """When called, :meth:`Rule.update_ui` should redraw the UI
-        for the rule state.
-        """
-        rule.update_ui()
-        captured = capsys.readouterr()
-        assert repr(captured.out) == repr(
-            grid_start_lines
-            + term.move(2, 0) + '\u2500' * 4 + '\n'
-            + term.move(3, 0) + rule.menu + term.clear_eol
-        )
-
-
 # Tests for Save.
 class TestSave:
     # Fixtures for Save tests.
@@ -1268,27 +1194,46 @@ class TestSave:
         )
 
     # Tests for Save input.
-    def test_Save_input(self, mocker, save):
+    def test_Save_input(self, capsys, mocker, save, term):
         """When given input, :meth:`Save.input` should return the expected
         command string.
         """
-        # mocker.patch('life.sui.input', side_effect=['spam'])
         save.term.inkey.side_effect = ['s', 'p', 'a', 'm', '\n']
-        assert save.input() == ('save', 'spam')
+        cmd = save.input()
+        captured = capsys.readouterr()
+        assert cmd == ('save', 'spam')
+        assert repr(captured.out) == repr(
+            term.move(4, 0) + '> ' + term.clear_eol
+            + term.move(4, 2)
+            + term.move(4, 2) + 's'
+            + term.move(4, 3) + 'p'
+            + term.move(4, 4) + 'a'
+            + term.move(4, 5) + 'm'
+        )
 
-    def test_Save_backspace(self, mocker, save):
+    def test_Save_backspace(self, capsys, mocker, save, term):
         """When given input, :meth:`Save.input` should return the expected
         command string. Backspace should delete characters.
         """
-        # mocker.patch('life.sui.input', side_effect=['spam'])
         save.term.inkey.side_effect = ['s', 'p', 'a', 'a', '\x7f', 'm', '\n']
-        assert save.input() == ('save', 'spam')
+        cmd = save.input()
+        captured = capsys.readouterr()
+        assert cmd == ('save', 'spam')
+        assert repr(captured.out) == repr(
+            term.move(4, 0) + '> ' + term.clear_eol
+            + term.move(4, 2)
+            + term.move(4, 2) + 's'
+            + term.move(4, 3) + 'p'
+            + term.move(4, 4) + 'a'
+            + term.move(4, 5) + 'a'
+            + term.move(4, 5) + ' '
+            + term.move(4, 5) + 'm'
+        )
 
     def test_Save_escape(self, mocker, save):
         """When given input, :meth:`Save.input` should return the expected
         command string. Escape should exit without saving.
         """
-        # mocker.patch('life.sui.input', side_effect=['spam'])
         save.term.inkey.side_effect = ['s', 'p', 'a', 'm', ESC]
         assert save.input() == ('exit',)
 
@@ -1296,7 +1241,6 @@ class TestSave:
         """When given input, :meth:`Save.input` should return the expected
         command string. Tab should complete directory names.
         """
-        # mocker.patch('life.sui.input', side_effect=['spam'])
         save.path = Path.cwd()
         save.term.inkey.side_effect = [
             't', 'e', '\t',

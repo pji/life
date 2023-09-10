@@ -133,8 +133,10 @@ class State(ABC):
         key = ''
         with self.term.cbreak():
             while key not in [ESC, '\n']:
+                x_text = len(buffer)
                 if key in ['\b', '\x7f']:
                     buffer = buffer[:-1]
+                    x_text -= 1
                     key = ' '
                 elif is_path and key == '\t':
                     key = self._expand_dir(buffer)
@@ -142,7 +144,7 @@ class State(ABC):
                 else:
                     buffer += key
                 print(
-                    self.term.move(y, x + len(buffer) - len(key)) + key,
+                    self.term.move(y, x + x_text) + key,
                     end='',
                     flush=True
                 )
@@ -254,6 +256,7 @@ class Config(State):
         super().__init__(*args, **kwargs)
         self.selected = 0
         self.settings = [
+            'pace',
             'rule',
             'wrap',
         ]
@@ -304,19 +307,32 @@ class Config(State):
         """Command method. Exit config mode and return to the core."""
         return Core(**self.asdict())
 
-    def select(self) -> Union['Config', 'Rule']:
+    def select(self) -> 'Config':
         """Command method. Change the selected setting."""
-        state: Union['Config', 'Rule'] = self
         setting = self.settings[self.selected]
 
-        if setting == 'rule':
-            state = Rule(**self.asdict())
+        if setting == 'pace':
+            self._draw_commands(
+                'Enter a number of seconds between each generation:'
+            )
+            y = -(self.data.height // -2) + 2
+            self._draw_prompt()
+            self.pace = float(self._get_text(y, 2))
+
+        elif setting == 'rule':
+            self._draw_commands(
+                'Enter the rules in BS notation. (Current rule: '
+                f'{self.data.rule})'
+            )
+            y = -(self.data.height // -2) + 2
+            self._draw_prompt()
+            self.rule = self._get_text(y, 2)
 
         else:
             current = getattr(self, setting)
             setattr(self, setting, not current)
 
-        return state
+        return self
 
     def up(self) -> 'Config':
         """Command method. Select the previous setting in the list."""
@@ -655,39 +671,6 @@ class Load(State):
 
     def update_ui(self):
         """Draw the load state UI."""
-        self._draw_state()
-        self._draw_rule()
-        self._draw_commands(self.menu)
-
-
-class Rule(State):
-    """Change the rules of the grid."""
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.menu = (
-            'Enter the rules in BS notation. (Current rule: '
-            f'{self.data.rule})'
-        )
-
-    def change(self, rule: str) -> 'Core':
-        """Change the rules of the grid."""
-        self.data.rule = rule
-        return Core(**self.asdict())
-
-    def exit(self) -> 'Core':
-        """Exit rule state."""
-        return Core(**self.asdict())
-
-    def input(self) -> Command:
-        """Get a rule from the user."""
-        y = self.data.height + 2
-        rule = input(self.term.move(y, 0) + '> ')
-        if rule:
-            return ('change', rule)
-        return ('exit',)
-
-    def update_ui(self):
-        """Draw the UI for autorun state."""
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)
