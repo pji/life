@@ -19,7 +19,7 @@ from numpy.typing import NDArray
 
 import life.pattern
 from life import util
-from life.life import Grid
+from life.life import Grid, InvalidRule
 
 
 # Types.
@@ -320,13 +320,22 @@ class Config(State):
             self.pace = float(self._get_text(y, 2))
 
         elif setting == 'rule':
-            self._draw_commands(
+            y = -(self.data.height // -2) + 2
+            msg = (
                 'Enter the rules in BS notation. (Current rule: '
                 f'{self.data.rule})'
             )
-            y = -(self.data.height // -2) + 2
-            self._draw_prompt()
-            self.rule = self._get_text(y, 2)
+            while True:
+                self._draw_commands(msg)
+                self._draw_prompt()
+                try:
+                    rule = self._get_text(y, 2)
+                    if rule:
+                        self.rule = rule
+                except InvalidRule:
+                    msg = 'Invalid rule. ' + msg
+                    continue
+                break
 
         else:
             current = getattr(self, setting)

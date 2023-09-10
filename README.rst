@@ -100,7 +100,7 @@ The following features are still planned to be implemented:
 *   (Done.) Improve text entry when saving patterns.
 *   (Done.) Manage different data entry types for configuration settings.
 *   (Done.) Fix backspacing in text fields.
-*   Validate rules.
+*   (Done.) Validate rules.
 *   Move clear to edit.
 *   Save as cells format.
 *   Allow editing to increase and decrease brush size.

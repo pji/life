@@ -7,6 +7,7 @@ A simple implementation of Conway's Game of Life.
 from collections import Counter
 from collections.abc import Iterator, Sequence
 from itertools import chain, product
+from re import search
 
 import numpy as np
 from numpy.typing import NDArray
@@ -20,6 +21,10 @@ Gridlike = Sequence[Sequence[Boollike]]
 
 
 # Exceptions.
+class InvalidRule(ValueError):
+    """The given rule is not properly formatted."""
+
+
 class PartialImplentation(Exception):
     """Grid doesn't fully implement MutableSequence.'"""
 
@@ -66,6 +71,11 @@ class Grid:
     @rule.setter
     def rule(self, value: str) -> None:
         """The rules for the Game of Life."""
+        # Validate rule string.
+        if not search(r'^[bB][0-9]*[/][sS][0-9]*$', value):
+            raise InvalidRule('Invalid rule format.')
+
+        # Parse rule string.
         born_str, survive_str = value.split('/')
         born = [int(n) for n in born_str[1:]]
         survive = [int(n) for n in survive_str[1:]]
@@ -234,13 +244,13 @@ class Grid:
 
     def view(
         self,
-        anchor: Sequence[int] = (0, 0),
+        origin: Sequence[int] = (0, 0),
         shape: Sequence[int] | None = None
     ) -> NDArray[np.bool_]:
         """Return a section of the data of the current grid."""
         if shape is None:
             shape = self._data.shape
-        starty, startx = anchor
+        starty, startx = origin
         leny, lenx = shape
         stopy = starty + leny
         stopx = startx + lenx

@@ -369,6 +369,25 @@ class TestConfig:
         assert state.origin_y == config.origin_y
         assert state.rule == 'B36/S23'
 
+    def test_Config_select_rule_invalid(self, config):
+        """When called, :meth:`Config.select` should set
+        :attr:`Config.rule` and return the parent object.
+        If an invalid value is given, prompt the user to
+        try again.
+        """
+        config.term.inkey.side_effect = [
+            's', 'p', 'a', 'm', '\n',
+            'B', '3', '6', '/', 'S', '2', '3', '\n',
+        ]
+        config.selected = 1
+        state = config.select()
+        assert state is config
+        assert state.data is config.data
+        assert state.term is config.term
+        assert state.origin_x == config.origin_x
+        assert state.origin_y == config.origin_y
+        assert state.rule == 'B36/S23'
+
     def test_Config_select_wrap(self, config):
         """When called, :meth:`Config.select` should change the selected
         setting then return itself.

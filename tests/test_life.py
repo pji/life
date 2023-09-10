@@ -4,6 +4,8 @@ test_life
 
 Unit tests for :mod:`life.life`.
 """
+from functools import partial
+
 import numpy as np
 import pytest as pt
 
@@ -11,7 +13,7 @@ from life import life
 
 
 # Utility functions.
-def raises(cls, *args, **kwargs):
+def raises_test(cls, *args, **kwargs):
     """Return the exception raised by the callable."""
     try:
         cls(*args, **kwargs)
@@ -76,6 +78,14 @@ def test_init_all_default():
         assert getattr(grid, attr) == required[attr]
     for attr in optional:
         assert getattr(grid, attr) == optional[attr]
+
+
+def test_init_all_invalid():
+    """When called with an invalid value, :class:`Grid` should raise
+    the correct exception.
+    """
+    raises = partial(raises_test, life.Grid)
+    assert raises(4, 4, 'spam') == (life.InvalidRule, 'Invalid rule format.')
 
 
 def test_init_all_optional():
@@ -174,6 +184,8 @@ def test_mutablesequence_protocol(grid):
     """:class:`Grid` should implement the :class:`MutableSequence`
     protocol.
     """
+    raises = raises_test
+
     # We are only implementing __setitem__.
     grid[0][0] = True
     grid[0, 2] = True
