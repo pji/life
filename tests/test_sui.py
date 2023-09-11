@@ -436,9 +436,11 @@ class TestConfig:
         captured = capsys.readouterr()
         assert repr(captured.out) == repr(
             term.move(0, 0) + term.black_on_green
-            + 'Pace: 0' + term.clear_eol + term.normal + '\n'
-            + term.move(1, 0) + 'Rule: B3/S23' + term.clear_eol + '\n'
-            + term.move(2, 0) + 'Wrap: True' + term.clear_eol + '\n'
+            + 'Pace: 0' + term.clear_eol + term.normal
+            + term.move(1, 0) + 'Rule: B3/S23' + term.clear_eol
+            + term.move(2, 0) + 'Wrap: True' + term.clear_eol
+            + term.move(3, 0) + term.clear_eol
+            + term.move(4, 0) + term.clear_eol
             + term.move(2, 0) + '\u2500' * 4 + '\n'
             + term.move(3, 0) + config.menu + term.clear_eol
         )
@@ -547,6 +549,13 @@ class TestCore:
         assert state.origin_x == window_core.origin_x
         assert state.origin_y == window_core.origin_y
 
+    def test_Core_move(self, core):
+        """When called, :meth:`Core.move` should return a :class:`Move`
+        object.
+        """
+        state = core.move()
+        assert isinstance(state, sui.Move)
+
     def test_Core_next(self, core):
         """When called, :meth:`Core.next` should advance the grid
         and return its parent object.
@@ -601,11 +610,12 @@ class TestCore:
         """When valid given input, :meth:`Core.input` should return the
         expected command string.
         """
-        core.term.inkey.side_effect = 'aeflnrsq'
+        core.term.inkey.side_effect = 'aeflmnrsq'
         assert core.input() == ('autorun',)
         assert core.input() == ('edit',)
         assert core.input() == ('config',)
         assert core.input() == ('load',)
+        assert core.input() == ('move',)
         assert core.input() == ('next',)
         assert core.input() == ('random',)
         assert core.input() == ('save',)
@@ -1104,6 +1114,151 @@ class TestLoad:
             + term.normal + term.clear_eol + '\n'
             + term.move(2, 0) + '\u2500' * 4 + '\n'
             + term.move(3, 0) + load.menu + term.clear_eol
+        )
+
+
+# Tests for Move.
+class TestMove:
+    # Fixtures for Move.
+    @pt.fixture
+    def move(self, grid, term):
+        """A :class:`Move` objects for testing."""
+        return sui.Move(grid, term)
+
+    # Tests for Move initialization.
+    def test_Move_all_default(self, grid, term):
+        """When called with no arguments, :class:`Move` should return
+        a instance of the class with properties set to their default
+        values.
+        """
+        requireds = {
+            'data': grid,
+            'term': term,
+        }
+        optionals = {
+            'origin_x': 0,
+            'origin_y': 0,
+            'pace': 0,
+        }
+        obj = sui.Move(**requireds, **optionals)
+        for attr in requireds:
+            assert getattr(obj, attr) == requireds[attr]
+        for attr in optionals:
+            assert getattr(obj, attr) == optionals[attr]
+
+    # Tests for Move command methods.
+    def test_Move_down(self, move, grid_40, term):
+        """When called with an integer, :meth:`Move.down` should add
+        the integer to the Y origin and return itself.
+        """
+        move.data = grid_40
+
+        state = move.down()
+        assert state is move
+        assert state.origin_y == 1
+
+        state = move.down(10)
+        assert state.origin_y == 11
+
+        state = move.down(35)
+        assert state.origin_y == 36
+
+    def test_Move_exit(self, move):
+        """When called, :meth:`Move.exit` should return a :class:`Core`
+        object.
+        """
+        state = move.exit()
+        assert isinstance(state, sui.Core)
+        assert state.data is move.data
+        assert state.term is move.term
+
+    def test_Move_left(self, move, grid_40, term):
+        """When called with an integer, :meth:`Move.left` should
+        subtract the integer from the X origin and return itself.
+        """
+        move.data = grid_40
+        move.origin_x = 38
+
+        state = move.left()
+        assert state is move
+        assert state.origin_x == 37
+
+        state = move.left(10)
+        assert state.origin_x == 27
+
+        state = move.left(35)
+        assert state.origin_x == 0
+
+    def test_Move_right(self, move, grid_40, term):
+        """When called with an integer, :meth:`Move.left` should
+        add the integer to the X origin and return itself.
+        """
+        move.data = grid_40
+
+        state = move.right()
+        assert state is move
+        assert state.origin_x == 1
+
+        state = move.right(10)
+        assert state.origin_x == 11
+
+        state = move.right(35)
+        assert state.origin_x == 36
+
+    def test_Move_up(self, move, grid_40, term):
+        """When called with an integer, :meth:`Move.up` should
+        subtract the integer from the X origin and return itself.
+        """
+        move.data = grid_40
+        move.origin_y = 38
+
+        state = move.up()
+        assert state is move
+        assert state.origin_y == 37
+
+        state = move.up(10)
+        assert state.origin_y == 27
+
+        state = move.up(35)
+        assert state.origin_y == 0
+
+    # Tests for Move input.
+    def test_Move_input(self, move, term):
+        """When given input, :meth:`Move.input` should return the expected
+        command string.
+        """
+        move.term.inkey.side_effect = [
+            DOWN,
+            SDOWN,
+            LEFT,
+            SLEFT,
+            RIGHT,
+            SRIGHT,
+            UP,
+            SUP,
+            'x',
+        ]
+        assert move.input() == ('down', 1)
+        assert move.input() == ('down', 10)
+        assert move.input() == ('left', 1)
+        assert move.input() == ('left', 10)
+        assert move.input() == ('right', 1)
+        assert move.input() == ('right', 10)
+        assert move.input() == ('up', 1)
+        assert move.input() == ('up', 10)
+        assert move.input() == ('exit',)
+
+    # Tests for Core UI updates.
+    def test_Core_update_ui(self, capsys, move, term):
+        """When called, :meth:`Move.update_ui` should redraw the UI
+        for the move state.
+        """
+        move.update_ui()
+        captured = capsys.readouterr()
+        assert repr(captured.out) == repr(
+            grid_start_lines
+            + term.move(2, 0) + '\u2500' * 4 + '\n'
+            + term.move(3, 0) + move.menu + term.clear_eol
         )
 
 

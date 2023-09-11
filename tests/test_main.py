@@ -16,6 +16,22 @@ def test_main_simple_loop(mocker):
     main()
 
 
+def test_main_d(mocker):
+    """When invoked from the command line with `-d` followed by a
+    two integers, :func:`main` should create a :class:`Start` object
+    with :attr:`Start.data.height` and `Start.data.width` set to the
+    given integers.
+    """
+    start = sui.Start()
+    mock_start = mocker.patch('life.main.Start', return_value=start)
+    mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
+    mocker.patch('sys.argv', ['life', '-d', '200', '200',])
+    main()
+    grid = mock_start.call_args[1]['data']
+    assert grid.height == 200
+    assert grid.width == 200
+
+
 def test_main_f(mocker):
     """When invoked from the command line with `-f` followed by a
     the path to a valid pattern file, :func:`main` should create a

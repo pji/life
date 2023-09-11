@@ -77,7 +77,8 @@ class State(ABC):
 
     def _draw_commands(self, cmds: str = '') -> None:
         """Draw the available commands."""
-        y = -(self.data.height // -2) + 1
+        # y = -(self.data.height // -2) + 1
+        y = self.term.height - 2
         print(
             self.term.move(y, 0) + cmds + self.term.clear_eol,
             end='',
@@ -107,8 +108,8 @@ class State(ABC):
 
     def _draw_rule(self) -> None:
         """Draw the a horizontal rule."""
-        width = self.data.width
-        y = -(self.data.height // -2)
+        width = self.term.width
+        y = self.term.height - 3
         print(self.term.move(y, 0) + '\u2500' * width)
 
     def _expand_dir(self, path: str | Path) -> str:
@@ -279,9 +280,7 @@ class Config(State):
 
     def _draw_state(self) -> None:
         """Draw the configuration to the screen."""
-        height = self.data.height // 2
-        if self.data.height % 2:
-            height += 1
+        height = self.term.height
 
         for i, setting in enumerate(self.settings):
             value = getattr(self, setting)
@@ -291,11 +290,15 @@ class Config(State):
             line += f'{setting.title()}: {value}' + self.term.clear_eol
             if self.selected == i:
                 line += self.term.normal
-            print(line)
+            print(line, end='', flush=True)
 
         if len(self.settings) < height:
             for y in range(len(self.settings), height):
-                print(self.term.move(y, 0) + self.term.clear_eol)
+                print(
+                    self.term.move(y, 0) + self.term.clear_eol,
+                    end='',
+                    flush=True
+                )
 
     def down(self) -> 'Config':
         """Command method. Select the next setting in the list."""
@@ -365,6 +368,7 @@ class Core(State):
         'e': 'edit',
         'f': 'config',
         'l': 'load',
+        'm': 'move',
         'n': 'next',
         'r': 'random',
         's': 'save',
@@ -396,6 +400,10 @@ class Core(State):
     def load(self) -> 'Load':
         """Command method. Switch to load state."""
         return Load(**self.asdict())
+
+    def move(self) -> 'Move':
+        """Command method. Switch to the move state."""
+        return Move(**self.asdict())
 
     def next(self) -> 'Core':
         """Command method. Run the next generation of the grid."""
@@ -680,6 +688,59 @@ class Load(State):
 
     def update_ui(self):
         """Draw the load state UI."""
+        self._draw_state()
+        self._draw_rule()
+        self._draw_commands(self.menu)
+
+
+class Move(State):
+    """The state for moving the window on the grid."""
+    commands = {
+        DOWN: ('down', 1),
+        LEFT: ('left', 1),
+        RIGHT: ('right', 1),
+        UP: ('up', 1),
+        SDOWN: ('down', 10),
+        SLEFT: ('left', 10),
+        SRIGHT: ('right', 10),
+        SUP: ('up', 10),
+        'x': 'exit',
+    }
+    menu = '(\u2190\u2191\u2192\u2193) Move, e(X)it'
+
+    def down(self, distance: int = 1) -> 'Move':
+        """Command method. Move the window down."""
+        self.origin_y += distance
+        if self.origin_y > (self.data.height - (self.term.height - 3) * 2):
+            self.origin_y = (self.data.height - (self.term.height - 3) * 2)
+        return self
+
+    def exit(self) -> 'Core':
+        """Command method. Return to the core."""
+        return Core(**self.asdict())
+
+    def left(self, distance: int = 1) -> 'Move':
+        """Command method. Move the window left."""
+        self.origin_x -= distance
+        if self.origin_x < 0:
+            self.origin_x = 0
+        return self
+
+    def right(self, distance: int = 1) -> 'Move':
+        """Command method. Move the window right."""
+        self.origin_x += distance
+        if self.origin_x > (self.data.width - self.term.width):
+            self.origin_x = self.data.width - self.term.width
+        return self
+
+    def up(self, distance: int = 1) -> 'Move':
+        """Command method. Move the window up."""
+        self.origin_y -= distance
+        if self.origin_y < 0:
+            self.origin_y = 0
+        return self
+
+    def update_ui(self):
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)

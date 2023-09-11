@@ -102,6 +102,8 @@ The following features are still planned to be implemented:
 *   (Done.) Fix backspacing in text fields.
 *   (Done.) Validate rules.
 *   (Done.) Move clear to edit.
+*   (Done.) Handle window movement.
+*   Set shape of grid from the command line.
 *   Save as cells format.
 *   Allow editing to increase and decrease brush size.
 *   Allow editing to place -ominos.
@@ -111,5 +113,4 @@ The following features are still planned to be implemented:
 *   Read RLE files.
 *   Move "exit" command to X from E.
 *   Show previous generation as a different color.
-*   Handle window movement.
 *   Look at more efficient algorithms for GoL. (bitpack?, striding?)

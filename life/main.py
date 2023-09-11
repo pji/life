@@ -8,6 +8,7 @@ from argparse import ArgumentParser
 
 from blessed import Terminal
 
+from life.life import Grid
 from life.sui import Start, End
 
 
@@ -16,6 +17,13 @@ def main():
     p = ArgumentParser(
         description='A Python implementation of Conway\'s Game of Life.',
         prog='life'
+    )
+    p.add_argument(
+        '-d', '--dimensions',
+        help='The dimensions for the grid of the Game of Life.',
+        action='store',
+        nargs=2,
+        type=int
     )
     p.add_argument(
         '-f', '--file',
@@ -45,6 +53,8 @@ def main():
     term = Terminal()
     with term.fullscreen(), term.hidden_cursor():
         kwargs = {'term': term,}
+        if args.dimensions:
+            kwargs['data'] = Grid(*args.dimensions)
         if args.file:
             kwargs['file'] = args.file.strip()
         if args.no_wrap:
