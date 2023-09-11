@@ -48,7 +48,8 @@ class State(ABC):
         term: Terminal,
         origin_y: int | None = None,
         origin_x: int | None = None,
-        pace: float = 0
+        pace: float = 0,
+        show_generation: bool = False
     ) -> None:
         """Initialize a State object.
 
@@ -64,6 +65,7 @@ class State(ABC):
             origin_y = (data.height - (term.height - 3) * 2) // 2
         self.origin_y = origin_y
         self.pace = pace
+        self.show_generation = show_generation
 
     def _char_for_state(self, top, bottom) -> str:
         """Return the character to draw based on the state of the cell."""
@@ -85,21 +87,19 @@ class State(ABC):
             flush=True
         )
 
-    def _draw_state(self) -> None:
-        """Draw the grid to the terminal."""
-        data: np.ndarray = self._get_window()
-        if len(data) % 2:
-            data = np.pad(data, ((0, 1), (0, 0)))
-        for i in range(0, len(data), 2):
-            cells = []
-            for j in range(0, len(data[i])):
-                char = self._char_for_state(data[i][j], data[i + 1][j])
-                cells.append(char)
-            print(self.term.move(i // 2, 0) + ''.join(cells))
+    def _draw_generation(self) -> None:
+        """Draw the current generation to the terminal."""
+        if self.show_generation:
+            y = self.term.height - 3
+            print(
+                self.term.move(y, 0) + f'Generation: {self.data.generation}',
+                end='',
+                flush=True
+            )
 
     def _draw_prompt(self, msg: str = '> ') -> None:
         """Draw the command prompt."""
-        y = -(self.data.height // -2) + 2
+        y = self.term.height - 1
         print(
             self.term.move(y, 0) + msg + self.term.clear_eol,
             end='',
@@ -111,6 +111,18 @@ class State(ABC):
         width = self.term.width
         y = self.term.height - 3
         print(self.term.move(y, 0) + '\u2500' * width)
+
+    def _draw_state(self) -> None:
+        """Draw the grid to the terminal."""
+        data: np.ndarray = self._get_window()
+        if len(data) % 2:
+            data = np.pad(data, ((0, 1), (0, 0)))
+        for i in range(0, len(data), 2):
+            cells = []
+            for j in range(0, len(data[i])):
+                char = self._char_for_state(data[i][j], data[i + 1][j])
+                cells.append(char)
+            print(self.term.move(i // 2, 0) + ''.join(cells))
 
     def _expand_dir(self, path: str | Path) -> str:
         """Given the start of the name of a directory, if there is only
@@ -168,6 +180,7 @@ class State(ABC):
             'origin_x': self.origin_x,
             'origin_y': self.origin_y,
             'pace': self.pace,
+            'show_generation': self.show_generation,
         }
 
     def input(self) -> Command:
@@ -200,6 +213,7 @@ class Autorun(State):
         LEFT: ('slower',),
         RIGHT: ('faster',),
         'x': ('exit',),
+        ' ': ('exit',)
     }
     menu = '(\u2190) Slower, (\u2192) Faster, e(X)it'
 
@@ -241,6 +255,7 @@ class Autorun(State):
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)
+        self._draw_generation()
 
 
 class Config(State):
@@ -259,6 +274,7 @@ class Config(State):
         self.settings = [
             'pace',
             'rule',
+            'show_generation',
             'wrap',
         ]
 
@@ -283,11 +299,12 @@ class Config(State):
         height = self.term.height
 
         for i, setting in enumerate(self.settings):
+            label = setting.replace('_', ' ')
             value = getattr(self, setting)
             line = str(self.term.move(i, 0))
             if self.selected == i:
                 line += self.term.black_on_green
-            line += f'{setting.title()}: {value}' + self.term.clear_eol
+            line += f'{label.title()}: {value}' + self.term.clear_eol
             if self.selected == i:
                 line += self.term.normal
             print(line, end='', flush=True)
@@ -428,6 +445,7 @@ class Core(State):
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)
+        self._draw_generation()
 
 
 class Edit(State):
@@ -529,6 +547,7 @@ class Edit(State):
     def flip(self) -> 'Edit':
         """Command method. Flip the state of the current cell."""
         self.data.flip(self.col, self.row)
+        self.data.generation = 0
         self._draw_state()
         self._draw_cursor()
         return self
@@ -678,6 +697,8 @@ class Load(State):
             else:
                 normal = pattern(raw)
             self.data.replace(normal)
+
+        self.data.generation = 0
         return Core(**self.asdict())
 
     def up(self) -> 'Load':

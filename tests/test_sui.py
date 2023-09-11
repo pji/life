@@ -263,6 +263,20 @@ class TestAutorun():
             + term.move(3, 0) + autorun.menu + term.clear_eol
         )
 
+    def test_Autorun_update_ui_show_generation(self, capsys, autorun, term):
+        """When called, :meth:`Autorun.update_ui` should redraw the UI.
+        If set to show the generation, the generation should be shown.
+        """
+        autorun.show_generation = True
+        autorun.update_ui()
+        captured = capsys.readouterr()
+        assert repr(captured.out) == repr(
+            grid_start_lines
+            + term.move(2, 0) + '\u2500' * 4 + '\n'
+            + term.move(3, 0) + autorun.menu + term.clear_eol
+            + term.move(2, 0) + 'Generation: 0'
+        )
+
 
 # Tests for Config.
 class TestConfig:
@@ -285,6 +299,8 @@ class TestConfig:
         optional = {
             'origin_x': 0,
             'origin_y': 0,
+            'pace': 0,
+            'show_generation': False,
         }
         obj = sui.Config(**required)
         for attr in required:
@@ -301,6 +317,8 @@ class TestConfig:
             'term': term,
             'origin_x': 2,
             'origin_y': 1,
+            'pace': 0.01,
+            'show_generation': True,
         }
         obj = sui.Config(**optional)
         for attr in optional:
@@ -438,8 +456,8 @@ class TestConfig:
             term.move(0, 0) + term.black_on_green
             + 'Pace: 0' + term.clear_eol + term.normal
             + term.move(1, 0) + 'Rule: B3/S23' + term.clear_eol
-            + term.move(2, 0) + 'Wrap: True' + term.clear_eol
-            + term.move(3, 0) + term.clear_eol
+            + term.move(2, 0) + 'Show Generation: False' + term.clear_eol
+            + term.move(3, 0) + 'Wrap: True' + term.clear_eol
             + term.move(4, 0) + term.clear_eol
             + term.move(2, 0) + '\u2500' * 4 + '\n'
             + term.move(3, 0) + config.menu + term.clear_eol
@@ -471,9 +489,17 @@ class TestCore:
             'data': grid,
             'term': term,
         }
+        optionals = {
+            'origin_x': 0,
+            'origin_y': 0,
+            'pace': 0,
+            'show_generation': False,
+        }
         obj = sui.Core(**required)
         for attr in required:
             assert getattr(obj, attr) is required[attr]
+        for attr in optionals:
+            assert getattr(obj, attr) is optionals[attr]
 
     # Tests for Core commands.
     def test_Core_autorun(self, core):
@@ -648,6 +674,21 @@ class TestCore:
             + term.move(3, 0) + core.menu + term.clear_eol
         )
 
+    def test_Core_update_ui_show_generation(self, capsys, core, term):
+        """When called, :meth:`Core.update_ui` should redraw the UI
+        for the core state. If set to show the generation, then the
+        generation should be shown.
+        """
+        core.show_generation = True
+        core.update_ui()
+        captured = capsys.readouterr()
+        assert repr(captured.out) == repr(
+            grid_start_lines
+            + term.move(2, 0) + '\u2500' * 4 + '\n'
+            + term.move(3, 0) + core.menu + term.clear_eol
+            + term.move(2, 0) + 'Generation: 0'
+        )
+
 
 # Tests for Edit.
 class TestEdit:
@@ -744,6 +785,7 @@ class TestEdit:
         """When called, :meth:`Edit.flip` should flip the selected
         location and return its parent object.
         """
+        edit.data.generation = 1138
         state = edit.flip()
         captured = capsys.readouterr()
         assert state is edit
@@ -759,6 +801,7 @@ class TestEdit:
             + term.move(1, 2) + term.bright_green + '\u2580'
             + term.bright_white_on_black + '\n'
         )
+        assert state.data.generation == 0
 
     def test_Edit_left(self, capsys, edit, term):
         """When called, :meth:`Edit.left` should subtract one from the col,
@@ -813,6 +856,7 @@ class TestEdit:
         """When called, :meth:`Edit.restore` should load the snapshot file
         and return the parent object.
         """
+        edit.data.generation = 1138
         edit.path = Path('tests/data/.snapshot.txt')
         state = edit.restore()
         assert state is edit
@@ -822,6 +866,7 @@ class TestEdit:
             [0, 1, 0, 1],
             [0, 0, 0, 0],
         ], dtype=bool)).all()
+        assert state.data.generation == 0
 
     def test_Edit_restore_no_snapshot(self, edit, term, data_start, tmp_path):
         """When called, :meth:`Edit.restore` should load the snapshot file
@@ -1027,6 +1072,7 @@ class TestLoad:
             [0, 1, 0, 1],
             [0, 0, 0, 0],
         ], dtype=bool)).all()
+        assert state.data.generation == 0
 
     def test_Load_load_directory(self, load):
         """When called with a directory selected, :meth:`Load.load` should

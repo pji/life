@@ -320,6 +320,7 @@ def test_tick(grid):
         [1, 0, 1, 0],
         [1, 0, 1, 0],
     ], dtype=bool)).all()
+    assert grid.generation == 1
 
     grid._data = np.array([
         [0, 1, 1, 0],
@@ -334,6 +335,7 @@ def test_tick(grid):
         [0, 0, 1, 1],
         [0, 1, 0, 1],
     ], dtype=bool)).all()
+    assert grid.generation == 2
 
     grid = pat_to_grid([
         '........X.......',
@@ -373,6 +375,7 @@ def test_tick(grid):
         '................',
         '................',
     ])._data).all()
+    assert grid.generation == 1
 
 
 def test_tick_no_wrap(grid):

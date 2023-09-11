@@ -32,6 +32,11 @@ def main():
         type=str
     )
     p.add_argument(
+        '-g', '--show_generation',
+        help='Show the current generation during the Game of Life.',
+        action='store_true'
+    )
+    p.add_argument(
         '-p', '--pace',
         help='The delay between ticks when autorunning.',
         action='store',
@@ -52,7 +57,10 @@ def main():
 
     term = Terminal()
     with term.fullscreen(), term.hidden_cursor():
-        kwargs = {'term': term,}
+        kwargs = {
+            'term': term,
+            'show_generation': args.show_generation,
+        }
         if args.dimensions:
             kwargs['data'] = Grid(*args.dimensions)
         if args.file:

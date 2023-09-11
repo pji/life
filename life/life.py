@@ -52,6 +52,7 @@ class Grid:
         self.width = int(width)
         self.wrap = wrap
 
+        self.generation = 0
         self._data: np.ndarray = np.zeros(
             (self.height, self.width),
             dtype=bool
@@ -241,6 +242,7 @@ class Grid:
         a[a < 9] = 0
         a[a == 9] = 1
         self._data = np.array(a, dtype=bool)
+        self.generation += 1
 
     def view(
         self,

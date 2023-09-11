@@ -46,6 +46,20 @@ def test_main_f(mocker):
     assert mock_start.call_args[1]['file'] == 'tests/data/spam'
 
 
+def test_main_g(mocker):
+    """When invoked from the command line with
+    `-g`, :func:`main` should create a :class:`Start`
+    object with :attr:`Start.show_generation` set to
+    `True`.
+    """
+    start = sui.Start()
+    mock_start = mocker.patch('life.main.Start', return_value=start)
+    mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
+    mocker.patch('sys.argv', ['life', '-g',])
+    main()
+    assert mock_start.call_args[1]['show_generation'] is True
+
+
 def test_main_p(mocker):
     """When invoked from the command line with `-p` followed by a
     a floating point number, :func:`main` should create a

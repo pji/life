@@ -103,14 +103,14 @@ The following features are still planned to be implemented:
 *   (Done.) Validate rules.
 *   (Done.) Move clear to edit.
 *   (Done.) Handle window movement.
-*   Set shape of grid from the command line.
+*   (Done.) Set shape of grid from the command line.
+*   (Done.) Move "exit" command to X from E.
+*   (Done.) Display current generation number.
 *   Save as cells format.
 *   Allow editing to increase and decrease brush size.
 *   Allow editing to place -ominos.
 *   Allow editing to place rotated -ominoes.
 *   Allow editing to place agars.
-*   Display current generation number.
 *   Read RLE files.
-*   Move "exit" command to X from E.
 *   Show previous generation as a different color.
 *   Look at more efficient algorithms for GoL. (bitpack?, striding?)
