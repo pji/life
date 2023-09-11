@@ -362,7 +362,6 @@ class Core(State):
     """
     commands = {
         'a': 'autorun',
-        'c': 'clear',
         'e': 'edit',
         'f': 'config',
         'l': 'load',
@@ -385,11 +384,6 @@ class Core(State):
     def autorun(self) -> 'Autorun':
         """Command method. Switch to autorun state."""
         return Autorun(**self.asdict())
-
-    def clear(self) -> 'Core':
-        """Command method. Clear the grid."""
-        self.data.clear()
-        return self
 
     def config(self) -> 'Config':
         """Command method. Switch to config state."""
@@ -440,13 +434,14 @@ class Edit(State):
         SRIGHT: ('right', 10),
         SUP: ('up', 10),
         ' ': 'flip',
-        'x': 'exit',
+        'c': 'clear',
         'r': 'restore',
         's': 'snapshot',
+        'x': 'exit',
     }
     menu = (
         '(\u2190\u2191\u2192\u2193) Move, (space) Flip, '
-        '(R)estore, (S)napshot, e(X)it'
+        '(C)lear, (R)estore, (S)napshot, e(X)it'
     )
 
     def __init__(self, *args, **kwargs):
@@ -508,6 +503,11 @@ class Edit(State):
         self.col = self.col % self.data.width
         self._draw_state()
         self._draw_cursor()
+
+    def clear(self) -> 'Edit':
+        """Command method. Clear the grid."""
+        self.data.clear()
+        return self
 
     def down(self, distance: int = 1) -> 'Edit':
         """Command method. Move the cursor down."""

@@ -496,19 +496,6 @@ class TestCore:
         assert state.origin_y == window_core.origin_y
         assert state.pace == 0.01
 
-    def test_Core_clear(self, core):
-        """When called, :meth:`Core.clear` should clear the grid
-        and return its parent object.
-        """
-        state = core.clear()
-        assert state is core
-        assert (core.data._data == np.array([
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-        ], dtype=bool)).all()
-
     def test_core_config(self, core):
         """When called, :meth:`Core.config` should return a :class:`Config`
         object.
@@ -614,9 +601,8 @@ class TestCore:
         """When valid given input, :meth:`Core.input` should return the
         expected command string.
         """
-        core.term.inkey.side_effect = 'aceflnrsq'
+        core.term.inkey.side_effect = 'aeflnrsq'
         assert core.input() == ('autorun',)
-        assert core.input() == ('clear',)
         assert core.input() == ('edit',)
         assert core.input() == ('config',)
         assert core.input() == ('load',)
@@ -629,8 +615,8 @@ class TestCore:
         """Given invalid input, :meth:`Core.input` should prompt the
         user to try again.
         """
-        core.term.inkey.side_effect = ('`', 'c')
-        assert core.input() == ('clear',)
+        core.term.inkey.side_effect = ('`', 'e')
+        assert core.input() == ('edit',)
         captured = capsys.readouterr()
         assert repr(captured.out) == repr(
             term.move(4, 0) + term.clear_eol
@@ -696,6 +682,11 @@ class TestEdit:
         assert obj.col == 2
 
     # Tests for Edit commands.
+    def test_Edit_clear(self, edit, term):
+        """When called, :meth:`Edit.clear` should clear the grid."""
+        state = edit.clear()
+        assert state is edit
+
     def test_Edit_down(self, capsys, edit, term):
         """When called, :meth:`Edit.down` should add one from the row,
         redraw the status, redraw the cursor, and return its parent object.
@@ -888,10 +879,11 @@ class TestEdit:
             SRIGHT,
             UP,
             SUP,
-            'x',
             ' ',
+            'c',
             'r',
             's',
+            'x',
         ]
         assert edit.input() == ('down', 1)
         assert edit.input() == ('down', 10)
@@ -901,10 +893,11 @@ class TestEdit:
         assert edit.input() == ('right', 10)
         assert edit.input() == ('up', 1)
         assert edit.input() == ('up', 10)
-        assert edit.input() == ('exit',)
         assert edit.input() == ('flip',)
+        assert edit.input() == ('clear',)
         assert edit.input() == ('restore',)
         assert edit.input() == ('snapshot',)
+        assert edit.input() == ('exit',)
 
     # Tests for Edit UI updates.
     def test_Edit_update_ui(self, capsys, edit, term):

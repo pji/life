@@ -101,7 +101,7 @@ The following features are still planned to be implemented:
 *   (Done.) Manage different data entry types for configuration settings.
 *   (Done.) Fix backspacing in text fields.
 *   (Done.) Validate rules.
-*   Move clear to edit.
+*   (Done.) Move clear to edit.
 *   Save as cells format.
 *   Allow editing to increase and decrease brush size.
 *   Allow editing to place -ominos.
