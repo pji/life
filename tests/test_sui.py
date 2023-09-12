@@ -888,10 +888,10 @@ class TestEdit:
         captured = capsys.readouterr()
         assert state is edit
         assert repr(saved) == repr(
-            'X.X\n'
+            'O.O\n'
             '...\n'
-            'X..\n'
-            'X..'
+            'O..\n'
+            'O..\n'
         )
         assert repr(captured.out) == repr(
             term.move(4, 0) + 'Saving...' + term.clear_eol
@@ -1379,10 +1379,10 @@ class TestSave:
         assert state.data is save.data
         assert state.term is save.term
         assert repr(saved) == repr(
-            'X.X\n'
+            'O.O\n'
             '...\n'
-            'X..\n'
-            'X..'
+            'O..\n'
+            'O..\n'
         )
 
     def test_Save_save_window(self, window_save):
@@ -1398,12 +1398,12 @@ class TestSave:
         assert state.origin_x == window_save.origin_x
         assert state.origin_y == window_save.origin_y
         assert repr(saved) == repr(
-            '.X.X.X\n'
-            'X.X.X.\n'
-            '.X.X.X\n'
-            'X.X.X.\n'
-            '.X.X.X\n'
-            'X.X.X.'
+            '.O.O.O\n'
+            'O.O.O.\n'
+            '.O.O.O\n'
+            'O.O.O.\n'
+            '.O.O.O\n'
+            'O.O.O.\n'
         )
 
     # Tests for Save input.
@@ -1608,20 +1608,3 @@ class TestStart:
             + term.move(2, 0) + '\u2500' * 4 + '\n'
             + term.move(3, 0) + start.menu + term.clear_eol
         )
-
-
-# Tests for cells.
-def test_cells():
-    """Given the contents of a .cells file, :func:`cells` should
-    return an array containing the data from the file.
-    """
-    assert (sui.cells([
-        '!comment\n',
-        '.O.\n',
-        'O.O\n',
-        '.O.\n',
-    ]) == np.array([
-        [0, 1, 0],
-        [1, 0, 1],
-        [0, 1, 0],
-    ], dtype=bool)).all()

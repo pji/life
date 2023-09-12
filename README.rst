@@ -106,7 +106,7 @@ The following features are still planned to be implemented:
 *   (Done.) Set shape of grid from the command line.
 *   (Done.) Move "exit" command to X from E.
 *   (Done.) Display current generation number.
-*   Save as cells format.
+*   (Done.) Save as cells format.
 *   Allow editing to increase and decrease brush size.
 *   Allow editing to place -ominos.
 *   Allow editing to place rotated -ominoes.

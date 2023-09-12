@@ -23,12 +23,36 @@ def data():
     ], dtype=bool)
 
 
-class TestPattern:
-    def test_read(self, data):
-        """When given a string, :meth:`Pattern.read` should return that
+class TestCells:
+    def test_decode(self, data):
+        """When given a string, :meth:`Cells.decode` should return that
         string as an :class:`numpy.ndarray`.
         """
-        assert (codec.Pattern.read(
+        assert (codec.Cells.decode(
+            '.....\n'
+            '.OOO.\n'
+            '...O.\n'
+            '..O..\n'
+            '.....'
+        ) == data).all()
+
+    def test_encode(self, data):
+        """When given an array, :meth:`Cells.encode` should return
+        that array as a string in `pattern` format.
+        """
+        assert codec.Cells.encode(data) == (
+            'OOO\n'
+            '..O\n'
+            '.O.\n'
+        )
+
+
+class TestPattern:
+    def test_decode(self, data):
+        """When given a string, :meth:`Pattern.decode` should return that
+        string as an :class:`numpy.ndarray`.
+        """
+        assert (codec.Pattern.decode(
             '.....\n'
             '.XXX.\n'
             '...X.\n'
@@ -36,12 +60,12 @@ class TestPattern:
             '.....'
         ) == data).all()
 
-    def test_write(self, data):
-        """When given an array, :meth:`Pattern.write` should return
+    def test_encode(self, data):
+        """When given an array, :meth:`Pattern.encode` should return
         that array as a string in `pattern` format.
         """
-        assert codec.Pattern.write(data) == (
+        assert codec.Pattern.encode(data) == (
             'XXX\n'
             '..X\n'
-            '.X.\n'
+            '.X.'
         )

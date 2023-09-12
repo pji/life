@@ -19,6 +19,7 @@ from numpy.typing import NDArray
 
 import life.pattern
 from life import util
+from life.codec import decode, encode
 from life.life import Grid, InvalidRule
 
 
@@ -691,11 +692,11 @@ class Load(State):
 
         elif filename.exists():
             with open(filename, 'r') as fh:
-                raw = fh.readlines()
+                raw = fh.read()
             if filename.suffix == '.cells':
-                normal = cells(raw)
+                normal = decode(raw, 'cells')
             else:
-                normal = pattern(raw)
+                normal = decode(raw, 'pattern')
             self.data.replace(normal)
 
         self.data.generation = 0
@@ -817,13 +818,12 @@ class Save(State):
 
         :param filename: The name of the file to save.
         """
-        grid_ = deepcopy(self.data)
-        grid_._data = np.array(self._remove_padding(grid_._data), dtype=bool)
+        text = encode(self.data.view(), 'cells')
         path = Path(filename)
         if '/' not in str(filename):
             path = self.path / filename
         with open(path, 'w') as fh:
-            fh.write(str(grid_))
+            fh.write(text)
         return Core(**self.asdict())
 
     def update_ui(self):
@@ -896,33 +896,6 @@ class Start(State):
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)
-
-
-# File formats.
-def cells(lines: list[str]) -> NDArray[np.bool_]:
-    """Covert the contents of a .cells file into something :mod:`life`
-    can understand.
-    """
-    filtered = [line.rstrip() for line in lines if not line.startswith('!')]
-    width = max(len(line) for line in filtered)
-    normal = [util.normalize_width(line, width) for line in filtered]
-    return np.array(
-        [util.char_to_bool(line, 'O') for line in normal],
-        dtype=bool
-    )
-
-
-def pattern(lines: list[str]) -> NDArray[np.bool_]:
-    """Convert the contents of a .pattern file into something :mod:`life`
-    can understand.
-    """
-    lines = [line.rstrip() for line in lines]
-    width = max(len(line) for line in lines)
-    normal = [util.normalize_width(line, width) for line in lines]
-    return np.array(
-        [util.char_to_bool(line, 'X') for line in normal],
-        dtype=bool
-    )
 
 
 # Mainline.
