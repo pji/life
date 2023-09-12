@@ -46,6 +46,17 @@ class TestCells:
             '.O.\n'
         )
 
+        a = np.zeros((84, 80), dtype=bool)
+        a[41, 40] = True
+        a[42, 39] = True
+        a[42, 41] = True
+        a[43, 40] = True
+        assert codec.Cells.encode(a) == (
+            '.O.\n'
+            'O.O\n'
+            '.O.\n'
+        )
+
 
 class TestPattern:
     def test_decode(self, data):

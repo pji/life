@@ -7,7 +7,7 @@
 
 # Ignore snapshot pattern
 pattern/.snapshot.txt
-.snapshot.txt
+.snapshot.cells
 
 # Ignore the virtual environment
 .venv

@@ -107,10 +107,10 @@ The following features are still planned to be implemented:
 *   (Done.) Move "exit" command to X from E.
 *   (Done.) Display current generation number.
 *   (Done.) Save as cells format.
+*   Read RLE files.
+*   Look at more efficient algorithms for GoL. (bitpack?, striding?)
 *   Allow editing to increase and decrease brush size.
 *   Allow editing to place -ominos.
 *   Allow editing to place rotated -ominoes.
 *   Allow editing to place agars.
-*   Read RLE files.
 *   Show previous generation as a different color.
-*   Look at more efficient algorithms for GoL. (bitpack?, striding?)

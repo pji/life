@@ -13,7 +13,7 @@ from life import util
 
 
 # Constants.
-Y, X = 1, 0
+Y, X = 0, 1
 
 
 # Base classes.
@@ -125,5 +125,5 @@ def remove_padding(a: NDArray[np.bool_]) -> NDArray[np.bool_]:
     while not a[:, x_end - 1].any() and x_end > 0:
         x_end -= 1
 
-    # return [row[x_start:x_end] for row in data[y_start:y_end]]
+    # Return the unpadded data.
     return a[y_start:y_end, x_start:x_end]

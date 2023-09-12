@@ -476,7 +476,7 @@ class Edit(State):
         super().__init__(*args, **kwargs)
         self.row = self.data.height // 2
         self.col = self.data.width // 2
-        self.path = Path('.snapshot.txt')
+        self.path = Path('.snapshot.cells')
 
     def _draw_cursor(self):
         """Display the cursor in the state UI."""
