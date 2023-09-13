@@ -695,6 +695,8 @@ class Load(State):
                 raw = fh.read()
             if filename.suffix == '.cells':
                 normal = decode(raw, 'cells')
+            elif filename.suffix == '.rle':
+                normal = decode(raw, 'rle')
             else:
                 normal = decode(raw, 'pattern')
             self.data.replace(normal)

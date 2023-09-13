@@ -80,3 +80,23 @@ class TestPattern:
             '..X\n'
             '.X.'
         )
+
+
+class TestRLE:
+    def test_decode(self, data):
+        """When given a string, :meth:`RLE.decode` should return that
+        string as an :class:`numpy.ndarray`.
+        """
+        assert (codec.RLE.decode(
+            'x = 5, y = 5\n'
+            '5b$b3o$3bo$2bo!'
+        ) == data).all()
+
+    def test_encode(self, data):
+        """When given an array, :meth:`RLE.encode` should return
+        that array as a string in `pattern` format.
+        """
+        assert codec.RLE.encode(data) == (
+            'x = 3, y = 3\n'
+            '3o$2bo$bo!'
+        )

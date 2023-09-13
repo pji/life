@@ -1088,6 +1088,25 @@ class TestLoad:
         assert state.path == Path('tests/data/zeggs')
         assert state.selected == 0
 
+    def test_Load_load_rle(self, load):
+        """When called, :meth:`Load.load` should load the selected file
+        and return a :class:`Core` object. If the file is an RLE file,
+        the RLE codex should be used to load the file.
+        """
+        load._get_files()
+        load.selected = 4
+        state = load.load()
+        assert isinstance(state, sui.Core)
+        assert state.data is load.data
+        assert state.term is load.term
+        assert (state.data._data == np.array([
+            [0, 1, 0, 1],
+            [1, 0, 1, 0],
+            [0, 1, 0, 1],
+            [0, 0, 0, 0],
+        ], dtype=bool)).all()
+        assert state.data.generation == 0
+
     def test_Load_load_window(self, window_load):
         """When called, :meth:`Load.load` should load the selected file
         and return a :class:`Core` object.
