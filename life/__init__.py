@@ -4,4 +4,4 @@ __init__
 
 Initialization for :mod:`life`.
 """
-from life.sui import main
+from life.main import main

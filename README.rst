@@ -108,9 +108,12 @@ The following features are still planned to be implemented:
 *   (Done.) Display current generation number.
 *   (Done.) Save as cells format.
 *   (Done.) Read RLE files.
+*   (Done.) Read/write metadata from/to files.
+*   Store user name in a configuration file.
 *   Look at more efficient algorithms for GoL. (bitpack?, striding?)
 *   Allow editing to increase and decrease brush size.
 *   Allow editing to place -ominos.
 *   Allow editing to place rotated -ominoes.
 *   Allow editing to place agars.
 *   Show previous generation as a different color.
+*   Download patterns from URLs.

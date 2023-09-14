@@ -5,13 +5,11 @@ sui
 The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
-from argparse import ArgumentParser
-from copy import deepcopy
 from importlib.abc import Traversable
 from importlib.resources import files
 from pathlib import Path
 from time import sleep
-from typing import Any, List, Sequence, Union
+from typing import Sequence, Union
 
 import numpy as np
 from blessed import Terminal
@@ -50,7 +48,10 @@ class State(ABC):
         origin_y: int | None = None,
         origin_x: int | None = None,
         pace: float = 0,
-        show_generation: bool = False
+        show_generation: bool = False,
+        name: str = '',
+        user: str = '',
+        comment: str = ''
     ) -> None:
         """Initialize a State object.
 
@@ -59,6 +60,9 @@ class State(ABC):
         """
         self.data = data
         self.term = term
+
+        self.comment = comment
+        self.name = name
         if origin_x is None:
             origin_x = (data.width - term.width) // 2
         self.origin_x = origin_x
@@ -67,6 +71,7 @@ class State(ABC):
         self.origin_y = origin_y
         self.pace = pace
         self.show_generation = show_generation
+        self.user = user
 
     def _char_for_state(self, top, bottom) -> str:
         """Return the character to draw based on the state of the cell."""
@@ -178,10 +183,12 @@ class State(ABC):
         return {
             'data': self.data,
             'term': self.term,
+            'comment': self.comment,
             'origin_x': self.origin_x,
             'origin_y': self.origin_y,
             'pace': self.pace,
             'show_generation': self.show_generation,
+            'user': self.user,
         }
 
     def input(self) -> Command:
@@ -273,9 +280,11 @@ class Config(State):
         super().__init__(*args, **kwargs)
         self.selected = 0
         self.settings = [
+            'comment',
             'pace',
             'rule',
             'show_generation',
+            'user',
             'wrap',
         ]
 
@@ -330,33 +339,48 @@ class Config(State):
 
     def select(self) -> 'Config':
         """Command method. Change the selected setting."""
+        def get_text_input(msg: str) -> str:
+            y = self.term.height - 1
+            self._draw_commands(msg)
+            self._draw_prompt()
+            return self._get_text(y, 2)
+
         setting = self.settings[self.selected]
 
-        if setting == 'pace':
-            self._draw_commands(
-                'Enter a number of seconds between each generation:'
-            )
-            y = -(self.data.height // -2) + 2
-            self._draw_prompt()
-            self.pace = float(self._get_text(y, 2))
+        if setting == 'comment':
+            msg = 'Enter a comment to add to the save file.'
+            self.comment = get_text_input(msg)
+
+        elif setting == 'pace':
+            msg = 'Enter a number of seconds between each generation:'
+            while True:
+                try:
+                    value = get_text_input(msg)
+                    if value:
+                        self.pace = float(value)
+                except ValueError:
+                    msg = 'Invalid float. ' + msg
+                    continue
+                break
 
         elif setting == 'rule':
-            y = -(self.data.height // -2) + 2
             msg = (
                 'Enter the rules in BS notation. (Current rule: '
                 f'{self.data.rule})'
             )
             while True:
-                self._draw_commands(msg)
-                self._draw_prompt()
                 try:
-                    rule = self._get_text(y, 2)
+                    rule = get_text_input(msg)
                     if rule:
                         self.rule = rule
                 except InvalidRule:
                     msg = 'Invalid rule. ' + msg
                     continue
                 break
+
+        elif setting == 'user':
+            msg = 'Enter a name to credit in the save file.'
+            self.user = get_text_input(msg)
 
         else:
             current = getattr(self, setting)
@@ -694,12 +718,14 @@ class Load(State):
             with open(filename, 'r') as fh:
                 raw = fh.read()
             if filename.suffix == '.cells':
-                normal = decode(raw, 'cells')
+                normal, info = decode(raw, 'cells')
             elif filename.suffix == '.rle':
-                normal = decode(raw, 'rle')
+                normal, info = decode(raw, 'rle')
             else:
-                normal = decode(raw, 'pattern')
+                normal, info = decode(raw, 'pattern')
             self.data.replace(normal)
+            self.user = info.user
+            self.comment = info.comment
 
         self.data.generation = 0
         return Core(**self.asdict())
@@ -775,32 +801,6 @@ class Save(State):
     menu = 'Enter name for save file.'
     path = Path('')
 
-    def _remove_padding(self, data: np.ndarray) -> list[Any]:
-        """Remove empty rows and columns surrounding the pattern."""
-        # Find the first row with the pattern.
-        y_start = 0
-        while True not in data[y_start] and y_start < len(data):
-            y_start += 1
-
-        # Find last row with the pattern.
-        y_end = len(data)
-        while True not in data[y_end - 1] and y_end > 0:
-            y_end -= 1
-
-        # Find first column with the pattern.
-        x_start = 0
-        while (not any(data[i][x_start] for i in range(len(data)))
-                and x_start < len(data[0])):
-            x_start += 1
-
-        # Find last column with pattern.
-        x_end = len(data[0])
-        while (not any(data[i][x_end - 1] for i in range(len(data)))
-                and x_start > 0):
-            x_end -= 1
-
-        return [row[x_start:x_end] for row in data[y_start:y_end]]
-
     def exit(self) -> 'Core':
         """Command method. Return to core without saving."""
         return Core(**self.asdict())
@@ -820,8 +820,11 @@ class Save(State):
 
         :param filename: The name of the file to save.
         """
-        text = encode(self.data.view(), 'cells')
         path = Path(filename)
+        info = util.FileInfo(
+            path.name, self.user, self.data.rule, self.comment
+        )
+        text = encode(self.data.view(), 'cells', info)
         if '/' not in str(filename):
             path = self.path / filename
         with open(path, 'w') as fh:
@@ -898,66 +901,3 @@ class Start(State):
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)
-
-
-# Mainline.
-def main():
-    p = ArgumentParser(
-        description='A Python implementation of Conway\'s Game of Life.',
-        prog='life'
-    )
-    p.add_argument(
-        '-f', '--file',
-        help='A file to load into the Game of Life.',
-        action='store',
-        type=str
-    )
-    p.add_argument(
-        '-p', '--pace',
-        help='The delay between ticks when autorunning.',
-        action='store',
-        type=float
-    )
-    p.add_argument(
-        '-r', '--rule',
-        help='The rule for the Game of Life.',
-        action='store',
-        type=str
-    )
-    p.add_argument(
-        '-W', '--no_wrap',
-        help='The grid should not wrap at the edges.',
-        action='store_true'
-    )
-    args = p.parse_args()
-
-    term = Terminal()
-    with term.fullscreen(), term.hidden_cursor():
-        kwargs = {'term': term,}
-        if args.file:
-            kwargs['file'] = args.file.strip()
-        if args.no_wrap:
-            kwargs['wrap'] = False
-        if args.pace:
-            kwargs['pace'] = args.pace
-        if args.rule:
-            kwargs['rule'] = args.rule.strip()
-        state = Start(**kwargs)
-        while not isinstance(state, End):
-            state.update_ui()
-            cmd, *args = state.input()
-            state = getattr(state, cmd)(*args)
-
-
-if __name__ == '__main__':
-    import traceback as tb
-
-    try:
-        main()
-    except Exception as ex:
-        with open('exception.log', 'w') as fh:
-            fh.write(str(type(ex)) + '\n')
-            fh.write(str(ex.args) + '\n')
-            tb_str = ''.join(tb.format_tb(ex.__traceback__))
-            fh.write(tb_str)
-        raise ex

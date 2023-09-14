@@ -5,6 +5,7 @@ util
 Utility functions for :mod:`life`.
 """
 from collections.abc import Sequence
+from dataclasses import dataclass
 from itertools import zip_longest
 from typing import Any, Iterator
 
@@ -59,3 +60,13 @@ def normalize_width(line: str, width: int, fill: str = '.') -> str:
     if len(line) < width:
         line += fill * (width - len(line))
     return line
+
+
+# Classes.
+@dataclass
+class FileInfo:
+    """Metadata for saved files."""
+    name: str = ''
+    user: str = ''
+    rule: str = ''
+    comment: str = ''

@@ -8,6 +8,7 @@ import numpy as np
 import pytest as pt
 
 from life import codec
+from life import util
 
 
 # Common fixtures.
@@ -23,24 +24,38 @@ def data():
     ], dtype=bool)
 
 
+@pt.fixture
+def info():
+    """A :class:`util.FileInfo` object for testing."""
+    return util.FileInfo('spam', 'egg', 'B3/S23', 'bacon')
+
+
 class TestCells:
     def test_decode(self, data):
         """When given a string, :meth:`Cells.decode` should return that
         string as an :class:`numpy.ndarray`.
         """
-        assert (codec.Cells.decode(
+        actual, actual_info = codec.Cells.decode(
+            '!Name: spam\n'
+            '! bacon\n'
             '.....\n'
             '.OOO.\n'
             '...O.\n'
             '..O..\n'
             '.....'
-        ) == data).all()
+        )
+        assert (actual == data).all()
+        assert actual_info == util.FileInfo('spam', comment='bacon')
 
-    def test_encode(self, data):
+    def test_encode(self, data, info):
         """When given an array, :meth:`Cells.encode` should return
         that array as a string in `pattern` format.
         """
-        assert codec.Cells.encode(data) == (
+        assert codec.Cells.encode(data, info) == (
+            '!Name: spam\n'
+            '! egg\n'
+            '! B3/S23\n'
+            '! bacon\n'
             'OOO\n'
             '..O\n'
             '.O.\n'
@@ -63,13 +78,15 @@ class TestPattern:
         """When given a string, :meth:`Pattern.decode` should return that
         string as an :class:`numpy.ndarray`.
         """
-        assert (codec.Pattern.decode(
+        actual, actual_info = codec.Pattern.decode(
             '.....\n'
             '.XXX.\n'
             '...X.\n'
             '..X..\n'
             '.....'
-        ) == data).all()
+        )
+        assert (actual == data).all()
+        assert actual_info == util.FileInfo()
 
     def test_encode(self, data):
         """When given an array, :meth:`Pattern.encode` should return
@@ -83,20 +100,28 @@ class TestPattern:
 
 
 class TestRLE:
-    def test_decode(self, data):
+    def test_decode(self, data, info):
         """When given a string, :meth:`RLE.decode` should return that
         string as an :class:`numpy.ndarray`.
         """
-        assert (codec.RLE.decode(
-            'x = 5, y = 5\n'
+        actual, actual_info = codec.RLE.decode(
+            '#N spam\n'
+            '#O egg\n'
+            '#C bacon\n'
+            'x = 5, y = 5, rule = B3/S23\n'
             '5b$b3o$3bo$2bo!'
-        ) == data).all()
+        )
+        assert (actual == data).all()
+        assert actual_info == info
 
-    def test_encode(self, data):
+    def test_encode(self, mocker, data, info):
         """When given an array, :meth:`RLE.encode` should return
         that array as a string in `pattern` format.
         """
-        assert codec.RLE.encode(data) == (
-            'x = 3, y = 3\n'
+        assert codec.RLE.encode(data, info) == (
+            '#N spam\n'
+            '#O egg\n'
+            '#C bacon\n'
+            'x = 3, y = 3, rule = B3/S23\n'
             '3o$2bo$bo!'
         )

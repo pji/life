@@ -362,7 +362,7 @@ class TestConfig:
         config.term.inkey.side_effect = [
             '0', '.', '0', '9', '\n',
         ]
-        config.selected = 0
+        config.selected = 1
         state = config.select()
         assert state is config
         assert state.data is config.data
@@ -378,7 +378,7 @@ class TestConfig:
         config.term.inkey.side_effect = [
             'B', '3', '6', '/', 'S', '2', '3', '\n',
         ]
-        config.selected = 1
+        config.selected = 2
         state = config.select()
         assert state is config
         assert state.data is config.data
@@ -397,7 +397,7 @@ class TestConfig:
             's', 'p', 'a', 'm', '\n',
             'B', '3', '6', '/', 'S', '2', '3', '\n',
         ]
-        config.selected = 1
+        config.selected = 2
         state = config.select()
         assert state is config
         assert state.data is config.data
@@ -454,11 +454,12 @@ class TestConfig:
         captured = capsys.readouterr()
         assert repr(captured.out) == repr(
             term.move(0, 0) + term.black_on_green
-            + 'Pace: 0' + term.clear_eol + term.normal
-            + term.move(1, 0) + 'Rule: B3/S23' + term.clear_eol
-            + term.move(2, 0) + 'Show Generation: False' + term.clear_eol
-            + term.move(3, 0) + 'Wrap: True' + term.clear_eol
-            + term.move(4, 0) + term.clear_eol
+            + 'Comment: ' + term.clear_eol + term.normal
+            + term.move(1, 0) + 'Pace: 0' + term.clear_eol
+            + term.move(2, 0) + 'Rule: B3/S23' + term.clear_eol
+            + term.move(3, 0) + 'Show Generation: False' + term.clear_eol
+            + term.move(4, 0) + 'User: ' + term.clear_eol
+            + term.move(5, 0) + 'Wrap: True' + term.clear_eol
             + term.move(2, 0) + '\u2500' * 4 + '\n'
             + term.move(3, 0) + config.menu + term.clear_eol
         )
@@ -697,7 +698,7 @@ class TestEdit:
     def edit(self, grid, term, tmp_path):
         """An :class:`Edit` object for testing."""
         edit = sui.Edit(grid, term)
-        edit.path = tmp_path / '.snapshot.txt'
+        edit.path = tmp_path / '.snapshot.cells'
         yield edit
 
     @pt.fixture
@@ -888,6 +889,8 @@ class TestEdit:
         captured = capsys.readouterr()
         assert state is edit
         assert repr(saved) == repr(
+            '!Name: .snapshot.cells\n'
+            '! B3/S23\n'
             'O.O\n'
             '...\n'
             'O..\n'
@@ -1106,6 +1109,8 @@ class TestLoad:
             [0, 0, 0, 0],
         ], dtype=bool)).all()
         assert state.data.generation == 0
+        assert state.user == 'Baked Beans'
+        assert state.comment == 'Tomato.'
 
     def test_Load_load_window(self, window_load):
         """When called, :meth:`Load.load` should load the selected file
@@ -1334,12 +1339,15 @@ class TestSave:
     def save(self, grid, term, tmp_path):
         save = sui.Save(grid, term)
         save.path = tmp_path
+        save.user = 'eggs'
+        save.comment = 'bacon'
         yield save
 
     @pt.fixture
     def window_save(self, big_grid, small_term, tmp_path):
         save = sui.Save(big_grid, small_term)
         save.path = tmp_path
+        save.user = 'eggs'
         yield save
 
     # Tests for Save initialization.
@@ -1398,6 +1406,10 @@ class TestSave:
         assert state.data is save.data
         assert state.term is save.term
         assert repr(saved) == repr(
+            '!Name: spam\n'
+            '! eggs\n'
+            '! B3/S23\n'
+            '! bacon\n'
             'O.O\n'
             '...\n'
             'O..\n'
@@ -1417,6 +1429,9 @@ class TestSave:
         assert state.origin_x == window_save.origin_x
         assert state.origin_y == window_save.origin_y
         assert repr(saved) == repr(
+            '!Name: spam\n'
+            '! eggs\n'
+            '! B3/S23\n'
             '.O.O.O\n'
             'O.O.O.\n'
             '.O.O.O\n'

@@ -5,6 +5,7 @@ codec
 File I/O codecs for :mod:`life`.
 """
 from abc import ABC, abstractmethod
+from textwrap import fill
 
 import numpy as np
 from numpy.typing import NDArray
@@ -21,23 +22,36 @@ class Codec(ABC):
     """A base class for codecs."""
     @classmethod
     @abstractmethod
-    def decode(cls, text: str) -> NDArray[np.bool_]:
+    def decode(cls, text: str) -> tuple[NDArray[np.bool_], util.FileInfo]:
         """Read a serialized array."""
 
     @classmethod
     @abstractmethod
-    def encode(cls, a: NDArray[np.bool_]) -> str:
+    def encode(
+        cls, a: NDArray[np.bool_], info: util.FileInfo | None = None
+    ) -> str:
         """Serialize an array."""
 
 
 # Classes.
 class Cells(Codec):
     @classmethod
-    def decode(cls, text: str) -> NDArray[np.bool_]:
+    def decode(cls, text: str) -> tuple[NDArray[np.bool_], util.FileInfo]:
         """Read an array that has been serialized in `cells` format."""
+        def get_info(lines: list[str]) -> tuple[str, str]:
+            name = ''
+            comment = []
+            for line in lines:
+                if line.startswith('!Name:'):
+                    name += line[6:].strip()
+                elif line.startswith('!'):
+                    comment.append(line[1:].strip())
+            return name, '\n'.join(comment)
+
         if text.endswith('\n'):
             text = text[:-1]
         lines = text.split('\n')
+        name, comment = get_info(lines)
         lines = [line for line in lines if not line.startswith('!')]
         height = len(lines)
         width = max(len(line) for line in lines)
@@ -45,21 +59,34 @@ class Cells(Codec):
         return np.array(
             [util.char_to_bool(line, 'O') for line in normal],
             dtype=bool
-        )
+        ), util.FileInfo(name, comment=comment)
 
     @classmethod
-    def encode(cls, a: NDArray[np.bool_]) -> str:
+    def encode(
+        cls, a: NDArray[np.bool_], info: util.FileInfo | None = None
+    ) -> str:
+        """Serialize an array."""
         """Write the array as a string in `cells` format."""
+        result = ''
+        if info and info.name:
+            result += f'!Name: {info.name}\n'
+        if info and info.user:
+            result += f'! {info.user}\n'
+        if info and info.rule:
+            result += f'! {info.rule}\n'
+        if info and info.comment:
+            result += f'! {info.comment}\n'
         a = remove_padding(a)
         out: NDArray[np.str_] = np.ndarray(a.shape, dtype='<U1')
         out.fill('.')
         out[a] = 'O'
-        return '\n'.join(''.join(c for c in row) for row in out) + '\n'
+        result += '\n'.join(''.join(c for c in row) for row in out) + '\n'
+        return result
 
 
 class Pattern(Codec):
     @classmethod
-    def decode(cls, text: str) -> NDArray[np.bool_]:
+    def decode(cls, text: str) -> tuple[NDArray[np.bool_], util.FileInfo]:
         """Read an array that has been serialized in `pattern` format."""
         if text.endswith('\n'):
             text = text[:-1]
@@ -70,10 +97,13 @@ class Pattern(Codec):
         return np.array(
             [util.char_to_bool(line, 'X') for line in normal],
             dtype=bool
-        )
+        ), util.FileInfo()
 
     @classmethod
-    def encode(cls, a: NDArray[np.bool_]) -> str:
+    def encode(
+        cls, a: NDArray[np.bool_], info: util.FileInfo | None = None
+    ) -> str:
+        """Serialize an array."""
         """Write the array as a string in `pattern` format."""
         a = remove_padding(a)
         out: NDArray[np.str_] = np.ndarray(a.shape, dtype='<U1')
@@ -84,19 +114,20 @@ class Pattern(Codec):
 
 class RLE(Codec):
     @classmethod
-    def decode(cls, text: str) -> NDArray[np.bool_]:
+    def decode(cls, text: str) -> tuple[NDArray[np.bool_], util.FileInfo]:
         """Read an array that has been serialized in `RLE` format."""
-        def get_shape(line: str) -> tuple[int, int]:
-            parts = line.split(',')
-            data = {}
-            for part in parts:
-                key, value = part.split('=')
-                data[key.strip()] = value.strip()
-            return int(data['y']), int(data['x'])
-
-        def get_rows(lines: list[str]) -> list[str]:
-            joined = ''.join(lines)
-            return joined.split('$')
+        def get_info(lines: list[str]) -> tuple[str, str, str]:
+            name = ''
+            user = ''
+            comment = []
+            for line in lines:
+                if line.casefold().startswith('#n'):
+                    name += line[2:].strip()
+                elif line.casefold().startswith('#o'):
+                    user += line[2:].strip()
+                elif line.casefold().startswith('#c'):
+                    comment.append(line[2:].strip())
+            return name, user, '\n'.join(comment)
 
         def get_live_slices(rows: list[str]) -> list[tuple[int, slice]]:
             result = []
@@ -129,22 +160,39 @@ class RLE(Codec):
 
             return result
 
+        def get_rows(lines: list[str]) -> list[str]:
+            joined = ''.join(lines)
+            return joined.split('$')
+
+        def get_shape(line: str) -> tuple[tuple[int, int], str]:
+            parts = line.split(',')
+            data = {}
+            for part in parts:
+                key, value = part.split('=')
+                data[key.strip()] = value.strip()
+            data.setdefault('rule', '')
+            return (int(data['y']), int(data['x'])), data['rule']
+
         if text.endswith('\n'):
             text = text[:-1]
         text = text.split('!')[0]
         lines = text.split('\n')
+        name, user, comment = get_info(lines)
         lines = [line for line in lines if not line.startswith('#')]
 
-        shape = get_shape(lines[0])
+        shape, rule = get_shape(lines[0])
         rows = get_rows(lines[1:])
 
         a = np.zeros(shape, dtype=bool)
         for y, x in get_live_slices(rows):
             a[y, x] = True
-        return a
+        return a, util.FileInfo(name, user, rule, comment)
 
     @classmethod
-    def encode(cls, a: NDArray[np.bool_]) -> str:
+    def encode(
+        cls, a: NDArray[np.bool_], info: util.FileInfo | None = None
+    ) -> str:
+        """Serialize an array."""
         """Write the array as a string in `cells` format."""
         def compress_row(row: str) -> str:
             result = ''
@@ -167,16 +215,25 @@ class RLE(Codec):
                 result = result[:-1]
             return result
 
-        a = remove_padding(a)
-
         result = ''
-        result += f'x = {a.shape[X]}, y = {a.shape[Y]}\n'
+        if info and info.name:
+            result += f'#N {info.name}\n'
+        if info and info.user:
+            result += f'#O {info.user}\n'
+        if info and info.comment:
+            result += f'#C {info.comment}\n'
+        a = remove_padding(a)
+        result += f'x = {a.shape[X]}, y = {a.shape[Y]}'
+        if info and info.rule:
+            result += f', rule = {info.rule}'
+        result += '\n'
 
         out: NDArray[np.str_] = np.ndarray(a.shape, dtype='<U1')
         out.fill('b')
         out[a] = 'o'
         rows = [''.join(c for c in row) for row in out]
-        result += '$'.join(compress_row(row) for row in rows) + '!'
+        cells = '$'.join(compress_row(row) for row in rows) + '!'
+        result += fill(cells, width=70)
         return result
 
 
@@ -189,16 +246,18 @@ codecs = {
 
 
 # Coding functions.
-def decode(text: str, codec: str):
+def decode(text: str, codec: str) -> tuple[NDArray[np.bool_], util.FileInfo]:
     """Deserialize a string."""
     decoder = codecs[codec]
     return decoder.decode(text)
 
 
-def encode(a: NDArray[np.bool_], codec: str):
+def encode(
+    a: NDArray[np.bool_], codec: str, info: util.FileInfo | None = None
+) -> str:
     """Deserialize a string."""
     encoder = codecs[codec]
-    return encoder.encode(a)
+    return encoder.encode(a, info)
 
 
 # Utility functions.
