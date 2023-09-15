@@ -13,7 +13,7 @@ addopts = [
 
 [project]
 name = "life"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
     {name="Paul J. Iutzi", email="pji@mac.com"},
 ]
