@@ -11,10 +11,10 @@ Developed by John Horton Conway and first published in the October
 1970 issue of *Scientific American,* the Game of Life is a cellular 
 automation that follows the following simple rules: 
 
-1. Any live cell with fewer than two live neighbors dies.
-2. Any live cell with two or three neighbors remains alive.
-3. Any live cell with more than three neighbors dies.
-4. Any dead cell with exactly three neighbors becomes alive.
+1.  Any live cell with fewer than two live neighbors dies.
+2.  Any live cell with two or three neighbors remains alive.
+3.  Any live cell with more than three neighbors dies.
+4.  Any dead cell with exactly three neighbors becomes alive.
 
 From those simple rules, a great amount of interesting complexity 
 arises.
@@ -41,10 +41,9 @@ How do I run the code?
 To run life, clone this repository to your local system and run the 
 following from the repository::
 
-    python3 -m life.sui
+    python3 -m life
 
-That assumes you have a fairly recent version of Python 3 available 
-and it's at least aliased to `python3`.
+That assumes you have Python 3.10 or greater installed as `python3`.
 
 
 How do I use life?
@@ -82,34 +81,40 @@ That assumes you have a fairly recent version of Python 3 available
 and it's at least aliased to `python3`.
 
 
+Most Recent Changes
+-------------------
+The following features were added in the most recent release:
+
+*   Handle grids larger than the display area. (windowing)
+*   Terminate cells at the edge of the grid rather than letting
+    them wrap.
+*   Allow wrap to be set as a command line argument.
+*   Allow rules to be set by command line argument.
+*   Load a file from command line argument.
+*   Implement configuration screen.
+*   In Load, allow pattern list to scroll.
+*   Set autorun rate.
+*   Move `main` to `main`.
+*   Allow editing movement by 10.
+*   Improve text entry when saving patterns.
+*   Manage different data entry types for configuration settings.
+*   Fix backspacing in text fields.
+*   Validate rules.
+*   Move clear to edit.
+*   Handle window movement.
+*   Set shape of grid from the command line.
+*   Move "exit" command to X from E.
+*   Display current generation number.
+*   Save as cells format.
+*   Read RLE files.
+*   Read/write metadata from/to files.
+*   Can change file format.
+
+
 To-do List
 ----------
 The following features are still planned to be implemented:
 
-*   (Done.) Handle grids larger than the display area. (windowing)
-*   (Done.) Terminate cells at the edge of the grid rather than letting
-    them wrap.
-*   (Done.) Allow wrap to be set as a command line argument.
-*   (Done.) Allow rules to be set by command line argument.
-*   (Done.) Load a file from command line argument.
-*   (Done.) Implement configuration screen.
-*   (Done.) In Load, allow pattern list to scroll.
-*   (Done.) Set autorun rate.
-*   (Done.) Move `main` to `main`.
-*   (Done.) Allow editing movement by 10.
-*   (Done.) Improve text entry when saving patterns.
-*   (Done.) Manage different data entry types for configuration settings.
-*   (Done.) Fix backspacing in text fields.
-*   (Done.) Validate rules.
-*   (Done.) Move clear to edit.
-*   (Done.) Handle window movement.
-*   (Done.) Set shape of grid from the command line.
-*   (Done.) Move "exit" command to X from E.
-*   (Done.) Display current generation number.
-*   (Done.) Save as cells format.
-*   (Done.) Read RLE files.
-*   (Done.) Read/write metadata from/to files.
-*   (Done.) Can change file format.
 *   Store user name in a configuration file.
 *   Look at more efficient algorithms for GoL. (bitpack?, striding?)
 *   Allow editing to increase and decrease brush size.
