@@ -109,6 +109,7 @@ The following features are still planned to be implemented:
 *   (Done.) Save as cells format.
 *   (Done.) Read RLE files.
 *   (Done.) Read/write metadata from/to files.
+*   (Done.) Can change file format.
 *   Store user name in a configuration file.
 *   Look at more efficient algorithms for GoL. (bitpack?, striding?)
 *   Allow editing to increase and decrease brush size.

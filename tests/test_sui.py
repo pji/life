@@ -300,6 +300,7 @@ class TestConfig:
             'origin_x': 0,
             'origin_y': 0,
             'pace': 0,
+            'save_format': 'cells',
             'show_generation': False,
         }
         obj = sui.Config(**required)
@@ -318,6 +319,7 @@ class TestConfig:
             'origin_x': 2,
             'origin_y': 1,
             'pace': 0.01,
+            'save_format': 'rle',
             'show_generation': True,
         }
         obj = sui.Config(**optional)
@@ -406,6 +408,41 @@ class TestConfig:
         assert state.origin_y == config.origin_y
         assert state.rule == 'B36/S23'
 
+    def test_Config_select_save_format(self, config):
+        """When called, :meth:`Config.select` should set
+        :attr:`Config.save_formet` and return the parent
+        object.
+        """
+        config.term.inkey.side_effect = [
+            'r', 'l', 'e', '\n',
+        ]
+        config.selected = 3
+        state = config.select()
+        assert state is config
+        assert state.data is config.data
+        assert state.term is config.term
+        assert state.origin_x == config.origin_x
+        assert state.origin_y == config.origin_y
+        assert state.save_format == 'rle'
+
+    def test_Config_select_save_format_invalid(self, config):
+        """When called, :meth:`Config.select` should set
+        :attr:`Config.save_formet` and return the parent
+        object. If an invalid value is given, prompt the
+        user to try again.
+        """
+        config.term.inkey.side_effect = [
+            's', 'p', 'a', 'm', '\n', 'r', 'l', 'e', '\n',
+        ]
+        config.selected = 3
+        state = config.select()
+        assert state is config
+        assert state.data is config.data
+        assert state.term is config.term
+        assert state.origin_x == config.origin_x
+        assert state.origin_y == config.origin_y
+        assert state.save_format == 'rle'
+
     def test_Config_select_wrap(self, config):
         """When called, :meth:`Config.select` should change the selected
         setting then return itself.
@@ -457,9 +494,10 @@ class TestConfig:
             + 'Comment: ' + term.clear_eol + term.normal
             + term.move(1, 0) + 'Pace: 0' + term.clear_eol
             + term.move(2, 0) + 'Rule: B3/S23' + term.clear_eol
-            + term.move(3, 0) + 'Show Generation: False' + term.clear_eol
-            + term.move(4, 0) + 'User: ' + term.clear_eol
-            + term.move(5, 0) + 'Wrap: True' + term.clear_eol
+            + term.move(3, 0) + 'Save Format: cells' + term.clear_eol
+            + term.move(4, 0) + 'Show Generation: False' + term.clear_eol
+            + term.move(5, 0) + 'User: ' + term.clear_eol
+            + term.move(6, 0) + 'Wrap: True' + term.clear_eol
             + term.move(2, 0) + '\u2500' * 4 + '\n'
             + term.move(3, 0) + config.menu + term.clear_eol
         )
@@ -1414,6 +1452,25 @@ class TestSave:
             '...\n'
             'O..\n'
             'O..\n'
+        )
+
+    def test_Save_save_rle(self, save):
+        """Given a filename, :meth:`Save.save` should save the current
+        grid to a file and return a :class:`Core` object.
+        """
+        save.save_format = 'rle'
+        state = save.save('spam')
+        with open(save.path / 'spam') as fh:
+            saved = fh.read()
+        assert isinstance(state, sui.Core)
+        assert state.data is save.data
+        assert state.term is save.term
+        assert repr(saved) == repr(
+            '#N spam\n'
+            '#O eggs\n'
+            '#C bacon\n'
+            'x = 3, y = 4, rule = B3/S23\n'
+            'obo$3b$o$o!'
         )
 
     def test_Save_save_window(self, window_save):

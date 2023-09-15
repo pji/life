@@ -17,7 +17,7 @@ from numpy.typing import NDArray
 
 import life.pattern
 from life import util
-from life.codec import decode, encode
+from life.codec import codecs, decode, encode
 from life.life import Grid, InvalidRule
 
 
@@ -36,6 +36,11 @@ SLEFT = '\x1b[1;2D'
 SRIGHT = '\x1b[1;2C'
 
 
+# Exceptions.
+class InvalidSaveFormat(ValueError):
+    """The given save file format was invalid."""
+
+
 # Base class.
 class State(ABC):
     commands: dict = {}
@@ -51,7 +56,8 @@ class State(ABC):
         show_generation: bool = False,
         name: str = '',
         user: str = '',
-        comment: str = ''
+        comment: str = '',
+        save_format: str = 'cells'
     ) -> None:
         """Initialize a State object.
 
@@ -70,8 +76,35 @@ class State(ABC):
             origin_y = (data.height - (term.height - 3) * 2) // 2
         self.origin_y = origin_y
         self.pace = pace
+        self.save_format = save_format
         self.show_generation = show_generation
         self.user = user
+
+    @property
+    def rule(self) -> str:
+        return self.data.rule
+
+    @rule.setter
+    def rule(self, value: str) -> None:
+        self.data.rule = value
+
+    @property
+    def save_format(self) -> str:
+        return self._save_format
+
+    @save_format.setter
+    def save_format(self, value: str) -> None:
+        if value not in codecs:
+            raise InvalidSaveFormat('Invalid save format.')
+        self._save_format = value
+
+    @property
+    def wrap(self) -> bool:
+        return self.data.wrap
+
+    @wrap.setter
+    def wrap(self, value) -> None:
+        self.data.wrap = value
 
     def _char_for_state(self, top, bottom) -> str:
         """Return the character to draw based on the state of the cell."""
@@ -283,26 +316,11 @@ class Config(State):
             'comment',
             'pace',
             'rule',
+            'save_format',
             'show_generation',
             'user',
             'wrap',
         ]
-
-    @property
-    def rule(self) -> str:
-        return self.data.rule
-
-    @rule.setter
-    def rule(self, value: str) -> None:
-        self.data.rule = value
-
-    @property
-    def wrap(self) -> bool:
-        return self.data.wrap
-
-    @wrap.setter
-    def wrap(self, value) -> None:
-        self.data.wrap = value
 
     def _draw_state(self) -> None:
         """Draw the configuration to the screen."""
@@ -375,6 +393,18 @@ class Config(State):
                         self.rule = rule
                 except InvalidRule:
                     msg = 'Invalid rule. ' + msg
+                    continue
+                break
+
+        elif setting == 'save_format':
+            msg = 'Save file format. Options: cells, pattern, rle.'
+            while True:
+                try:
+                    save_format = get_text_input(msg)
+                    if save_format:
+                        self.save_format = save_format
+                except InvalidSaveFormat:
+                    msg = 'Invalid save file format. ' + msg
                     continue
                 break
 
@@ -824,7 +854,7 @@ class Save(State):
         info = util.FileInfo(
             path.name, self.user, self.data.rule, self.comment
         )
-        text = encode(self.data.view(), 'cells', info)
+        text = encode(self.data.view(), self.save_format, info)
         if '/' not in str(filename):
             path = self.path / filename
         with open(path, 'w') as fh:
