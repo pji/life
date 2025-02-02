@@ -5,8 +5,8 @@ sui
 The user interface for Conway's Game of Life.
 """
 from abc import ABC, abstractmethod
-from importlib.resources.abc import Traversable
 from importlib.resources import files
+from importlib.resources.abc import Traversable
 from pathlib import Path
 from time import sleep
 from typing import Sequence, Union

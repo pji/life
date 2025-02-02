@@ -9,7 +9,7 @@ from argparse import ArgumentParser
 from blessed import Terminal
 
 from life.life import Grid
-from life.sui import Start, End
+from life.sui import End, Start
 
 
 # Mainline.

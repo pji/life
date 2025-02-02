@@ -13,13 +13,13 @@ addopts = [
 
 [project]
 name = "life"
-version = "0.1.1"
+version = "0.1.2_DEV"
 authors = [
     {name="Paul J. Iutzi", email="pji@mac.com"},
 ]
 description = "Another implementation of Conway's Game of Life."
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

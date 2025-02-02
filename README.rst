@@ -43,7 +43,7 @@ following from the repository::
 
     python3 -m life
 
-That assumes you have Python 3.10 or greater installed as `python3`.
+That assumes you have Python 3.11 or greater installed as `python3`.
 
 
 How do I use life?
@@ -85,30 +85,7 @@ Most Recent Changes
 -------------------
 The following features were added in the most recent release:
 
-*   Handle grids larger than the display area. (windowing)
-*   Terminate cells at the edge of the grid rather than letting
-    them wrap.
-*   Allow wrap to be set as a command line argument.
-*   Allow rules to be set by command line argument.
-*   Load a file from command line argument.
-*   Implement configuration screen.
-*   In Load, allow pattern list to scroll.
-*   Set autorun rate.
-*   Move `main` to `main`.
-*   Allow editing movement by 10.
-*   Improve text entry when saving patterns.
-*   Manage different data entry types for configuration settings.
-*   Fix backspacing in text fields.
-*   Validate rules.
-*   Move clear to edit.
-*   Handle window movement.
-*   Set shape of grid from the command line.
-*   Move "exit" command to X from E.
-*   Display current generation number.
-*   Save as cells format.
-*   Read RLE files.
-*   Read/write metadata from/to files.
-*   Can change file format.
+*   Removed warnings when tested under Python 3.13.
 
 
 To-do List

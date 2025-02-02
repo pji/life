@@ -7,8 +7,7 @@ Unit tests for file I/O codecs.
 import numpy as np
 import pytest as pt
 
-from life import codec
-from life import util
+from life import codec, util
 
 
 # Common fixtures.
