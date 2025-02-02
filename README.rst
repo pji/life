@@ -86,6 +86,7 @@ Most Recent Changes
 The following features were added in the most recent release:
 
 *   Removed warnings when tested under Python 3.13.
+*   Switched from `pipenv` to `poetry`.
 
 
 To-do List

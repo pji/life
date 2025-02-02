@@ -13,6 +13,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from life import util
+from life.model import LifeAry
 
 
 # Types.
@@ -35,7 +36,7 @@ class Grid:
 
     # Class methods.
     @classmethod
-    def from_array(cls, a: NDArray[np.bool_], rule: str = 'B3/S23') -> 'Grid':
+    def from_array(cls, a: LifeAry, rule: str = 'B3/S23') -> 'Grid':
         """Build a new :class:`Grid` from a :class:`numpy.ndarray`."""
         height, width = a.shape
         grid = cls(width, height, rule)
@@ -148,7 +149,7 @@ class Grid:
     def __getitem__(self, key) -> bool:
         return self._data.__getitem__(key)
 
-    def __iter__(self) -> Iterator[NDArray[np.bool_]]:
+    def __iter__(self) -> Iterator[LifeAry]:
         while True:
             self.tick()
             yield self._data
@@ -156,7 +157,7 @@ class Grid:
     def __len__(self) -> int:
         return len(self._data)
 
-    def __reversed__(self) -> Iterator[NDArray[np.bool_]]:
+    def __reversed__(self) -> Iterator[LifeAry]:
         a = self._data.copy()
         a = np.flip(a, axis=0)
         a = np.flip(a, axis=1)
@@ -192,7 +193,7 @@ class Grid:
         new = self.rng.integers(0, 2, self.shape, dtype=bool)
         self._data = new
 
-    def replace(self, seq: Gridlike | NDArray[np.bool_]) -> None:
+    def replace(self, seq: Gridlike | LifeAry) -> None:
         """Replace the :class:`Grid` with the given values."""
         try:
             new = np.array(seq, dtype=bool)
@@ -248,7 +249,7 @@ class Grid:
         self,
         origin: Sequence[int] = (0, 0),
         shape: Sequence[int] | None = None
-    ) -> NDArray[np.bool_]:
+    ) -> LifeAry:
         """Return a section of the data of the current grid."""
         if shape is None:
             shape = self._data.shape

@@ -11,6 +11,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from life import util
+from life.model import LifeAry
 
 
 # Constants.
@@ -22,22 +23,29 @@ class Codec(ABC):
     """A base class for codecs."""
     @classmethod
     @abstractmethod
-    def decode(cls, text: str) -> tuple[NDArray[np.bool_], util.FileInfo]:
+    def decode(cls, text: str) -> tuple[LifeAry, util.FileInfo]:
         """Read a serialized array."""
 
     @classmethod
     @abstractmethod
     def encode(
-        cls, a: NDArray[np.bool_], info: util.FileInfo | None = None
+        cls, a: LifeAry, info: util.FileInfo | None = None
     ) -> str:
         """Serialize an array."""
 
 
 # Classes.
 class Cells(Codec):
+    """A codec for saving and loading `cells` format files."""
+
     @classmethod
-    def decode(cls, text: str) -> tuple[NDArray[np.bool_], util.FileInfo]:
-        """Read an array that has been serialized in `cells` format."""
+    def decode(cls, text: str) -> tuple[LifeAry, util.FileInfo]:
+        """Read an array that has been serialized in `cells` format.
+
+        :param text: `cell` formatted data in a :class:`str`.
+        :returns: A :class:`tuple` object.
+        :rtype: :class:`tuple`
+        """
         def get_info(lines: list[str]) -> tuple[str, str]:
             name = ''
             comment = []
@@ -63,10 +71,15 @@ class Cells(Codec):
 
     @classmethod
     def encode(
-        cls, a: NDArray[np.bool_], info: util.FileInfo | None = None
+        cls, a: LifeAry, info: util.FileInfo | None = None
     ) -> str:
-        """Serialize an array."""
-        """Write the array as a string in `cells` format."""
+        """Write the array as a string in `cells` format.
+
+        :param a: A grid from a Game of Life as an array.
+        :param info: Metadata for the file.
+        :returns: A :class:`str` object.
+        :rtype: :class:`str`
+        """
         result = ''
         if info and info.name:
             result += f'!Name: {info.name}\n'
@@ -86,8 +99,13 @@ class Cells(Codec):
 
 class Pattern(Codec):
     @classmethod
-    def decode(cls, text: str) -> tuple[NDArray[np.bool_], util.FileInfo]:
-        """Read an array that has been serialized in `pattern` format."""
+    def decode(cls, text: str) -> tuple[LifeAry, util.FileInfo]:
+        """Read an array that has been serialized in `pattern` format.
+
+        :param text: `pattern` formatted data in a :class:`str`.
+        :returns: A :class:`tuple` object.
+        :rtype: :class:`tuple`
+        """
         if text.endswith('\n'):
             text = text[:-1]
         lines = text.split('\n')
@@ -101,10 +119,15 @@ class Pattern(Codec):
 
     @classmethod
     def encode(
-        cls, a: NDArray[np.bool_], info: util.FileInfo | None = None
+        cls, a: LifeAry, info: util.FileInfo | None = None
     ) -> str:
-        """Serialize an array."""
-        """Write the array as a string in `pattern` format."""
+        """Write the array as a string in `pattern` format.
+
+        :param a: A grid from a Game of Life as an array.
+        :param info: Metadata for the file.
+        :returns: A :class:`str` object.
+        :rtype: :class:`str`
+        """
         a = remove_padding(a)
         out: NDArray[np.str_] = np.ndarray(a.shape, dtype='<U1')
         out.fill('.')
@@ -113,9 +136,16 @@ class Pattern(Codec):
 
 
 class RLE(Codec):
+    """A codec for saving and loading `cells` format files."""
+
     @classmethod
-    def decode(cls, text: str) -> tuple[NDArray[np.bool_], util.FileInfo]:
-        """Read an array that has been serialized in `RLE` format."""
+    def decode(cls, text: str) -> tuple[LifeAry, util.FileInfo]:
+        """Read an array that has been serialized in `RLE` format.
+
+        :param text: `rle` formatted data in a :class:`str`.
+        :returns: A :class:`tuple` object.
+        :rtype: :class:`tuple`
+        """
         def get_info(lines: list[str]) -> tuple[str, str, str]:
             name = ''
             user = ''
@@ -190,10 +220,15 @@ class RLE(Codec):
 
     @classmethod
     def encode(
-        cls, a: NDArray[np.bool_], info: util.FileInfo | None = None
+        cls, a: LifeAry, info: util.FileInfo | None = None
     ) -> str:
-        """Serialize an array."""
-        """Write the array as a string in `cells` format."""
+        """Write the array as a string in `cells` format.
+
+        :param a: A grid from a Game of Life as an array.
+        :param info: Metadata for the file.
+        :returns: A :class:`str` object.
+        :rtype: :class:`str`
+        """
         def compress_row(row: str) -> str:
             result = ''
             count = 0
@@ -246,23 +281,43 @@ codecs = {
 
 
 # Coding functions.
-def decode(text: str, codec: str) -> tuple[NDArray[np.bool_], util.FileInfo]:
-    """Deserialize a string."""
+def decode(text: str, codec: str) -> tuple[LifeAry, util.FileInfo]:
+    """Deserialize a string.
+
+    :param text: The serialized data to decode.
+    :param codec: The codec to use for the decoding.
+    :returns: A :class:`tuple` object.
+    :rtype: :class:`tuple`
+    """
     decoder = codecs[codec]
     return decoder.decode(text)
 
 
 def encode(
-    a: NDArray[np.bool_], codec: str, info: util.FileInfo | None = None
+    a: LifeAry,
+    codec: str,
+    info: util.FileInfo | None = None
 ) -> str:
-    """Deserialize a string."""
+    """Deserialize a string.
+
+    :param a: The array to encode.
+    :param codec: The codec to use when encoding the data.
+    :param info: Metadata for the file.
+    :returns: A :class:`str` object.
+    :rtype: :class:`str`
+    """
     encoder = codecs[codec]
     return encoder.encode(a, info)
 
 
 # Utility functions.
-def remove_padding(a: NDArray[np.bool_]) -> NDArray[np.bool_]:
-    """Remove empty rows and columns surrounding the pattern."""
+def remove_padding(a: LifeAry) -> LifeAry:
+    """Remove empty rows and columns surrounding the pattern.
+
+    :param a: The array to remove padding from.
+    :returns: A :class:`numpy.ndarray` object.
+    :rtype: :class:`numpy.ndarray`
+    """
     # Find the first row with the pattern.
     y_start = 0
     while not a[y_start, :].any() and y_start < a.shape[Y]:
