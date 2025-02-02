@@ -31,7 +31,6 @@ pre:
 test:
 	python -m pytest --capture=sys
 
-
 .PHONY: testv
 testv:
 	python -m pytest -vv  --capture=sys

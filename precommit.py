@@ -56,8 +56,7 @@ def check_doctests(names):
 def check_requirements():
     """Check requirements."""
     print('Checking requirements...')
-    os.putenv('PIPENV_VERBOSITY', '-1')
-    cmd = '.venv/bin/python -m pipenv requirements'
+    cmd = 'poetry export --without-hashes --format=requirements.txt'
     current = os.popen(cmd).readlines()
     current = wrap_lines(current, 35, '', '  ')
     with open('requirements.txt') as fh:
