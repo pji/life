@@ -74,7 +74,6 @@ class State(ABC):
         origin_x: int | None = None,
         pace: float = 0,
         show_generation: bool = False,
-        name: str = '',
         user: str = '',
         comment: str = '',
         save_format: str = 'cells'
@@ -84,7 +83,6 @@ class State(ABC):
         self.term = term
 
         self.comment = comment
-        self.name = name
         if origin_x is None:
             origin_x = (data.width - term.width) // 2
         self.origin_x = origin_x
@@ -277,7 +275,7 @@ class State(ABC):
 
 # State classes.
 class Autorun(State):
-    """Automatically advance the generation of the grid.
+    """A state that automatically advance the generation of the grid.
 
     :param data: The grid object for the current Game of Life.
     :param term: The terminal the Game of Life is being run in.
@@ -288,15 +286,23 @@ class Autorun(State):
     :param pace: The time between ticks in the game. Defaults to `0`.
     :param show_generation: Whether to display the generation of
         the Game of Life. Defaults to `False`.
-    :param name:
     :param user: The name of the user to credit in save files.
         Defaults to an empty `str`.
     :param comment: A comment for the save file. Defaults to an
         empty `str`.
     :param save_format: The format to use when saving the file.
         Defaults to `cells`.
-    :returns: An :class:`life.sui.State` object.
-    :rtype: life.sui.State
+    :returns: An :class:`life.sui.Autorun` object.
+    :rtype: life.sui.Autorun
+
+    Usage::
+
+        >>> from blessed import Terminal
+        >>> from life.life import Grid
+        >>>
+        >>> grid = Grid(5, 5)
+        >>> term = Terminal()
+        >>> state = Autorun(grid, term)
     """
     commands = {
         LEFT: ('slower',),
@@ -307,18 +313,58 @@ class Autorun(State):
     menu = '(\u2190) Slower, (\u2192) Faster, e(X)it'
 
     def exit(self) -> 'Core':
-        """Exit autorun state."""
+        """Exit autorun state.
+
+        :returns: A :class:`life.sui.Core` object.
+        :rtype: life.sui.Core
+
+        Usage::
+
+            >>> from blessed import Terminal
+            >>> from life.life import Grid
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Autorun(grid, term)
+            >>>
+            >>> state = state.exit()
+            >>> type(state)
+            <class 'life.sui.Core'>
+        """
         return Core(**self.asdict())
 
     def faster(self) -> 'Autorun':
-        """Command method. Decrease the time between ticks."""
+        """Command method. Decrease the time between ticks.
+
+        :returns: A :class:`life.sui.Core` object.
+        :rtype: life.sui.Core
+
+        Usage::
+
+            >>> from blessed import Terminal
+            >>> from life.life import Grid
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Autorun(grid, term, pace=0.2)
+            >>>
+            >>> state.pace
+            0.2
+            >>> state = state.faster()
+            >>> state.pace
+            0.19
+        """
         self.pace -= 0.01
         if self.pace < 0.0:
             self.pace = 0.0
         return self
 
     def input(self) -> Command:
-        """Get and handle input from the user."""
+        """Get and handle input from the user.
+
+        :returns: A :class:`tuple` object.
+        :rtype: tuple
+        """
         cmd = ('run',)
         with self.term.cbreak():
             raw_input = self.term.inkey(timeout=0.001)
@@ -328,19 +374,77 @@ class Autorun(State):
         return cmd
 
     def run(self) -> 'Autorun':
-        """Advance the generation of the grid."""
+        """Advance the generation of the grid.
+
+        :returns: A :class:`life.sui.Core` object.
+        :rtype: life.sui.Core
+
+        Usage::
+
+            >>> from blessed import Terminal
+            >>> from life.life import Grid
+            >>> import numpy as np
+            >>>
+            >>> a = np.array([
+            ...     [False, False, False, False, False],
+            ...     [False, True, True, True, False],
+            ...     [False, False, False, True, False],
+            ...     [False, False, True, False, False],
+            ...     [False, False, False, False, False],
+            ... ])
+            >>> grid = Grid.from_array(a)
+            >>> term = Terminal()
+            >>> state = Autorun(grid, term)
+            >>>
+            >>> print(str(grid))
+            .....
+            .XXX.
+            ...X.
+            ..X..
+            .....
+            >>> state = state.run()
+            >>> print(str(grid))
+            ..X..
+            ..XX.
+            .X.X.
+            .....
+            .....
+        """
         if self.pace:
             sleep(self.pace)
         self.data.tick()
         return self
 
     def slower(self) -> 'Autorun':
-        """Command method. Increase the time between ticks."""
+        """Command method. Increase the time between ticks.
+
+        :returns: A :class:`life.sui.Core` object.
+        :rtype: life.sui.Core
+
+        Usage::
+
+            >>> from blessed import Terminal
+            >>> from life.life import Grid
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Autorun(grid, term, pace=0.2)
+            >>>
+            >>> state.pace
+            0.2
+            >>> state = state.faster()
+            >>> state.pace
+            0.21
+        """
         self.pace += 0.01
         return self
 
-    def update_ui(self):
-        """Draw the UI for autorun state."""
+    def update_ui(self) -> None:
+        """Draw the UI for autorun state.
+
+        :returns: `None`.
+        :rtype: NoneType
+        """
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)
@@ -348,7 +452,37 @@ class Autorun(State):
 
 
 class Config(State):
-    """The state for changing the configuration settings of the grid."""
+    """The state for changing the configuration settings of the grid.
+
+    :param data: The grid object for the current Game of Life.
+    :param term: The terminal the Game of Life is being run in.
+    :param origin_x: (Optional.) The X location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param origin_y:  (Optional.) The Y location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param pace: The time between ticks in the game. Defaults to `0`.
+    :param show_generation: Whether to display the generation of
+        the Game of Life. Defaults to `False`.
+    :param user: The name of the user to credit in save files.
+        Defaults to an empty `str`.
+    :param comment: A comment for the save file. Defaults to an
+        empty `str`.
+    :param save_format: The format to use when saving the file.
+        Defaults to `cells`.
+    :returns: An :class:`life.sui.Autorun` object.
+    :rtype: life.sui.Autorun
+
+    Usage::
+
+        >>> from blessed import Terminal
+        >>> from life.life import Grid
+        >>>
+        >>> grid = Grid(5, 5)
+        >>> term = Terminal()
+        >>> state = Config(grid, term)
+        >>> type(state)
+        <class 'life.sui.Config'>
+    """
     commands = {
         DOWN: 'down',
         UP: 'up',
@@ -394,17 +528,57 @@ class Config(State):
                 )
 
     def down(self) -> 'Config':
-        """Command method. Select the next setting in the list."""
+        """Command method. Select the next setting in the list.
+
+        :returns: A :class:`life.sui.Config` object.
+        :rtype: life.sui.Config
+
+        Usage::
+
+            >>> from blessed import Terminal
+            >>> from life.life import Grid
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Config(grid, term)
+            >>>
+            >>> state.selected
+            0
+            >>> state = state.down()
+            >>> state.selected
+            1
+        """
         self.selected += 1
         self.selected %= len(self.settings)
         return self
 
     def exit(self) -> 'Core':
-        """Command method. Exit config mode and return to the core."""
+        """Command method. Exit config mode and return to the core.
+
+        :returns: A :class:`life.sui.Config` object.
+        :rtype: life.sui.Config
+
+        Usage::
+
+            >>> from blessed import Terminal
+            >>> from life.life import Grid
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Config(grid, term)
+            >>>
+            >>> state = state.exit()
+            >>> type(state)
+            <class 'life.sui.Core'>
+        """
         return Core(**self.asdict())
 
     def select(self) -> 'Config':
-        """Command method. Change the selected setting."""
+        """Command method. Change the selected setting.
+
+        :returns: A :class:`life.sui.Config` object.
+        :rtype: life.sui.Config
+        """
         def get_text_input(msg: str) -> str:
             y = self.term.height - 1
             self._draw_commands(msg)
@@ -467,13 +641,36 @@ class Config(State):
         return self
 
     def up(self) -> 'Config':
-        """Command method. Select the previous setting in the list."""
+        """Command method. Select the previous setting in the list.
+
+        :returns: A :class:`life.sui.Config` object.
+        :rtype: life.sui.Config
+
+        Usage::
+
+            >>> from blessed import Terminal
+            >>> from life.life import Grid
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Config(grid, term)
+            >>>
+            >>> state.selected
+            0
+            >>> state = state.up()
+            >>> state.selected
+            6
+        """
         self.selected -= 1
         self.selected %= len(self.settings)
         return self
 
     def update_ui(self) -> None:
-        """Update the terminal display."""
+        """Update the terminal display.
+
+        :returns: A :class:`life.sui.Config` object.
+        :rtype: life.sui.Config
+        """
         self._draw_state()
         self._draw_rule()
         self._draw_commands(self.menu)

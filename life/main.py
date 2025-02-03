@@ -13,7 +13,7 @@ from life.sui import End, Start
 
 
 # Mainline.
-def main():
+def main() -> None:
     """Parse the arguments used to invoke :mod:`life` and run the script.
 
     :returns: `None`.
@@ -85,5 +85,5 @@ def main():
         state = Start(**kwargs)
         while not isinstance(state, End):
             state.update_ui()
-            cmd, *args = state.input()
-            state = getattr(state, cmd)(*args)
+            cmd, *cmd_args = state.input()
+            state = getattr(state, cmd)(*cmd_args)
