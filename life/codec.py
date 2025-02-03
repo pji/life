@@ -44,7 +44,7 @@ class Cells(Codec):
 
         :param text: `cell` formatted data in a :class:`str`.
         :returns: A :class:`tuple` object.
-        :rtype: :class:`tuple`
+        :rtype: tuple
         """
         def get_info(lines: list[str]) -> tuple[str, str]:
             name = ''
@@ -78,7 +78,7 @@ class Cells(Codec):
         :param a: A grid from a Game of Life as an array.
         :param info: Metadata for the file.
         :returns: A :class:`str` object.
-        :rtype: :class:`str`
+        :rtype: str
         """
         result = ''
         if info and info.name:
@@ -104,7 +104,7 @@ class Pattern(Codec):
 
         :param text: `pattern` formatted data in a :class:`str`.
         :returns: A :class:`tuple` object.
-        :rtype: :class:`tuple`
+        :rtype: tuple
         """
         if text.endswith('\n'):
             text = text[:-1]
@@ -126,7 +126,7 @@ class Pattern(Codec):
         :param a: A grid from a Game of Life as an array.
         :param info: Metadata for the file.
         :returns: A :class:`str` object.
-        :rtype: :class:`str`
+        :rtype: str
         """
         a = remove_padding(a)
         out: NDArray[np.str_] = np.ndarray(a.shape, dtype='<U1')
@@ -144,7 +144,7 @@ class RLE(Codec):
 
         :param text: `rle` formatted data in a :class:`str`.
         :returns: A :class:`tuple` object.
-        :rtype: :class:`tuple`
+        :rtype: tuple
         """
         def get_info(lines: list[str]) -> tuple[str, str, str]:
             name = ''
@@ -227,7 +227,7 @@ class RLE(Codec):
         :param a: A grid from a Game of Life as an array.
         :param info: Metadata for the file.
         :returns: A :class:`str` object.
-        :rtype: :class:`str`
+        :rtype: str
         """
         def compress_row(row: str) -> str:
             result = ''
@@ -287,7 +287,7 @@ def decode(text: str, codec: str) -> tuple[LifeAry, util.FileInfo]:
     :param text: The serialized data to decode.
     :param codec: The codec to use for the decoding.
     :returns: A :class:`tuple` object.
-    :rtype: :class:`tuple`
+    :rtype: tuple
     """
     decoder = codecs[codec]
     return decoder.decode(text)
@@ -304,7 +304,7 @@ def encode(
     :param codec: The codec to use when encoding the data.
     :param info: Metadata for the file.
     :returns: A :class:`str` object.
-    :rtype: :class:`str`
+    :rtype: str
     """
     encoder = codecs[codec]
     return encoder.encode(a, info)
@@ -316,7 +316,7 @@ def remove_padding(a: LifeAry) -> LifeAry:
 
     :param a: The array to remove padding from.
     :returns: A :class:`numpy.ndarray` object.
-    :rtype: :class:`numpy.ndarray`
+    :rtype: numpy.ndarray
     """
     # Find the first row with the pattern.
     y_start = 0

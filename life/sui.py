@@ -43,9 +43,29 @@ class InvalidSaveFormat(ValueError):
 
 # Base class.
 class State(ABC):
+    """An abstract base class for UI states.
+
+    :param data: The grid object for the current Game of Life.
+    :param term: The terminal the Game of Life is being run in.
+    :param origin_x: (Optional.) The X location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param origin_y:  (Optional.) The Y location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param pace: The time between ticks in the game. Defaults to `0`.
+    :param show_generation: Whether to display the generation of
+        the Game of Life. Defaults to `False`.
+    :param name:
+    :param user: The name of the user to credit in save files.
+        Defaults to an empty `str`.
+    :param comment: A comment for the save file. Defaults to an
+        empty `str`.
+    :param save_format: The format to use when saving the file.
+        Defaults to `cells`.
+    :returns: An :class:`life.sui.State` object.
+    :rtype: life.sui.State
+    """
     commands: dict = {}
 
-    """An abstract base class for UI states."""
     def __init__(
         self,
         data: Grid,
@@ -59,11 +79,7 @@ class State(ABC):
         comment: str = '',
         save_format: str = 'cells'
     ) -> None:
-        """Initialize a State object.
-
-        :param data: The grid object for the current game of life.
-        :param term: The terminal the game of life is being run in.
-        """
+        """Initialize a State object."""
         self.data = data
         self.term = term
 
@@ -212,7 +228,11 @@ class State(ABC):
         return self.data.view(origin, shape)
 
     def asdict(self) -> dict:
-        """Get the parameters of the state as a dictionary."""
+        """Get the parameters of the state as a dictionary.
+
+        :returns: A :class:`dict` object.
+        :rtype: dict
+        """
         return {
             'data': self.data,
             'term': self.term,
@@ -225,7 +245,11 @@ class State(ABC):
         }
 
     def input(self) -> Command:
-        """Get and handle input from the user."""
+        """Get and handle input from the user.
+
+        :returns: A :class:`Command` object
+        :rtype: Command
+        """
         cmd: Command | str | None = None
         prompt = ''
         while not cmd:
@@ -244,12 +268,36 @@ class State(ABC):
 
     @abstractmethod
     def update_ui(self) -> None:
-        """Update the terminal display."""
+        """Update the terminal display.
+
+        :returns: `None`.
+        :rtype: NoneType
+        """
 
 
 # State classes.
 class Autorun(State):
-    """Automatically advance the generation of the grid."""
+    """Automatically advance the generation of the grid.
+
+    :param data: The grid object for the current Game of Life.
+    :param term: The terminal the Game of Life is being run in.
+    :param origin_x: (Optional.) The X location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param origin_y:  (Optional.) The Y location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param pace: The time between ticks in the game. Defaults to `0`.
+    :param show_generation: Whether to display the generation of
+        the Game of Life. Defaults to `False`.
+    :param name:
+    :param user: The name of the user to credit in save files.
+        Defaults to an empty `str`.
+    :param comment: A comment for the save file. Defaults to an
+        empty `str`.
+    :param save_format: The format to use when saving the file.
+        Defaults to `cells`.
+    :returns: An :class:`life.sui.State` object.
+    :rtype: life.sui.State
+    """
     commands = {
         LEFT: ('slower',),
         RIGHT: ('faster',),

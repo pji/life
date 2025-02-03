@@ -14,6 +14,12 @@ from life.sui import End, Start
 
 # Mainline.
 def main():
+    """Parse the arguments used to invoke :mod:`life` and run the script.
+
+    :returns: `None`.
+    :rtype: NoneType
+    """
+    # Parse the command line.
     p = ArgumentParser(
         description='A Python implementation of Conway\'s Game of Life.',
         prog='life'
@@ -55,8 +61,11 @@ def main():
     )
     args = p.parse_args()
 
+    # Switch the terminal into a more interactive mode.
     term = Terminal()
     with term.fullscreen(), term.hidden_cursor():
+
+        # Build the configuration.
         kwargs = {
             'term': term,
             'show_generation': args.show_generation,
@@ -71,6 +80,8 @@ def main():
             kwargs['pace'] = args.pace
         if args.rule:
             kwargs['rule'] = args.rule.strip()
+
+        # Configure and run the Game of Life.
         state = Start(**kwargs)
         while not isinstance(state, End):
             state.update_ui()

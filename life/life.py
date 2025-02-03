@@ -32,12 +32,56 @@ class PartialImplentation(Exception):
 
 # Classes.
 class Grid:
+    """A grid for the Game of Life.
+
+    :param width: The number of positions in the width of the grid.
+    :param height: The number of positions in the height of the grid.
+    :param rule: (Optional.) The rules for the Game of Life as a
+        :class:`str`. It follows the pattern `B[0-8]*[/]S[0-8]*` where
+        `B` is the numbers of adjacent live squares needed for the current
+        square to be born and `S` is the numbers of adjacent live squares
+        needed for a live square to stay alive. It defaults to `B3/S23`.
+    :returns: A :class:`life.life.Grid` object.
+    :rtype: life.life.Grid
+
+    Usage::
+
+        >>> # To create an 10x12 grid for the Game of Life, using the
+        >>> # standard rules.
+        >>> grid = Grid(10, 12, 'b3/s23')
+        >>> grid
+        Grid(10, 12, 'b3/s23')
+    """
     rng = np.random.default_rng()
 
     # Class methods.
     @classmethod
     def from_array(cls, a: LifeAry, rule: str = 'B3/S23') -> 'Grid':
-        """Build a new :class:`Grid` from a :class:`numpy.ndarray`."""
+        """Build a new :class:`Grid` from a :class:`numpy.ndarray`.
+
+        :param a: The array used to build the :class:`life.life.Grid`.
+        :param rule: (Optional.) The rules for the Game of Life as a
+            :class:`str`. It follows the pattern `B[0-8]+[/]S[0-8]+` where
+            `B` is the numbers of adjacent live squares needed for the current
+            square to be born and `S` is the numbers of adjacent live squares
+            needed for a live square to stay alive. It defaults to `B3/S23`.
+        :returns: A :class:`life.life.Grid` object.
+        :rtype: life.life.Grid
+
+        Usage::
+
+            >>> a = np.array([
+            ...     [False, True, False, True],
+            ...     [True, False, True, False],
+            ...     [False, True, False, True],
+            ...     [True, False, True, False],
+            ... ])
+            >>> grid = Grid.from_array(a, 'b3/s23')
+            >>> grid
+            Grid(4, 4, 'b3/s23')
+            >>> str(grid)
+            '.X.X\nX.X.\n.X.X\nX.X.'
+        """
         height, width = a.shape
         grid = cls(width, height, rule)
         grid._data = a
@@ -45,7 +89,9 @@ class Grid:
 
     # Initialization.
     def __init__(
-        self, width: int, height: int, rule: str = 'B3/S23', wrap: bool = True
+        self, width: int,
+        height: int,
+        rule: str = 'B3/S23', wrap: bool = True
     ) -> None:
         """Initialize an instance of the class."""
         self.height = height
@@ -62,17 +108,53 @@ class Grid:
     # Rule properties.
     @property
     def born(self) -> tuple[int, ...]:
-        """The numbers of neighbors that cause a cell to be born."""
+        """The numbers of neighbors that cause a cell to be born.
+
+        :returns: A :class:`tuple` object.
+        :rtype: tuple
+
+        Usage::
+
+            >>> grid = Grid(10, 12, 'b3/s23')
+            >>> grid.born
+            (3,)
+        """
         return self._born
 
     @property
     def rule(self) -> str:
-        """The rules for the Game of Life."""
+        """The rules for the Game of Life.
+
+        :returns: A :class:`str` object.
+        :rtype: str
+
+        Usage::
+
+            >>> grid = Grid(10, 12, 'b3/s23')
+            >>> grid.rule
+            'b3/s23'
+        """
         return self._rule
 
     @rule.setter
     def rule(self, value: str) -> None:
-        """The rules for the Game of Life."""
+        """The rules for the Game of Life.
+
+        :param value: (Optional.) The rules for the Game of Life as a
+            :class:`str`. It follows the pattern `B[0-8]+[/]S[0-8]+` where
+            `B` is the numbers of adjacent live squares needed for the current
+            square to be born and `S` is the numbers of adjacent live squares
+            needed for a live square to stay alive. It defaults to `B3/S23`.
+        :returns: `None`.
+        :rtype: NoneType
+
+        Usage::
+
+            >>> grid = Grid(10, 12, 'b3/s23')
+            >>> grid.rule = 'b2/s45'
+            >>> grid.rule
+            'b2/s45'
+        """
         # Validate rule string.
         if not search(r'^[bB][0-9]*[/][sS][0-9]*$', value):
             raise InvalidRule('Invalid rule format.')
@@ -87,12 +169,33 @@ class Grid:
 
     @property
     def survive(self) -> tuple[int, ...]:
-        """The numbers of neighbors that cause a cell to survive."""
+        """The numbers of neighbors that cause a cell to survive.
+
+        :returns: A :class:`tuple` object.
+        :rtype: tuple
+
+        Usage::
+
+            >>> grid = Grid(10, 12, 'b3/s23')
+            >>> grid.survive
+            (2, 3)
+        """
         return self._survive
 
     # Properties.
     @property
     def shape(self) -> tuple[int, ...]:
+        """The dimensions of the :class:`life.life.Grid`.
+
+        :returns: A :class:`tuple` object.
+        :rtype: tuple
+
+        Usage::
+
+            >>> grid = Grid(10, 12, 'b3/s23')
+            >>> grid.shape
+            (12, 10)
+        """
         return self._data.shape
 
     # Comparisons.
@@ -178,23 +281,82 @@ class Grid:
 
     # Method to manage the Game of Life.
     def clear(self) -> None:
-        """Clear all live locations from the grid."""
+        """Clear all live locations from the grid.
+
+        :returns: `None`.
+        :rtype: NoneType
+
+        Usage::
+
+            >>> a = np.array([
+            ...     [False, True, False, True],
+            ...     [True, False, True, False],
+            ...     [False, True, False, True],
+            ...     [True, False, True, False],
+            ... ])
+            >>> grid = Grid.from_array(a, 'b3/s23')
+            >>> str(grid)
+            '.X.X\nX.X.\n.X.X\nX.X.'
+            >>> grid.clear()
+            >>> str(grid)
+            '....\n....\n....\n....'
+        """
         self._data.fill(False)
 
     def flip(self, x: int, y: int) -> None:
-        """Change the valu of the given location on the :class:`Grid`
-        to its opposite value.
+        """Change the value of the given location on the
+        :class:`life.life.Grid` to its opposite value.
+
+        :param x: The X axis position of the location to change.
+        :param y: The Y axis position of the location to change.
+        :returns: `None`.
+        :rtype: NoneType
+
+        Usage::
+
+            >>> grid = Grid(4, 4)
+            >>> str(grid)
+            '....\n....\n....\n....'
+            >>> grid.flip(1, 2)
+            >>> str(grid)
+            '....\n....\n.X..\n....'
         """
         value = (self._data[y][x] + 1) % 2
         self._data[y][x] = value
 
     def randomize(self) -> None:
-        """Randomize the values of the grid."""
+        """Randomize the values of the grid.
+
+        :returns: `None`.
+        :rtype: NoneType
+        """
         new = self.rng.integers(0, 2, self.shape, dtype=bool)
         self._data = new
 
     def replace(self, seq: Gridlike | LifeAry) -> None:
-        """Replace the :class:`Grid` with the given values."""
+        """Replace the :class:`life.life.Grid` with the given values.
+
+        :param seq: An array or similar two-dimensional sequence with
+            values to use when replacing the current :class:`life.life.Grid`
+            values.
+        :returns: `None`.
+        :rtype: NoneType
+
+        Usage::
+
+            >>> grid = Grid(4, 4)
+            >>>
+            >>> # This line is just to seed the random number generator
+            >>> # to ensure repeatability for testing the documentation.
+            >>> # Do not do this is you want randomization.
+            >>> grid.rng = np.random.default_rng(1138)
+            >>>
+            >>> str(grid)
+            '....\n....\n....\n....'
+            >>> grid.randomize()
+            >>> str(grid)
+            '..XX\n..XX\n.XX.\nX.X.'
+        """
         try:
             new = np.array(seq, dtype=bool)
         except ValueError:
@@ -202,7 +364,42 @@ class Grid:
         self._data = util.fit_array(new, self.shape)
 
     def tick(self) -> None:
-        """Advance the Game of Life one generation."""
+        """Advance the Game of Life one generation.
+
+        :returns: `None`.
+        :rtype: NoneType
+
+        Usage::
+
+            >>> a = np.array([
+            ...     [False, False, False, False, False],
+            ...     [False, True, True, True, False],
+            ...     [False, False, False, True, False],
+            ...     [False, False, True, False, False],
+            ...     [False, False, False, False, False],
+            ... ])
+            >>> grid = Grid.from_array(a)
+            >>> print(str(grid))
+            .....
+            .XXX.
+            ...X.
+            ..X..
+            .....
+            >>> grid.tick()
+            >>> print(str(grid))
+            ..X..
+            ..XX.
+            .X.X.
+            .....
+            .....
+            >>> grid.tick()
+            >>> print(str(grid))
+            ..XX.
+            .X.X.
+            ...X.
+            .....
+            .....
+        """
         a = np.zeros(self.shape, dtype=int)
 
         # Set up for the roll.
@@ -250,7 +447,31 @@ class Grid:
         origin: Sequence[int] = (0, 0),
         shape: Sequence[int] | None = None
     ) -> LifeAry:
-        """Return a section of the data of the current grid."""
+        """Return a section of the data of the current grid.
+
+        :param origin: The grid position of the upper-left corner of
+            the view.
+        :param shape: The X and Y dimensions of the view.
+        :returns: A :class:`numpy.ndarray` object.
+        :rtype: numpy.ndarray
+
+        Usage::
+
+            >>> a = np.array([
+            ...     [False, False, False, False, False],
+            ...     [False, True, True, True, False],
+            ...     [False, False, False, True, False],
+            ...     [False, False, True, False, False],
+            ...     [False, False, False, False, False],
+            ... ])
+            >>> grid = Grid.from_array(a)
+            >>> grid.view()
+            array([[False, False, False, False, False],
+                   [False,  True,  True,  True, False],
+                   [False, False, False,  True, False],
+                   [False, False,  True, False, False],
+                   [False, False, False, False, False]])
+        """
         if shape is None:
             shape = self._data.shape
         starty, startx = origin
