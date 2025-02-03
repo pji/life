@@ -54,7 +54,6 @@ class State(ABC):
     :param pace: The time between ticks in the game. Defaults to `0`.
     :param show_generation: Whether to display the generation of
         the Game of Life. Defaults to `False`.
-    :param name:
     :param user: The name of the user to credit in save files.
         Defaults to an empty `str`.
     :param comment: A comment for the save file. Defaults to an
@@ -469,8 +468,8 @@ class Config(State):
         empty `str`.
     :param save_format: The format to use when saving the file.
         Defaults to `cells`.
-    :returns: An :class:`life.sui.Autorun` object.
-    :rtype: life.sui.Autorun
+    :returns: An :class:`life.sui.Config` object.
+    :rtype: life.sui.Config
 
     Usage::
 
@@ -679,6 +678,24 @@ class Config(State):
 class Core(State):
     """The standard state of the UI. This is used to manually progress
     the grid and switch to other states.
+
+    :param data: The grid object for the current Game of Life.
+    :param term: The terminal the Game of Life is being run in.
+    :param origin_x: (Optional.) The X location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param origin_y:  (Optional.) The Y location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param pace: The time between ticks in the game. Defaults to `0`.
+    :param show_generation: Whether to display the generation of
+        the Game of Life. Defaults to `False`.
+    :param user: The name of the user to credit in save files.
+        Defaults to an empty `str`.
+    :param comment: A comment for the save file. Defaults to an
+        empty `str`.
+    :param save_format: The format to use when saving the file.
+        Defaults to `cells`.
+    :returns: An :class:`life.sui.Core` object.
+    :rtype: life.sui.Core
     """
     commands = {
         'a': 'autorun',
@@ -749,7 +766,26 @@ class Core(State):
 
 
 class Edit(State):
-    """The state for manually editing the grid."""
+    """The state for manually editing the grid.
+
+    :param data: The grid object for the current Game of Life.
+    :param term: The terminal the Game of Life is being run in.
+    :param origin_x: (Optional.) The X location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param origin_y:  (Optional.) The Y location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param pace: The time between ticks in the game. Defaults to `0`.
+    :param show_generation: Whether to display the generation of
+        the Game of Life. Defaults to `False`.
+    :param user: The name of the user to credit in save files.
+        Defaults to an empty `str`.
+    :param comment: A comment for the save file. Defaults to an
+        empty `str`.
+    :param save_format: The format to use when saving the file.
+        Defaults to `cells`.
+    :returns: An :class:`life.sui.Edit` object.
+    :rtype: life.sui.Edit
+    """
     commands = {
         DOWN: ('down', 1),
         LEFT: ('left', 1),
@@ -889,7 +925,26 @@ class Edit(State):
 
 
 class End(State):
-    """A state that terminates the game of life."""
+    """A state that terminates the game of life.
+
+    :param data: The grid object for the current Game of Life.
+    :param term: The terminal the Game of Life is being run in.
+    :param origin_x: (Optional.) The X location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param origin_y:  (Optional.) The Y location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param pace: The time between ticks in the game. Defaults to `0`.
+    :param show_generation: Whether to display the generation of
+        the Game of Life. Defaults to `False`.
+    :param user: The name of the user to credit in save files.
+        Defaults to an empty `str`.
+    :param comment: A comment for the save file. Defaults to an
+        empty `str`.
+    :param save_format: The format to use when saving the file.
+        Defaults to `cells`.
+    :returns: An :class:`life.sui.End` object.
+    :rtype: life.sui.End
+    """
     def __init__(self):
         """Initialize an instance of End."""
         pass
@@ -904,7 +959,26 @@ class End(State):
 
 
 class Load(State):
-    """The state for loading patterns from a file."""
+    """The state for loading patterns from a file.
+
+    :param data: The grid object for the current Game of Life.
+    :param term: The terminal the Game of Life is being run in.
+    :param origin_x: (Optional.) The X location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param origin_y:  (Optional.) The Y location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param pace: The time between ticks in the game. Defaults to `0`.
+    :param show_generation: Whether to display the generation of
+        the Game of Life. Defaults to `False`.
+    :param user: The name of the user to credit in save files.
+        Defaults to an empty `str`.
+    :param comment: A comment for the save file. Defaults to an
+        empty `str`.
+    :param save_format: The format to use when saving the file.
+        Defaults to `cells`.
+    :returns: An :class:`life.sui.Load` object.
+    :rtype: life.sui.Load
+    """
     commands = {
         DOWN: 'down',
         UP: 'up',
@@ -1019,7 +1093,26 @@ class Load(State):
 
 
 class Move(State):
-    """The state for moving the window on the grid."""
+    """The state for moving the window on the grid.
+
+    :param data: The grid object for the current Game of Life.
+    :param term: The terminal the Game of Life is being run in.
+    :param origin_x: (Optional.) The X location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param origin_y:  (Optional.) The Y location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param pace: The time between ticks in the game. Defaults to `0`.
+    :param show_generation: Whether to display the generation of
+        the Game of Life. Defaults to `False`.
+    :param user: The name of the user to credit in save files.
+        Defaults to an empty `str`.
+    :param comment: A comment for the save file. Defaults to an
+        empty `str`.
+    :param save_format: The format to use when saving the file.
+        Defaults to `cells`.
+    :returns: An :class:`life.sui.Move` object.
+    :rtype: life.sui.Move
+    """
     commands = {
         DOWN: ('down', 1),
         LEFT: ('left', 1),
@@ -1072,7 +1165,26 @@ class Move(State):
 
 
 class Save(State):
-    """The state for saving the grid state to a file."""
+    """The state for saving the grid state to a file.
+
+    :param data: The grid object for the current Game of Life.
+    :param term: The terminal the Game of Life is being run in.
+    :param origin_x: (Optional.) The X location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param origin_y:  (Optional.) The Y location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param pace: The time between ticks in the game. Defaults to `0`.
+    :param show_generation: Whether to display the generation of
+        the Game of Life. Defaults to `False`.
+    :param user: The name of the user to credit in save files.
+        Defaults to an empty `str`.
+    :param comment: A comment for the save file. Defaults to an
+        empty `str`.
+    :param save_format: The format to use when saving the file.
+        Defaults to `cells`.
+    :returns: An :class:`life.sui.Save` object.
+    :rtype: life.sui.Save
+    """
     menu = 'Enter name for save file.'
     path = Path('')
 
@@ -1113,7 +1225,26 @@ class Save(State):
 
 
 class Start(State):
-    """The starting state for the UI."""
+    """The starting state for the UI.
+
+    :param data: The grid object for the current Game of Life.
+    :param term: The terminal the Game of Life is being run in.
+    :param origin_x: (Optional.) The X location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param origin_y:  (Optional.) The Y location for the upper-left
+        corner of the displayed area of the grid. Defaults to `None`.
+    :param pace: The time between ticks in the game. Defaults to `0`.
+    :param show_generation: Whether to display the generation of
+        the Game of Life. Defaults to `False`.
+    :param user: The name of the user to credit in save files.
+        Defaults to an empty `str`.
+    :param comment: A comment for the save file. Defaults to an
+        empty `str`.
+    :param save_format: The format to use when saving the file.
+        Defaults to `cells`.
+    :returns: An :class:`life.sui.Start` object.
+    :rtype: life.sui.Start
+    """
     menu = 'Copyright © 2020 Paul J. Iutzi'
     prompt = 'Press any key to continue.'
 
