@@ -329,6 +329,29 @@ class Grid:
 
         :returns: `None`.
         :rtype: NoneType
+
+        Usage::
+
+            >>> grid = Grid(5, 5)
+            >>>
+            >>> # This line is just to seed the random number generator
+            >>> # to ensure repeatability for testing the documentation.
+            >>> # Do not do this is you want randomization.
+            >>> grid.rng = np.random.default_rng(1138)
+            >>>
+            >>> print(grid)
+            .....
+            .....
+            .....
+            .....
+            .....
+            >>> grid.randomize()
+            >>> print(grid)
+            ..XX.
+            .XX.X
+            X.X.X
+            ..XX.
+            XX...
         """
         new = self.rng.integers(0, 2, self.shape, dtype=bool)
         self._data = new
@@ -344,18 +367,28 @@ class Grid:
 
         Usage::
 
-            >>> grid = Grid(4, 4)
+            >>> grid = Grid(5, 5)
+            >>> a = np.array([
+            ...     [False, False, False, False, False],
+            ...     [False, True, True, True, False],
+            ...     [False, False, False, True, False],
+            ...     [False, False, True, False, False],
+            ...     [False, False, False, False, False],
+            ... ])
             >>>
-            >>> # This line is just to seed the random number generator
-            >>> # to ensure repeatability for testing the documentation.
-            >>> # Do not do this is you want randomization.
-            >>> grid.rng = np.random.default_rng(1138)
-            >>>
-            >>> str(grid)
-            '....\n....\n....\n....'
-            >>> grid.randomize()
-            >>> str(grid)
-            '..XX\n..XX\n.XX.\nX.X.'
+            >>> print(grid)
+            .....
+            .....
+            .....
+            .....
+            .....
+            >>> grid.replace(a)
+            >>> print(grid)
+            .....
+            .XXX.
+            ...X.
+            ..X..
+            .....
         """
         try:
             new = np.array(seq, dtype=bool)
@@ -379,21 +412,21 @@ class Grid:
             ...     [False, False, False, False, False],
             ... ])
             >>> grid = Grid.from_array(a)
-            >>> print(str(grid))
+            >>> print(grid)
             .....
             .XXX.
             ...X.
             ..X..
             .....
             >>> grid.tick()
-            >>> print(str(grid))
+            >>> print(grid)
             ..X..
             ..XX.
             .X.X.
             .....
             .....
             >>> grid.tick()
-            >>> print(str(grid))
+            >>> print(grid)
             ..XX.
             .X.X.
             ...X.

@@ -37,6 +37,10 @@ SRIGHT = '\x1b[1;2C'
 
 
 # Exceptions.
+class CannotTakeInput(NotImplementedError):
+    """The state is not allowed to take input."""
+
+
 class InvalidSaveFormat(ValueError):
     """The given save file format was invalid."""
 
@@ -64,6 +68,7 @@ class State(ABC):
     :rtype: life.sui.State
     """
     commands: dict = {}
+    _menu: str = ''
 
     def __init__(
         self,
@@ -92,6 +97,10 @@ class State(ABC):
         self.save_format = save_format
         self.show_generation = show_generation
         self.user = user
+
+    @property
+    def menu(self) -> str:
+        return self._menu
 
     @property
     def rule(self) -> str:
@@ -263,13 +272,15 @@ class State(ABC):
             cmd = (cmd,)
         return cmd
 
-    @abstractmethod
     def update_ui(self) -> None:
-        """Update the terminal display.
+        """Draw the UI for the edit state.
 
         :returns: `None`.
         :rtype: NoneType
         """
+        self._draw_state()
+        self._draw_rule()
+        self._draw_commands(self.menu)
 
 
 # State classes.
@@ -309,7 +320,7 @@ class Autorun(State):
         'x': ('exit',),
         ' ': ('exit',)
     }
-    menu = '(\u2190) Slower, (\u2192) Faster, e(X)it'
+    _menu = '(\u2190) Slower, (\u2192) Faster, e(X)it'
 
     def exit(self) -> 'Core':
         """Exit autorun state.
@@ -444,9 +455,7 @@ class Autorun(State):
         :returns: `None`.
         :rtype: NoneType
         """
-        self._draw_state()
-        self._draw_rule()
-        self._draw_commands(self.menu)
+        super().update_ui()
         self._draw_generation()
 
 
@@ -488,7 +497,7 @@ class Config(State):
         'x': 'exit',
         '\n': 'select',
     }
-    menu = '(\u2191\u2192) Move, (\u23ce) Select, e(X)it'
+    _menu = '(\u2191\u2192) Move, (\u23ce) Select, e(X)it'
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -664,16 +673,6 @@ class Config(State):
         self.selected %= len(self.settings)
         return self
 
-    def update_ui(self) -> None:
-        """Update the terminal display.
-
-        :returns: A :class:`life.sui.Config` object.
-        :rtype: life.sui.Config
-        """
-        self._draw_state()
-        self._draw_rule()
-        self._draw_commands(self.menu)
-
 
 class Core(State):
     """The standard state of the UI. This is used to manually progress
@@ -696,6 +695,17 @@ class Core(State):
         Defaults to `cells`.
     :returns: An :class:`life.sui.Core` object.
     :rtype: life.sui.Core
+
+    Usage::
+
+        >>> from life.life import Grid
+        >>> from blessed import Terminal
+        >>>
+        >>> grid = Grid(5, 5)
+        >>> term = Terminal()
+        >>> state = Core(grid, term)
+        >>> type(state)
+        <class 'life.sui.Core'>
     """
     commands = {
         'a': 'autorun',
@@ -710,7 +720,8 @@ class Core(State):
     }
 
     @property
-    def menu(self):
+    def menu(self) -> str:
+        """The text for the menu."""
         cmds = []
         for key in self.commands:
             index = self.commands[key].index(key)
@@ -720,48 +731,230 @@ class Core(State):
         return ', '.join(cmds)
 
     def autorun(self) -> 'Autorun':
-        """Command method. Switch to autorun state."""
+        """Command method. Switch to autorun state.
+
+        :returns: An :class:`life.sui.Autorun` object.
+        :rtype: life.sui.Autorun
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Core(grid, term)
+            >>> state = state.autorun()
+            >>> type(state)
+            <class 'life.sui.Autorun'>
+        """
         return Autorun(**self.asdict())
 
     def config(self) -> 'Config':
-        """Command method. Switch to config state."""
+        """Command method. Switch to config state.
+
+        :returns: An :class:`life.sui.Config` object.
+        :rtype: life.sui.Config
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Core(grid, term)
+            >>> state = state.config()
+            >>> type(state)
+            <class 'life.sui.Config'>
+        """
         return Config(**self.asdict())
 
     def edit(self) -> 'Edit':
-        """Command method. Switch to edit state."""
+        """Command method. Switch to edit state.
+
+        :returns: An :class:`life.sui.Edit` object.
+        :rtype: life.sui.Edit
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Core(grid, term)
+            >>> state = state.edit()
+            >>> type(state)
+            <class 'life.sui.Edit'>
+        """
         return Edit(**self.asdict())
 
     def load(self) -> 'Load':
-        """Command method. Switch to load state."""
+        """Command method. Switch to load state.
+
+        :returns: An :class:`life.sui.Load` object.
+        :rtype: life.sui.Load
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Core(grid, term)
+            >>> state = state.load()
+            >>> type(state)
+            <class 'life.sui.Load'>
+        """
         return Load(**self.asdict())
 
     def move(self) -> 'Move':
-        """Command method. Switch to the move state."""
+        """Command method. Switch to the move state.
+
+        :returns: An :class:`life.sui.Move` object.
+        :rtype: life.sui.Move
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Core(grid, term)
+            >>> state = state.move()
+            >>> type(state)
+            <class 'life.sui.Move'>
+        """
         return Move(**self.asdict())
 
     def next(self) -> 'Core':
-        """Command method. Run the next generation of the grid."""
+        """Command method. Run the next generation of the grid.
+
+        :returns: An :class:`life.sui.Core` object.
+        :rtype: life.sui.Core
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> a = np.array([
+            ...     [False, False, False, False, False],
+            ...     [False, True, True, True, False],
+            ...     [False, False, False, True, False],
+            ...     [False, False, True, False, False],
+            ...     [False, False, False, False, False],
+            ... ])
+            >>> grid = Grid.from_array(a)
+            >>> term = Terminal()
+            >>> state = Core(grid, term)
+            >>>
+            >>> print(grid)
+            .....
+            .XXX.
+            ...X.
+            ..X..
+            .....
+            >>> state = state.next()
+            >>> print(grid)
+            ..X..
+            ..XX.
+            .X.X.
+            .....
+            .....
+        """
         self.data.tick()
         return self
 
     def quit(self) -> 'End':
-        """Command method. Quit the game of life."""
-        return End()
+        """Command method. Quit the game of life.
+
+        :returns: An :class:`life.sui.End` object.
+        :rtype: life.sui.End
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Core(grid, term)
+            >>> state = state.end()
+            >>> type(state)
+            <class 'life.sui.End'>
+        """
+        return End(**self.asdict())
 
     def random(self) -> 'Core':
-        """Command method. Randomize the values in the grid."""
+        """Command method. Randomize the values in the grid.
+
+        :returns: An :class:`life.sui.Core` object.
+        :rtype: life.sui.Core
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>> import numpy as np
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>>
+            >>> # This line is just to seed the random number generator
+            >>> # to ensure repeatability for testing the documentation.
+            >>> # Do not do this is you want randomization.
+            >>> grid.rng = np.random.default_rng(1138)
+            >>>
+            >>> state = Core(grid, term)
+            >>>
+            >>> print(grid)
+            .....
+            .....
+            .....
+            .....
+            .....
+            >>> state = state.random()
+            >>> print(grid)
+            ..XX.
+            .XX.X
+            X.X.X
+            ..XX.
+            XX...
+        """
         self.data.randomize()
         return self
 
     def save(self) -> 'Save':
-        """Command method. Switch to save state."""
+        """Command method. Switch to save state.
+
+        :returns: An :class:`life.sui.Save` object.
+        :rtype: life.sui.Save
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Core(grid, term)
+            >>> state = state.save()
+            >>> type(state)
+            <class 'life.sui.Save'>
+        """
         return Save(**self.asdict())
 
-    def update_ui(self):
-        """Draw the UI for the core state."""
-        self._draw_state()
-        self._draw_rule()
-        self._draw_commands(self.menu)
+    def update_ui(self) -> None:
+        """Draw the UI for the core state.
+
+        :returns: `None`.
+        :rtype: NoneType
+        """
+        super().update_ui()
         self._draw_generation()
 
 
@@ -785,6 +978,17 @@ class Edit(State):
         Defaults to `cells`.
     :returns: An :class:`life.sui.Edit` object.
     :rtype: life.sui.Edit
+
+    Usage::
+
+        >>> from life.life import Grid
+        >>> from blessed import Terminal
+        >>>
+        >>> grid = Grid(5, 5)
+        >>> term = Terminal()
+        >>> state = Edit(grid, term)
+        >>> type(state)
+        <class 'life.sui.Edit'>
     """
     commands = {
         DOWN: ('down', 1),
@@ -801,7 +1005,7 @@ class Edit(State):
         's': 'snapshot',
         'x': 'exit',
     }
-    menu = (
+    _menu = (
         '(\u2190\u2191\u2192\u2193) Move, (space) Flip, '
         '(C)lear, (R)estore, (S)napshot, e(X)it'
     )
@@ -813,6 +1017,7 @@ class Edit(State):
         self.col = self.data.width // 2
         self.path = Path('.snapshot.cells')
 
+    # Private methods.
     def _draw_cursor(self):
         """Display the cursor in the state UI."""
         y = self.row // 2
@@ -866,22 +1071,126 @@ class Edit(State):
         self._draw_state()
         self._draw_cursor()
 
+    # Public methods.
     def clear(self) -> 'Edit':
-        """Command method. Clear the grid."""
+        """Command method. Clear the grid.
+
+        :returns: An :class:`life.sui.Edit` object.
+        :rtype: life.sui.Edit
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>> import numpy as np
+            >>>
+            >>> a = np.array([
+            ...     [False, False, False, False, False],
+            ...     [False, True, True, True, False],
+            ...     [False, False, False, True, False],
+            ...     [False, False, True, False, False],
+            ...     [False, False, False, False, False],
+            ... ])
+            >>> grid = Grid.from_array(a)
+            >>> term = Terminal()
+            >>> state = Edit(grid, term)
+            >>>
+            >>> print(grid)
+            .....
+            .XXX.
+            ...X.
+            ..X..
+            .....
+            >>> state = state.clear()
+            >>> print(grid)
+            .....
+            .....
+            .....
+            .....
+            .....
+        """
         self.data.clear()
         return self
 
     def down(self, distance: int = 1) -> 'Edit':
-        """Command method. Move the cursor down."""
+        """Command method. Move the cursor down.
+
+        :param distance: (Optional.) How far to move. Defaults
+            to `1`.
+        :returns: An :class:`life.sui.Edit` object.
+        :rtype: life.sui.Edit
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Edit(grid, term)
+            >>>
+            >>> state.col, state.row
+            (2, 2)
+            >>> state = state.down()
+            >>> state.col, state.row
+            (2, 3)
+        """
         self._move_cursor(distance, 0)
         return self
 
     def exit(self) -> 'Core':
-        """Command method, switch to the Core state."""
+        """Command method, switch to the Core state.
+
+        :returns: An :class:`life.sui.Edit` object.
+        :rtype: life.sui.Edit
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Edit(grid, term)
+            >>>
+            >>> state = state.exit()
+            >>> type(state)
+            <class 'life.sui.Core'>
+        """
         return Core(**self.asdict())
 
     def flip(self) -> 'Edit':
-        """Command method. Flip the state of the current cell."""
+        """Command method. Flip the state of the current cell.
+
+        :returns: An :class:`life.sui.Edit` object.
+        :rtype: life.sui.Edit
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Edit(grid, term)
+            >>>
+            >>> state.row, state.col
+            (2, 2)
+            >>> print(grid)
+            .....
+            .....
+            .....
+            .....
+            .....
+            >>> grid.col, grid.row
+            >>> state.flip()
+            >>> print(grid)
+            .....
+            .....
+            ..X..
+            .....
+            .....
+        """
         self.data.flip(self.col, self.row)
         self.data.generation = 0
         self._draw_state()
@@ -889,38 +1198,111 @@ class Edit(State):
         return self
 
     def left(self, distance: int = 1) -> 'Edit':
-        """Command method. Move the cursor left."""
+        """Command method. Move the cursor left.
+
+        :param distance: (Optional.) How far to move. Defaults
+            to `1`.
+        :returns: An :class:`life.sui.Edit` object.
+        :rtype: life.sui.Edit
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Edit(grid, term)
+            >>>
+            >>> state.col, state.row
+            (2, 2)
+            >>> state = state.left()
+            >>> state.col, state.row
+            (2, 1)
+        """
         self._move_cursor(0, distance * -1)
         return self
 
     def right(self, distance: int = 1) -> 'Edit':
-        """Command method. Move the cursor right."""
+        """Command method. Move the cursor right.
+
+        :param distance: (Optional.) How far to move. Defaults
+            to `1`.
+        :returns: An :class:`life.sui.Edit` object.
+        :rtype: life.sui.Edit
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Edit(grid, term)
+            >>>
+            >>> state.col, state.row
+            (2, 2)
+            >>> state = state.right()
+            >>> state.col, state.row
+            (2, 3)
+        """
         self._move_cursor(0, distance)
         return self
 
     def restore(self) -> 'Edit':
-        """Restore the snapshot grid state."""
+        """Restore the snapshot grid state.
+
+        :returns: An :class:`life.sui.Edit` object.
+        :rtype: life.sui.Edit
+        """
         load = Load(self.data, self.term)
         load.load(self.path)
         return self
 
     def snapshot(self) -> 'Edit':
-        """Save the current grid state as a snapshot."""
+        """Save the current grid state as a snapshot.
+
+        :returns: An :class:`life.sui.Edit` object.
+        :rtype: life.sui.Edit
+        """
         self._draw_prompt('Saving...')
         save = Save(self.data, self.term)
         save.save(self.path)
         return self
 
     def up(self, distance: int = 1) -> 'Edit':
-        """Command method. Move the cursor up."""
+        """Command method. Move the cursor up.
+
+        :param distance: (Optional.) How far to move. Defaults
+            to `1`.
+        :returns: An :class:`life.sui.Edit` object.
+        :rtype: life.sui.Edit
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Edit(grid, term)
+            >>>
+            >>> state.col, state.row
+            (2, 2)
+            >>> state = state.up()
+            >>> state.col, state.row
+            (1, 2)
+        """
         self._move_cursor(distance * -1, 0)
         return self
 
-    def update_ui(self):
-        """Draw the UI for the edit state."""
-        self._draw_state()
-        self._draw_rule()
-        self._draw_commands(self.menu)
+    def update_ui(self) -> None:
+        """Draw the UI for the edit state.
+
+        :returns: `None`.
+        :rtype: NoneType
+        """
+        super().update_ui()
         self._draw_cursor()
 
 
@@ -944,17 +1326,35 @@ class End(State):
         Defaults to `cells`.
     :returns: An :class:`life.sui.End` object.
     :rtype: life.sui.End
+
+    Usage::
+
+        >>> from life.life import Grid
+        >>> from blessed import Terminal
+        >>>
+        >>> grid = Grid(5, 5)
+        >>> term = Terminal()
+        >>> state = End(grid, term)
+        >>> type(state)
+        <class 'life.sui.End'>
     """
-    def __init__(self):
-        """Initialize an instance of End."""
-        pass
+    def input(self) -> Command:
+        """This should never be called on an End object. It will
+        raise a :class:`life.sui.CannotTakeInput` error if ever
+        called.
 
-    def input(self):
-        """This should never be called on an End object."""
-        raise NotEmplementedError('End objects do not get input.')
+        :returns: A :class:`Command` object
+        :rtype: Command
+        """
+        raise CannotTakeInput('End objects do not get input.')
+        return tuple()
 
-    def update_ui(self):
-        """Do not change the UI."""
+    def update_ui(self) -> None:
+        """Do not change the UI.
+
+        :returns: `None`.
+        :rtype: NoneType
+        """
         pass
 
 
@@ -978,6 +1378,17 @@ class Load(State):
         Defaults to `cells`.
     :returns: An :class:`life.sui.Load` object.
     :rtype: life.sui.Load
+
+    Usage::
+
+        >>> from life.life import Grid
+        >>> from blessed import Terminal
+        >>>
+        >>> grid = Grid(5, 5)
+        >>> term = Terminal()
+        >>> state = Load(grid, term)
+        >>> type(state)
+        <class 'life.sui.Load'>
     """
     commands = {
         DOWN: 'down',
@@ -986,7 +1397,7 @@ class Load(State):
         'x': 'exit',
         '\n': 'load',
     }
-    menu = '(\u2191\u2192) Move, (\u23ce) Select, (F)rom file, e(X)it'
+    _menu = '(\u2191\u2192) Move, (\u23ce) Select, (F)rom file, e(X)it'
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -994,6 +1405,7 @@ class Load(State):
         self.path = files(life.pattern)
         self.selected = 0
 
+    # Private methods.
     def _draw_state(self):
         """Display the files available to be loaded."""
         height = self.term.height - 3
@@ -1031,19 +1443,78 @@ class Load(State):
             self.files.append(name)
         self.files.insert(0, '..')
 
+    # Public methods.
     def down(self) -> 'Load':
-        """Command method. Select the next file in the list."""
+        """Command method. Select the next file in the list.
+
+        :returns: A :class:`life.sui.Load`
+        :rtype: life.sui.Load
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Load(grid, term)
+            >>>
+            >>> state._get_files()
+            >>> state.selected
+            0
+            >>> state = state.down()
+            >>> state.selected
+            1
+        """
         self.selected += 1
         self.selected = self.selected % len(self.files)
         return self
 
     def exit(self) -> 'Core':
-        """Command method. Exit load state."""
+        """Command method. Exit load state.
+
+        :returns: A :class:`life.sui.Core`
+        :rtype: life.sui.Core
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Load(grid, term)
+            >>>
+            >>> state = state.exit()
+            >>> type(state)
+            <class 'life.sui.Core'>
+        """
         return Core(**self.asdict())
 
     def file(self, path: Path = Path.cwd()) -> 'Load':
         """Command method. Select from files in the current working
         directory.
+
+        :param path: The path of the file to load.
+        :returns: A :class:`life.sui.Load`
+        :rtype: life.sui.Load
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>> from pathlib import Path
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Load(grid, term)
+            >>> state.path = Path('/')
+            >>>
+            >>> state.path
+            PosixPath('/')
+            >>> state = state.file(Path('/tmp'))
+            >>> state.path
+            PosixPath('/tmp')
         """
         self.path = path
         return self
@@ -1051,7 +1522,12 @@ class Load(State):
     def load(
         self, filename: str | Path | Traversable | None = None
     ) -> Union['Core', 'Load']:
-        """Load the selected file and return to core state."""
+        """Load the selected file and return to core state.
+
+        :param path: The path of the file to load.
+        :returns: A :class:`life.sui.Load`
+        :rtype: life.sui.Load
+        """
         if filename is None:
             filename = self.path / self.files[self.selected]
         if isinstance(filename, Traversable):
@@ -1080,16 +1556,31 @@ class Load(State):
         return Core(**self.asdict())
 
     def up(self) -> 'Load':
-        """Command method. Select the previous file in the list."""
+        """Command method. Select the previous file in the list.
+
+        :returns: A :class:`life.sui.Load`
+        :rtype: life.sui.Load
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Load(grid, term)
+            >>> state._get_files()
+            >>> state.selected = 1
+            >>>
+            >>> state.selected
+            1
+            >>> state = state.up()
+            >>> state.selected
+            0
+        """
         self.selected -= 1
         self.selected = self.selected % len(self.files)
         return self
-
-    def update_ui(self):
-        """Draw the load state UI."""
-        self._draw_state()
-        self._draw_rule()
-        self._draw_commands(self.menu)
 
 
 class Move(State):
@@ -1124,7 +1615,7 @@ class Move(State):
         SUP: ('up', 10),
         'x': 'exit',
     }
-    menu = '(\u2190\u2191\u2192\u2193) Move, e(X)it'
+    _menu = '(\u2190\u2191\u2192\u2193) Move, e(X)it'
 
     def down(self, distance: int = 1) -> 'Move':
         """Command method. Move the window down."""
@@ -1185,7 +1676,7 @@ class Save(State):
     :returns: An :class:`life.sui.Save` object.
     :rtype: life.sui.Save
     """
-    menu = 'Enter name for save file.'
+    _menu = 'Enter name for save file.'
     path = Path('')
 
     def exit(self) -> 'Core':
@@ -1245,7 +1736,7 @@ class Start(State):
     :returns: An :class:`life.sui.Start` object.
     :rtype: life.sui.Start
     """
-    menu = 'Copyright © 2020 Paul J. Iutzi'
+    _menu = 'Copyright © 2020 Paul J. Iutzi'
     prompt = 'Press any key to continue.'
 
     def __init__(

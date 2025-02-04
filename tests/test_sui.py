@@ -1018,10 +1018,20 @@ class TestEnd:
         """When given required parameters, :class:`End` should return
         an instance with attributes set to the given values.
         """
-        required = {}
+        required = {
+            'data': grid,
+            'term': term,
+        }
+        optional = {
+            'origin_x': 0,
+            'origin_y': 0,
+            'pace': 0,
+        }
         obj = sui.End(**required)
         for attr in required:
             assert getattr(obj, attr) is required[attr]
+        for attr in optional:
+            assert getattr(obj, attr) is optional[attr]
 
 
 # Tests for Load.
