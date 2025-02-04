@@ -11,6 +11,8 @@ from typing import Any, Iterator
 
 import numpy as np
 
+from life.model import LifeAry
+
 
 Y, X = 0, 1
 
@@ -35,9 +37,7 @@ def char_to_bool(line: str, true: str = 'X') -> list[bool]:
     return result
 
 
-def fit_array(
-    a: np.ndarray, shape: tuple[int, ...], fill: Any = 0
-) -> np.ndarray:
+def fit_array(a: LifeAry, shape: tuple[int, ...], fill: Any = 0) -> LifeAry:
     """Fit the given array into the given shape."""
     max_shape = max_per_index(a.shape, shape)
     padded = pad_array(a, max_shape, fill)
@@ -48,9 +48,7 @@ def fit_array(
     return padded[slices[Y], slices[X]]
 
 
-def pad_array(
-    a: np.ndarray, new_shape: Sequence[int], fill: Any
-) -> np.ndarray:
+def pad_array(a: LifeAry, new_shape: Sequence[int], fill: Any) -> LifeAry:
     """Resize the given array to the given new shape."""
     diffs = [n - o for n, o in zip(new_shape, a.shape)]
     pads = [(n // 2, n - (n // 2)) for n in diffs]
