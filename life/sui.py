@@ -1603,6 +1603,17 @@ class Move(State):
         Defaults to `cells`.
     :returns: An :class:`life.sui.Move` object.
     :rtype: life.sui.Move
+
+    Usage::
+
+        >>> from life.life import Grid
+        >>> from blessed import Terminal
+        >>>
+        >>> grid = Grid(5, 5)
+        >>> term = Terminal()
+        >>> state = Move(grid, term)
+        >>> type(state)
+        <class 'life.sui.Move'>
     """
     commands = {
         DOWN: ('down', 1),
@@ -1618,41 +1629,136 @@ class Move(State):
     _menu = '(\u2190\u2191\u2192\u2193) Move, e(X)it'
 
     def down(self, distance: int = 1) -> 'Move':
-        """Command method. Move the window down."""
+        """Command method. Move the window down.
+
+        :param distance: (Optional.) How far to move. Defaults to `1`.
+        :returns: An :class:`life.sui.Move` object.
+        :rtype: life.sui.Move
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Move(grid, term)
+            >>>
+            >>> state.origin_x, state.origin_y
+            (-38, -55)
+            >>> state = state.down(1)
+            >>> state.origin_x, state.origin_y
+            (-38, -109)
+        """
         self.origin_y += distance
         if self.origin_y > (self.data.height - (self.term.height - 3) * 2):
             self.origin_y = (self.data.height - (self.term.height - 3) * 2)
         return self
 
     def exit(self) -> 'Core':
-        """Command method. Return to the core."""
+        """Command method. Return to the core.
+
+        :returns: An :class:`life.sui.Core` object.
+        :rtype: life.sui.Core
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Move(grid, term)
+            >>>
+            >>> state = state.exit()
+            >>> type(state)
+            <class 'life.sui.Core'>
+        """
         return Core(**self.asdict())
 
     def left(self, distance: int = 1) -> 'Move':
-        """Command method. Move the window left."""
+        """Command method. Move the window left.
+
+        :param distance: (Optional.) How far to move. Defaults to `1`.
+        :returns: An :class:`life.sui.Move` object.
+        :rtype: life.sui.Move
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Move(grid, term)
+            >>>
+            >>> state.origin_x, state.origin_y
+            (-38, -55)
+            >>> state = state.left(1)
+            >>> state.origin_x, state.origin_y
+            (0, -55)
+        """
         self.origin_x -= distance
         if self.origin_x < 0:
             self.origin_x = 0
         return self
 
     def right(self, distance: int = 1) -> 'Move':
-        """Command method. Move the window right."""
+        """Command method. Move the window right.
+
+        :param distance: (Optional.) How far to move. Defaults to `1`.
+        :returns: An :class:`life.sui.Move` object.
+        :rtype: life.sui.Move
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Move(grid, term)
+            >>>
+            >>> state.origin_x, state.origin_y
+            (-38, -55)
+            >>> state = state.right(1)
+            >>> state.origin_x, state.origin_y
+            (-75, -55)
+        """
         self.origin_x += distance
         if self.origin_x > (self.data.width - self.term.width):
             self.origin_x = self.data.width - self.term.width
         return self
 
     def up(self, distance: int = 1) -> 'Move':
-        """Command method. Move the window up."""
+        """Command method. Move the window up.
+
+        :param distance: (Optional.) How far to move. Defaults to `1`.
+        :returns: An :class:`life.sui.Move` object.
+        :rtype: life.sui.Move
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Move(grid, term)
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> state = Move(grid, term)
+            >>>
+            >>> state.origin_x, state.origin_y
+            (-38, -55)
+            >>> state = state.up(1)
+            >>> state.origin_x, state.origin_y
+            (-38, 0)
+        """
         self.origin_y -= distance
         if self.origin_y < 0:
             self.origin_y = 0
         return self
-
-    def update_ui(self):
-        self._draw_state()
-        self._draw_rule()
-        self._draw_commands(self.menu)
 
 
 class Save(State):
@@ -1675,16 +1781,48 @@ class Save(State):
         Defaults to `cells`.
     :returns: An :class:`life.sui.Save` object.
     :rtype: life.sui.Save
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Save(grid, term)
+            >>> type(state)
+            <class 'life.sui.Save'>
     """
     _menu = 'Enter name for save file.'
     path = Path('')
 
     def exit(self) -> 'Core':
-        """Command method. Return to core without saving."""
+        """Command method. Return to core without saving.
+
+        :returns: An :class:`life.sui.Core` object.
+        :rtype: life.sui.Core
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Save(grid, term)
+            >>>
+            >>> state = state.exit()
+            >>> type(state)
+            <class 'life.sui.Core'>
+        """
         return Core(**self.asdict())
 
     def input(self) -> Command:
-        """Get a file name from the user."""
+        """Get a file name from the user.
+
+        :returns: A :class:`tuple` object.
+        :rtype: tuple
+        """
         self._draw_prompt()
         y = -(self.data.height // -2) + 2
 
@@ -1697,6 +1835,8 @@ class Save(State):
         """Save the current grid state to a file.
 
         :param filename: The name of the file to save.
+        :returns: An :class:`life.sui.Core` object.
+        :rtype: life.sui.Core
         """
         path = Path(filename)
         info = util.FileInfo(
@@ -1709,14 +1849,9 @@ class Save(State):
             fh.write(text)
         return Core(**self.asdict())
 
-    def update_ui(self):
-        self._draw_state()
-        self._draw_rule()
-        self._draw_commands(self.menu)
-
 
 class Start(State):
-    """The starting state for the UI.
+    """The starting state for the UI, displaying the title screen.
 
     :param data: The grid object for the current Game of Life.
     :param term: The terminal the Game of Life is being run in.
@@ -1735,6 +1870,19 @@ class Start(State):
         Defaults to `cells`.
     :returns: An :class:`life.sui.Start` object.
     :rtype: life.sui.Start
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Start(grid, term)
+            >>>
+            >>> state = state.exit()
+            >>> type(state)
+            <class 'life.sui.Start'>
     """
     _menu = 'Copyright © 2020 Paul J. Iutzi'
     prompt = 'Press any key to continue.'
@@ -1766,35 +1914,35 @@ class Start(State):
         self.wrap = wrap
         self.rule = rule
 
-    @property
-    def rule(self) -> str:
-        return self.data.rule
-
-    @rule.setter
-    def rule(self, value: str) -> None:
-        self.data.rule = value
-
-    @property
-    def wrap(self) -> bool:
-        return self.data.wrap
-
-    @wrap.setter
-    def wrap(self, value: bool) -> None:
-        self.data.wrap = value
-
+    # Public methods.
     def input(self) -> Command:
-        """Return a Core object."""
+        """Get input from the user.
+
+        :returns: A :class:`tuple` object.
+        :rtype: tuple
+        """
         self._draw_prompt(self.prompt)
         with self.term.cbreak():
             self.term.inkey()
         return ('run',)
 
     def run(self) -> Core:
-        """Return a Core object to start the game of life."""
-        return Core(**self.asdict())
+        """Return a Core object to start the game of life.
 
-    def update_ui(self):
-        """Draw the initial display state."""
-        self._draw_state()
-        self._draw_rule()
-        self._draw_commands(self.menu)
+        :returns: An :class:`life.sui.Core` object.
+        :rtype: life.sui.Core
+
+        Usage::
+
+            >>> from life.life import Grid
+            >>> from blessed import Terminal
+            >>>
+            >>> grid = Grid(5, 5)
+            >>> term = Terminal()
+            >>> state = Start(grid, term)
+            >>>
+            >>> state = state.run()
+            >>> type(state)
+            <class 'life.sui.Core'>
+        """
+        return Core(**self.asdict())
