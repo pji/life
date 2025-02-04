@@ -17,7 +17,15 @@ Y, X = 0, 1
 
 # Functions.
 def char_to_bool(line: str, true: str = 'X') -> list[bool]:
-    """Convert the characters in a string to booleans."""
+    """Convert the characters in a string to booleans.
+
+    :param line: The line of text to convert.
+    :param true: (Optional.) The character that translates as true.
+        This is case insensitive. All other characters will translate
+        as false. Defaults to `X`.
+    :returns: A :class:`list` object.
+    :rtype: list
+    """
     result: list[bool] = []
     for char in line:
         if char.casefold() == true.casefold():
@@ -65,7 +73,15 @@ def normalize_width(line: str, width: int, fill: str = '.') -> str:
 # Classes.
 @dataclass
 class FileInfo:
-    """Metadata for saved files."""
+    """Metadata for saved files.
+
+    :param name: The name of the file.
+    :param user: The creator of the file.
+    :param rule: The rules for the Game of Life.
+    :param comment: A comment describing the file.
+    :returns: A :class:`life.util.FileInfo` object.
+    :rtype: life.util.FileInfo
+    """
     name: str = ''
     user: str = ''
     rule: str = ''
