@@ -91,7 +91,8 @@ class Grid:
     def __init__(
         self, width: int,
         height: int,
-        rule: str = 'B3/S23', wrap: bool = True
+        rule: str = 'B3/S23',
+        wrap: bool = True
     ) -> None:
         """Initialize an instance of the class."""
         self.height = height

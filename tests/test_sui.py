@@ -1595,13 +1595,13 @@ class TestStart:
         return start
 
     # Tests for Start initialization.
-    def test_Start_init_all_default(self, term):
+    def test_Start_init_all_default(self, grid, term):
         """Given no parameters, :class:`Start` should initialize an
         instance of itself using default attribute values.
         """
-        start = sui.Start()
-        assert start.data.width == term.width
-        assert start.data.height == (term.height - 3) * 2
+        start = sui.Start(grid, term)
+        assert start.data.width == grid.width
+        assert start.data.height == grid.height
         assert start.origin_y == 0
         assert start.origin_x == 0
         assert start.pace == 0
@@ -1620,7 +1620,6 @@ class TestStart:
             'origin_x': 2,
             'origin_y': 3,
             'pace': 0.01,
-            'wrap': False,
         }
         obj = sui.Start(**optionals)
         for attr in optionals:
@@ -1634,26 +1633,6 @@ class TestStart:
         start = sui.Start(big_grid, small_term)
         assert start.origin_y == 2
         assert start.origin_x == 2
-
-    def test_Start_init_file(self, term):
-        """Given a path to a file, :class:`Start` should generate a grid
-        from the contents of the file.
-        """
-        start = sui.Start(term=term, file='tests/data/spam')
-        assert start.file == 'tests/data/spam'
-        assert (start.data._data == np.array([
-            [0, 1, 0, 1],
-            [1, 0, 1, 0],
-            [0, 1, 0, 1],
-            [0, 0, 0, 0],
-        ], dtype=bool)).all()
-
-    def test_Start_init_no_wrap(self, ):
-        """Given wrap of `False`, :class:`Start` should generate a grid
-        then set the grid's wrap to `False`.
-        """
-        start = sui.Start(wrap=False)
-        assert not start.data.wrap
 
     # Tests for Start commands.
     def test_Start_run(self, start):

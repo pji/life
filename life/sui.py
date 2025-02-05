@@ -1887,33 +1887,6 @@ class Start(State):
     _menu = 'Copyright © 2020 Paul J. Iutzi'
     prompt = 'Press any key to continue.'
 
-    def __init__(
-        self,
-        data: Grid | None = None,
-        term: Terminal | None = None,
-        file: str | Path = Path(str(files(life.pattern))) / 'title.txt',
-        rule: str = 'B3/S23',
-        wrap: bool = True,
-        *args, **kwargs
-    ):
-        """Initialize a Start object.
-
-        :param data: (Optional.) The grid object for the current
-            game of life.
-        :param term: (Optional.) The terminal the game of life is
-            being run in.
-        """
-        if not term:
-            term = Terminal()
-        if not data:
-            data = Grid(term.width, (term.height - 3) * 2)
-            load = Load(data, term)
-            load.load(file)
-        super().__init__(data, term, *args, **kwargs)
-        self.file = file
-        self.wrap = wrap
-#         self.rule = rule
-
     # Public methods.
     def input(self) -> Command:
         """Get input from the user.
@@ -1971,20 +1944,23 @@ def main_loop(
     # Set up the initial state.
     term = Terminal()
     if dimensions:
-        grid = Grid(*dimensions, rule)
+        grid = Grid(*dimensions, rule, wrap=not no_wrap)
     else:
         if not file:
             file = Path(str(files(life.pattern))) / 'title.txt'
-        grid = Grid(term.width, (term.height - 3) * 2, rule=rule)
+        grid = Grid(
+            term.width,
+            (term.height - 3) * 2,
+            rule=rule,
+            wrap=not no_wrap
+        )
         load = Load(grid, term)
         load.load(file)
     state = Start(
         data=grid,
         term=term,
-        file=file,
         show_generation=show_generation,
-        pace=pace,
-        wrap=not no_wrap
+        pace=pace
     )
 
     # Run the main loop.
@@ -1993,4 +1969,3 @@ def main_loop(
             state.update_ui()
             cmd, *args = state.input()
             state = getattr(state, cmd)(*args)
-

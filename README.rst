@@ -88,6 +88,8 @@ The following features were added in the most recent release:
 *   Removed warnings when tested under Python 3.13.
 *   Switched from `pipenv` to `poetry`.
 *   Added attributes to `life.sui.End` to better fit the base class.
+*   Removed attributes from `life.sui.Start` to better fit the base class.
+*   Moved main UI loop to `life.sui` to keep the terminal UI together.
 *   Refactored `life.sui.State.update_ui` to increase code reuse.
 
 

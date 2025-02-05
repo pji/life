@@ -4,8 +4,8 @@ model
 
 Types for :mod:`life`.
 """
-from numpy.typing import NDArray
 import numpy as np
+from numpy.typing import NDArray
 
 
 # Types.

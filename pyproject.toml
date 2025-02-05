@@ -27,7 +27,7 @@ isort = "^6.0.0"
 
 [project]
 name = "life"
-version = "0.1.2.dev"
+version = "0.1.2"
 authors = [
     {name="Paul J. Iutzi", email="pji@mac.com"},
 ]
