@@ -23,7 +23,7 @@ def test_main_d(mocker):
     given integers.
     """
     start = sui.Start()
-    mock_start = mocker.patch('life.main.Start', return_value=start)
+    mock_start = mocker.patch('life.sui.Start', return_value=start)
     mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
     mocker.patch('sys.argv', ['life', '-d', '200', '200',])
     main()
@@ -39,7 +39,7 @@ def test_main_f(mocker):
     path.
     """
     start = sui.Start()
-    mock_start = mocker.patch('life.main.Start', return_value=start)
+    mock_start = mocker.patch('life.sui.Start', return_value=start)
     mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
     mocker.patch('sys.argv', ['life', '-f tests/data/spam'])
     main()
@@ -53,7 +53,7 @@ def test_main_g(mocker):
     `True`.
     """
     start = sui.Start()
-    mock_start = mocker.patch('life.main.Start', return_value=start)
+    mock_start = mocker.patch('life.sui.Start', return_value=start)
     mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
     mocker.patch('sys.argv', ['life', '-g',])
     main()
@@ -67,7 +67,7 @@ def test_main_p(mocker):
     number.
     """
     start = sui.Start()
-    mock_start = mocker.patch('life.main.Start', return_value=start)
+    mock_start = mocker.patch('life.sui.Start', return_value=start)
     mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
     mocker.patch('sys.argv', ['life', '-p 0.01'])
     main()
@@ -80,11 +80,11 @@ def test_main_r(mocker):
     object with :attr:`Start.rule` set to the given rule string.
     """
     start = sui.Start()
-    mock_start = mocker.patch('life.main.Start', return_value=start)
+    mock_start = mocker.patch('life.sui.Start', return_value=start)
     mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
     mocker.patch('sys.argv', ['life', '-r B36/S23'])
     main()
-    assert mock_start.call_args[1]['rule'] == 'B36/S23'
+    assert mock_start.call_args[1]['data'].rule == 'B36/S23'
 
 
 def test_main_W(mocker):
@@ -93,7 +93,7 @@ def test_main_W(mocker):
     set to `False`.
     """
     start = sui.Start()
-    mock_start = mocker.patch('life.main.Start', return_value=start)
+    mock_start = mocker.patch('life.sui.Start', return_value=start)
     mocker.patch('blessed.Terminal.inkey', side_effect=[' ', 'q'])
     mocker.patch('sys.argv', ['life', '-W'])
     main()

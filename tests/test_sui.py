@@ -1620,7 +1620,6 @@ class TestStart:
             'origin_x': 2,
             'origin_y': 3,
             'pace': 0.01,
-            'rule': 'B36/S23',
             'wrap': False,
         }
         obj = sui.Start(**optionals)
@@ -1655,13 +1654,6 @@ class TestStart:
         """
         start = sui.Start(wrap=False)
         assert not start.data.wrap
-
-    def test_Start_init_rule(self, ):
-        """Given a valid rule string, :class:`Start` should generate a grid
-        then set the grid's rule to the given value.
-        """
-        start = sui.Start(rule='B36/S23')
-        assert start.data.rule == 'B36/S23'
 
     # Tests for Start commands.
     def test_Start_run(self, start):

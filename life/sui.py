@@ -1912,7 +1912,7 @@ class Start(State):
         super().__init__(data, term, *args, **kwargs)
         self.file = file
         self.wrap = wrap
-        self.rule = rule
+#         self.rule = rule
 
     # Public methods.
     def input(self) -> Command:
@@ -1946,3 +1946,51 @@ class Start(State):
             <class 'life.sui.Core'>
         """
         return Core(**self.asdict())
+
+
+# The UI and game loop.
+def main_loop(
+    dimensions: tuple[int, int] | None,
+    file: str | Path,
+    show_generation: bool,
+    pace: float,
+    rule: str,
+    no_wrap: bool
+) -> None:
+    """The main UI and game loop.
+
+    :param dimensions: The dimensions for the grid, if starting new.
+    :param file: The file to load, if starting from a file.
+    :param show_generation: Whether to display the generation.
+    :param pace: The pace when autorunning the Game of Life.
+    :param rule: The rule for the Game of Life.
+    :param no_wrap: Whether not to wrap the edges of the grid.
+    :returns: `None`.
+    :rtype: NoneType
+    """
+    # Set up the initial state.
+    term = Terminal()
+    if dimensions:
+        grid = Grid(*dimensions, rule)
+    else:
+        if not file:
+            file = Path(str(files(life.pattern))) / 'title.txt'
+        grid = Grid(term.width, (term.height - 3) * 2, rule=rule)
+        load = Load(grid, term)
+        load.load(file)
+    state = Start(
+        data=grid,
+        term=term,
+        file=file,
+        show_generation=show_generation,
+        pace=pace,
+        wrap=not no_wrap
+    )
+
+    # Run the main loop.
+    with term.fullscreen(), term.hidden_cursor():
+        while not isinstance(state, End):
+            state.update_ui()
+            cmd, *args = state.input()
+            state = getattr(state, cmd)(*args)
+

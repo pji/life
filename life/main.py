@@ -6,10 +6,7 @@ Main program loop for :mod:`life`.
 """
 from argparse import ArgumentParser
 
-from blessed import Terminal
-
-from life.life import Grid
-from life.sui import End, Start
+from life.sui import main_loop
 
 
 # Mainline.
@@ -46,13 +43,15 @@ def main() -> None:
         '-p', '--pace',
         help='The delay between ticks when autorunning.',
         action='store',
-        type=float
+        type=float,
+        default=0.0
     )
     p.add_argument(
         '-r', '--rule',
         help='The rule for the Game of Life.',
         action='store',
-        type=str
+        type=str,
+        default='b3/s23'
     )
     p.add_argument(
         '-W', '--no_wrap',
@@ -61,29 +60,13 @@ def main() -> None:
     )
     args = p.parse_args()
 
-    # Switch the terminal into a more interactive mode.
-    term = Terminal()
-    with term.fullscreen(), term.hidden_cursor():
-
-        # Build the configuration.
-        kwargs = {
-            'term': term,
-            'show_generation': args.show_generation,
-        }
-        if args.dimensions:
-            kwargs['data'] = Grid(*args.dimensions)
-        if args.file:
-            kwargs['file'] = args.file.strip()
-        if args.no_wrap:
-            kwargs['wrap'] = False
-        if args.pace:
-            kwargs['pace'] = args.pace
-        if args.rule:
-            kwargs['rule'] = args.rule.strip()
-
-        # Configure and run the Game of Life.
-        state = Start(**kwargs)
-        while not isinstance(state, End):
-            state.update_ui()
-            cmd, *cmd_args = state.input()
-            state = getattr(state, cmd)(*cmd_args)
+    file = args.file.strip() if args.file else ''
+    rule = args.rule.strip() if args.rule else args.rule
+    main_loop(
+        dimensions=args.dimensions,
+        file=file,
+        show_generation=args.show_generation,
+        pace=args.pace,
+        rule=rule,
+        no_wrap=args.no_wrap
+    )
